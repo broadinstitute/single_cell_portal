@@ -11,7 +11,7 @@ To visit the portal please go to: https://portals.broadinstitute.org/single_cell
 For tutorials and descriptions of files please go to: https://github.com/broadinstitute/single_cell_portal/wiki
 
 ## Reporting Bugs and Improvements
-To report a bugs or suggest an improvement please create a new issue at: https://github.com/broadinstitute/single_cell_portal/issues
+To report a bug or suggest an improvement please create a new issue at: https://github.com/broadinstitute/single_cell_portal/issues
 
 
 Happy Science!!!
