@@ -13,6 +13,9 @@ For tutorials and descriptions of files please go to: https://github.com/broadin
 ## Reporting Bugs and Improvements
 To report a bug or suggest an improvement please create a new issue at: https://github.com/broadinstitute/single_cell_portal/issues
 
+## Need Help?
+
+Email us at single_cell_portal@broadinstitute.org
 
 Happy Science!!!
 
