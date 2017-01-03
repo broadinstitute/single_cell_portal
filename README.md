@@ -10,6 +10,17 @@ To visit the portal please go to: https://portals.broadinstitute.org/single_cell
 ## Tutorials
 For tutorials and descriptions of files please go to: https://github.com/broadinstitute/single_cell_portal/wiki
 
+## Convenience Scripts
+Scripts to help when working with data files for the portal are made available in this repo and require __python 3.X__. Using these scripts to verify the format of input files can be found at https://github.com/broadinstitute/single_cell_portal/wiki/File-Definitions .
+
+To download:   
+use the download button at https://github.com/broadinstitute/single_cell_portal   
+
+To clone using git in a command line terminal:
+```
+git clone https://github.com/broadinstitute/single_cell_portal.git
+```
+
 ## Reporting Bugs and Improvements
 To report a bug or suggest an improvement please create a new issue at: https://github.com/broadinstitute/single_cell_portal/issues
 
