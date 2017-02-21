@@ -13,19 +13,21 @@ import PortalFiles
 
 
 def check_cell_names(expression_file=None,
-                     coordinates_file=None,
-                     cluster_file=None):
+                     coordinates_file_group=None,
+                     metadata_file=None):
     """
     Check files among themselves.
     """
-    if cluster_file:
-        if coordinates_file:
-            cluster_file.compare_cell_names(coordinates_file)
+    if metadata_file:
+        if coordinates_file_group:
+            for coordinates_file in coordinates_file_group:
+                metadata_file.compare_cell_names(coordinates_file)
         if expression_file:
-            cluster_file.compare_cell_names(expression_file)
+            metadata_file.compare_cell_names(expression_file)
     if coordinates_file:
         if expression_file:
-            coordinates_file.compare_cell_names(expression_file)
+            for coordinates_file in coordinates_file_group:
+                coordinates_file.compare_cell_names(expression_file)
 
 
 prsr_arguments = argparse.ArgumentParser(
@@ -36,18 +38,19 @@ prsr_arguments = argparse.ArgumentParser(
 
 prsr_arguments.add_argument("--coordinates_file",
                             default=None,
-                            dest="coordinates_file",
+                            dest="coordinates_file_group",
                             type=str,
+                            nargs="*",
                             help="".join(["The file that holds the ",
                                           "coordinates for the main ",
                                           "visualization."]))
 
-prsr_arguments.add_argument("--cluster_file",
+prsr_arguments.add_argument("--metadata_file",
                             default=None,
-                            dest="cluster_file",
+                            dest="metadata_file",
                             type=str,
-                            help="".join(["The file that holds the clusters ",
-                                          "for the main visualization."]))
+                            help="".join(["The file that holds metadata ",
+                                          "to be used for all visualizations."]))
 
 prsr_arguments.add_argument("--expression_file",
                             default=None,
@@ -72,76 +75,79 @@ prsr_arguments.add_argument("--deid_cells",
 
 prs_args = prsr_arguments.parse_args()
 
-coordinates_portal_file = None
-cluster_portal_file = None
+coordinates_files = []
+metadata_portal_file = None
 expression_portal_file = None
 
-if prs_args.coordinates_file:
-    coordinates_portal_file = PortalFiles.CoordinatesFile(prs_args.coordinates_file,
+if prs_args.coordinates_file_group:
+    for coordinates_file in prs_args.coordinates_file_group:
+        coordinates_portal_file = PortalFiles.CoordinatesFile(coordinates_file,
                                               file_delimiter=prs_args.file_delimiter,
                                               expected_header=PortalFiles.c_COORDINATES_HEADER,
-                                              demo_file_link="https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/cluster_coordinates_example.txt")
-    coordinates_portal_file.check()
+                                              demo_file_link=PortalFiles.c_COORDINATES_DEMO_LINK)
+        coordinates_portal_file.check()
+        coordinates_files.append(coordinates_portal_file)
 
-if prs_args.cluster_file:
-    cluster_portal_file = PortalFiles.ClusterFile(prs_args.cluster_file,
+if prs_args.metadata_file:
+    metadata_portal_file = PortalFiles.MetadataFile(prs_args.metadata_file,
                                       file_delimiter=prs_args.file_delimiter,
-                                      expected_header=PortalFiles.c_CLUSTER_HEADER,
-                                      demo_file_link="https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/cluster_assignments_example.txt")
-    cluster_portal_file.check()
+                                      expected_header=PortalFiles.c_METADATA_HEADER,
+                                      demo_file_link=PortalFiles.c_METADATA_DEMO_LINK)
+    metadata_portal_file.check()
 
 if prs_args.expression_file:
     expression_portal_file = PortalFiles.ExpressionFile(prs_args.expression_file,
                                             file_delimiter=prs_args.file_delimiter,
-                                            demo_file_link="https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/expression_matrix_example.txt")
+                                            demo_file_link=PortalFiles.c_EXPRESSION_DEMO_LINK)
     expression_portal_file.check()
 
 check_cell_names(expression_file=expression_portal_file,
-                 coordinates_file=coordinates_portal_file,
-                 cluster_file=cluster_portal_file)
+                 coordinates_file_group=coordinates_files,
+                 metadata_file=metadata_portal_file)
 
 # Deidentify all cell names (optionally) after all QC checks are made.
 if prs_args.do_deidentify_cell:
-    print("Deidentifying Cell Nams/Ids")
+    print("Deidentifying Cell Names/Ids")
 
     # Holds the deidentified cell names if used
     deid_names = {}
 
-    if prs_args.coordinates_file:
-        deid_info = coordinates_portal_file.deidentify_cell_names(deid_names)
-        if not deid_info:
-            exit(51)
-        deid_file = deid_info["name"]
-        deid_names = deid_info["mapping"]
-        print(" ".join(["A version of the coordinates file with",
-                        "deidentifed cells names was named",
-                        str(deid_file)]))
-        print("Checking format of new file.")
-        # Reset to deidentified file
-        coordinates_portal_file = PortalFiles.CoordinatesFile(deid_file,
-                                              file_delimiter=prs_args.file_delimiter,
-                                              expected_header=PortalFiles.c_COORDINATES_HEADER,
-                                              demo_file_link="https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/cluster_coordinates_example.txt")
-        coordinates_portal_file.check()
+    if coordinates_files:
+        for coordinates_portal_file in coordinates_files:
+            deid_info = coordinates_portal_file.deidentify_cell_names(deid_names)
+            if not deid_info:
+                exit(51)
+            deid_file = deid_info["name"]
+            deid_names = deid_info["mapping"]
+            print(" ".join(["A version of the coordinates file with",
+                            "deidentifed cells names was named",
+                            str(deid_file)]))
+            print("Checking format of new file.")
+            # Reset to deidentified file
+            coordinates_portal_file = PortalFiles.CoordinatesFile(deid_file,
+                                                  file_delimiter=prs_args.file_delimiter,
+                                                  expected_header=PortalFiles.c_COORDINATES_HEADER,
+                                                  demo_file_link=PortalFiles.c_COORDINATES_DEMO_LINK)
+            coordinates_portal_file.check()
 
-    if prs_args.cluster_file:
-        deid_info = cluster_portal_file.deidentify_cell_names(deid_names)
+    if metadata_portal_file:
+        deid_info = metadata_portal_file.deidentify_cell_names(deid_names)
         if not deid_info:
             exit(52)
         deid_file = deid_info["name"]
         deid_names = deid_info["mapping"]
-        print(" ".join(["A version of the cluster/metadata file with",
+        print(" ".join(["A version of the metadata file with",
                         "deidentifed cells names was named",
                         str(deid_file)]))
         print("Checking format of new file.")
         # Reset to deidentified file
-        cluster_portal_file = PortalFiles.ClusterFile(deid_file,
+        metadata_portal_file = PortalFiles.MetadataFile(deid_file,
                                       file_delimiter=prs_args.file_delimiter,
-                                      expected_header=PortalFiles.c_CLUSTER_HEADER,
-                                      demo_file_link="https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/cluster_assignments_example.txt")
-        cluster_portal_file.check()
+                                      expected_header=PortalFiles.c_METADATA_HEADER,
+                                      demo_file_link=PortalFiles.c_METADATA_DEMO_LINK)
+        metadata_portal_file.check()
 
-    if prs_args.expression_file:
+    if expression_portal_file:
         deid_info = expression_portal_file.deidentify_cell_names(deid_names)
         if not deid_info:
             exit(53)
@@ -154,11 +160,11 @@ if prs_args.do_deidentify_cell:
         # Reset to deidentified file
         expression_portal_file = PortalFiles.ExpressionFile(deid_file,
                                             file_delimiter=prs_args.file_delimiter,
-                                            demo_file_link="https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/expression_matrix_example.txt")
+                                            demo_file_link=PortalFiles.c_EXPRESSION_DEMO_LINK)
         expression_portal_file.check()
 
     print("If multiple files are given, checking among files.")
     check_cell_names(expression_file=expression_portal_file,
-                     coordinates_file=coordinates_portal_file,
-                     cluster_file=cluster_portal_file)
+                     coordinates_file_group=coordinates_files,
+                     metadata_file=metadata_portal_file)
 print("Completed.")
