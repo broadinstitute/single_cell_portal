@@ -40,8 +40,8 @@ def files_are_equivalent(file_path_1, file_path_2):
             for line in check_file_1:
                 compare_line = next(check_file_2)
                 if not line == compare_line:
-                    print(line)
-                    print(compare_line)
+                    print("::"+line+"::")
+                    print("::"+compare_line+"::")
                     return(False)
     return(True)
 
@@ -86,7 +86,7 @@ class CoordinatesFileTester(unittest.TestCase):
         if not test_file.file_name == test_file_name:
             has_error = True
             error_message.append("File name incorrect.")
-        if not test_file.header_length == PortalFiles.c_COORDINATES_HEADER_LENGTH:
+        if not test_file.header_length == 6:
             has_error = True
             error_message.append("File length incorrect.")
         if not test_file.line_number == 1:
@@ -111,8 +111,8 @@ class CoordinatesFileTester(unittest.TestCase):
                                  "ExpectedHeader:"+",".join(PortalFiles.c_COORDINATES_HEADER),
                                  "ExpectedHeaderLen:"+str(PortalFiles.c_COORDINATES_HEADER_LENGTH),
                                  "FileName:"+test_file_name,
-                                 "Header:"+",".join(PortalFiles.c_COORDINATES_HEADER),
-                                 "HeaderLen:"+str(PortalFiles.c_COORDINATES_HEADER_LENGTH),
+                                 "Header:"+",".join(["NAME","X","Y","Z","Category","Intensity"]),
+                                 "HeaderLen:"+str(6),
                                  "LineNumber:"+str(1),
                                  "CellNames:"+str(test_file.cell_names)])
         self.assertTrue(correct_str == actual_str,
@@ -132,10 +132,23 @@ class CoordinatesFileTester(unittest.TestCase):
 
     def test_check_header_incorrect(self):
         """
-        Check the header is called incorrect when it is incorrect.
+        Check the header is called incorrect when position 00 is incorrect.
         """
         test_file_name = os.path.join("test_files",
                                       "coordinates_bad_header.txt")
+        test_file = PortalFiles.CoordinatesFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_header()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_header_for_duplicates(self):
+        """
+        Check the header is called incorrect when duplicates exist.
+        """
+        test_file_name = os.path.join("test_files",
+                                      "coordinates_bad_header_duplicates.txt")
         test_file = PortalFiles.CoordinatesFile(test_file_name)
         if test_file.file_has_error:
             self.assertTrue(False, "Did not start test with a no error state.")
@@ -298,9 +311,9 @@ class CoordinatesFileTester(unittest.TestCase):
         Check comparing cell names for two files with identical cell names.
         """
         test_file_name = os.path.join("test_files", "coordinates.txt")
-        test_file_name_2 = os.path.join("test_files", "cluster.txt")
+        test_file_name_2 = os.path.join("test_files", "metadata.txt")
         test_file = PortalFiles.CoordinatesFile(test_file_name)
-        test_file_2 = PortalFiles.ClusterFile(test_file_name_2)
+        test_file_2 = PortalFiles.MetadataFile(test_file_name_2)
         self.assertTrue((not test_file.file_has_error) and
                         (not test_file_2.file_has_error),
                         "Did not start test with a no error state.")
@@ -315,9 +328,9 @@ class CoordinatesFileTester(unittest.TestCase):
         """
         test_file_name = os.path.join("test_files",
                                       "coordinates_duplicates.txt")
-        test_file_name_2 = os.path.join("test_files", "cluster.txt")
+        test_file_name_2 = os.path.join("test_files", "metadata.txt")
         test_file = PortalFiles.CoordinatesFile(test_file_name)
-        test_file_2 = PortalFiles.ClusterFile(test_file_name_2)
+        test_file_2 = PortalFiles.MetadataFile(test_file_name_2)
         self.assertTrue((not test_file.file_has_error) and
                         (not test_file_2.file_has_error),
                         "Did not start test with a no error state.")
@@ -332,9 +345,9 @@ class CoordinatesFileTester(unittest.TestCase):
         """
         test_file_name = os.path.join("test_files",
                                       "coordinates.txt")
-        test_file_name_2 = os.path.join("test_files", "cluster_duplicates.txt")
+        test_file_name_2 = os.path.join("test_files", "metadata_duplicates.txt")
         test_file = PortalFiles.CoordinatesFile(test_file_name)
-        test_file_2 = PortalFiles.ClusterFile(test_file_name_2)
+        test_file_2 = PortalFiles.MetadataFile(test_file_name_2)
         self.assertTrue((not test_file.file_has_error) and
                         (not test_file_2.file_has_error),
                         "Did not start test with a no error state.")
@@ -348,8 +361,11 @@ class CoordinatesFileTester(unittest.TestCase):
         """
         test_file = os.path.join("test_files", "coordinates.txt")
         test_file = PortalFiles.CoordinatesFile(test_file)
-        names = "".join(["Cell_A,Cell_B,Cell_C,Cell_D,Cell_E,",
-                         "Cell_F,Cell_G,Cell_H,Cell_I,Cell_J"])
+        names = ",".join(["CELL_0001","CELL_00010","CELL_00011",
+                         "CELL_00012","CELL_00013","CELL_00014",
+                         "CELL_00015","CELL_0002","CELL_0003",
+                         "CELL_0004","CELL_0005","CELL_0006",
+                         "CELL_0007","CELL_0008","CELL_0009"])
         test_file.cell_names = None
         test_file.update_cell_names()
         names_after = ",".join(sorted(test_file.cell_names))
@@ -362,8 +378,11 @@ class CoordinatesFileTester(unittest.TestCase):
         """
         test_file = os.path.join("test_files", "coordinates.txt")
         test_file = PortalFiles.CoordinatesFile(test_file)
-        names = "".join(["Cell_A,Cell_B,Cell_C,Cell_D,Cell_E,",
-                         "Cell_F,Cell_G,Cell_H,Cell_I,Cell_J"])
+        names = ",".join(["CELL_0001","CELL_00010","CELL_00011",
+                         "CELL_00012","CELL_00013","CELL_00014",
+                         "CELL_00015","CELL_0002","CELL_0003",
+                         "CELL_0004","CELL_0005","CELL_0006",
+                         "CELL_0007","CELL_0008","CELL_0009"])
         test_file.update_cell_names()
         test_file.update_cell_names()
         test_file.update_cell_names()
@@ -391,10 +410,6 @@ class CoordinatesFileTester(unittest.TestCase):
             os.remove(map_file)
         test_file = PortalFiles.CoordinatesFile(test_file_name)
         deid_file_name = test_file.deidentify_cell_names()["name"]
-        print(files_are_equivalent(file_path_1=deid_file_name,
-                                             file_path_2=correct_file))
-        print(files_are_equivalent(file_path_1=map_file,
-                             file_path_2=correct_map))
         self.assertTrue(files_are_equivalent(file_path_1=deid_file_name,
                                              file_path_2=correct_file) and
                         files_are_equivalent(file_path_1=map_file,
@@ -411,11 +426,12 @@ class CoordinatesFileTester(unittest.TestCase):
                                  "coordinates"+PortalFiles.c_DEID_POSTFIX+".txt")
         map_file = os.path.join("test_files",
                                 "coordinates"+PortalFiles.c_MAP_POSTFIX+".txt")
-        cell_mappings_truth = ["Cell_A:cell_0", "Cell_B:cell_1", "Cell_C:cell_2",
-                               "Cell_D:cell_3", "Cell_E:cell_4", "Cell_F:cell_5",
-                               "Cell_G:cell_6", "Cell_H:cell_7", "Cell_I:cell_8",
-                               "Cell_J:cell_9"]
-        cell_mappings_truth = ",".join(cell_mappings_truth)
+        cell_mappings_truth = ["CELL_0001:cell_0", "CELL_0002:cell_1", "CELL_0003:cell_2",
+                               "CELL_0004:cell_3", "CELL_0005:cell_4", "CELL_0006:cell_5",
+                               "CELL_0007:cell_6", "CELL_0008:cell_7", "CELL_0009:cell_8",
+                               "CELL_00010:cell_9", "CELL_00011:cell_10", "CELL_00012:cell_11",
+                               "CELL_00013:cell_12", "CELL_00014:cell_13", "CELL_00015:cell_14"]
+        cell_mappings_truth = ",".join(sorted(cell_mappings_truth))
         # Remove the test files if the exist
         if(os.path.exists(deid_file)):
             os.remove(deid_file)
@@ -425,9 +441,9 @@ class CoordinatesFileTester(unittest.TestCase):
         deid_info = test_file.deidentify_cell_names()
         deid_file_mapping = deid_info["mapping"]
         cell_mappings = []
-        for sorted_key in sorted(deid_file_mapping.keys()):
+        for sorted_key in deid_file_mapping.keys():
             cell_mappings.append(str(sorted_key)+":"+str(deid_file_mapping[sorted_key]))
-        cell_mappings = ",".join(cell_mappings)
+        cell_mappings = ",".join(sorted(cell_mappings))
         self.assertTrue(cell_mappings == cell_mappings_truth,
                         "Returned mappings were not expected.="+cell_mappings)
 
@@ -597,8 +613,11 @@ class ExpressionFileTester(unittest.TestCase):
         """
         test_file = os.path.join("test_files", "expression.txt")
         test_file = PortalFiles.ExpressionFile(test_file)
-        names = "".join(["Cell_A,Cell_B,Cell_C,Cell_D,Cell_E,",
-                         "Cell_F,Cell_G,Cell_H,Cell_I,Cell_J"])
+        names = "".join(["CELL_0001,CELL_00010,CELL_00011,",
+                         "CELL_00012,CELL_00013,CELL_00014,",
+                         "CELL_00015,CELL_0002,CELL_0003,",
+                         "CELL_0004,CELL_0005,CELL_0006,",
+                         "CELL_0007,CELL_0008,CELL_0009"])
         test_file.update_cell_names()
         test_file.update_cell_names()
         test_file.update_cell_names()
@@ -626,10 +645,6 @@ class ExpressionFileTester(unittest.TestCase):
             os.remove(map_file)
         test_file = PortalFiles.ExpressionFile(test_file_name)
         deid_file_name = test_file.deidentify_cell_names()["name"]
-        print(files_are_equivalent(file_path_1=deid_file_name,
-                                             file_path_2=correct_file))
-        print(files_are_equivalent(file_path_1=map_file,
-                             file_path_2=correct_map))
         self.assertTrue(files_are_equivalent(file_path_1=deid_file_name,
                                              file_path_2=correct_file) and
                         files_are_equivalent(file_path_1=map_file,
@@ -646,10 +661,11 @@ class ExpressionFileTester(unittest.TestCase):
                                  "expression"+PortalFiles.c_DEID_POSTFIX+".txt")
         map_file = os.path.join("test_files",
                                 "expression"+PortalFiles.c_MAP_POSTFIX+".txt")
-        cell_mappings_truth = ["Cell_A:cell_0", "Cell_B:cell_1", "Cell_C:cell_2",
-                               "Cell_D:cell_3", "Cell_E:cell_4", "Cell_F:cell_5",
-                               "Cell_G:cell_6", "Cell_H:cell_7", "Cell_I:cell_8",
-                               "Cell_J:cell_9"]
+        cell_mappings_truth = sorted(["CELL_0001:cell_0", "CELL_0002:cell_1", "CELL_0003:cell_2",
+                               "CELL_0004:cell_3", "CELL_0005:cell_4", "CELL_0006:cell_5",
+                               "CELL_0007:cell_6", "CELL_0008:cell_7", "CELL_0009:cell_8",
+                               "CELL_00010:cell_9", "CELL_00011:cell_10", "CELL_00012:cell_11",
+                               "CELL_00013:cell_12", "CELL_00014:cell_13", "CELL_00015:cell_14"])
         cell_mappings_truth = ",".join(cell_mappings_truth)
         # Remove the test files if the exist
         if(os.path.exists(deid_file)):
@@ -660,9 +676,9 @@ class ExpressionFileTester(unittest.TestCase):
         deid_info = test_file.deidentify_cell_names()
         deid_file_mapping = deid_info["mapping"]
         cell_mappings = []
-        for sorted_key in sorted(deid_file_mapping.keys()):
+        for sorted_key in deid_file_mapping.keys():
             cell_mappings.append(str(sorted_key)+":"+str(deid_file_mapping[sorted_key]))
-        cell_mappings = ",".join(cell_mappings)
+        cell_mappings = ",".join(sorted(cell_mappings))
         self.assertTrue(cell_mappings == cell_mappings_truth,
                         "Returned mappings were not expected.="+cell_mappings)
 
@@ -723,10 +739,258 @@ class ExpressionFileTester(unittest.TestCase):
                                                    file_path_2=correct_map),
                           "Deidentify should not occur when the files being made exist.")
 
+class MetadataFileTester(unittest.TestCase):
+    """
+    Tests the Metadata File object.
+    """
+
+    def test_init(self):
+        """
+        Make sure init can occur
+        """
+        test_file = os.path.join("test_files", "metadata.txt")
+        PortalFiles.MetadataFile(test_file)
+        self.assertTrue(True, 'Metadata file can init.')
+
+    def test_check_header_correct(self):
+        """
+        Check the header is called correct when it is.
+        """
+        test_file_name = os.path.join("test_files", "metadata.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_header()
+        self.assertTrue(not test_file.file_has_error,
+                        "Should not have reached an error state.")
+
+    def test_check_header_incorrect_00(self):
+        """
+        Check the header is called incorrect when element 00 is wrong.
+        """
+        test_file_name = os.path.join("test_files",
+                                      "metadata_bad_header.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_header()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_header_incorrect_element_count(self):
+        """
+        Check the header is called incorrect when 00 is blank.
+        """
+        test_file_name = os.path.join("test_files",
+                                      "metadata_bad_header_2.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_header()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_header_duplicate_id(self):
+        """
+        Check the header is called incorrect when a column is duplicate.
+        """
+        test_file_name = os.path.join("test_files",
+                                      "metadata_bad_header_dup.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_header()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_header_no_data_column(self):
+        """
+        Check the header is called incorrect when there are only id columns.
+        """
+        test_file_name = os.path.join("test_files",
+                                      "metadata_bad_no_data.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_header()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_body_incorrect_1(self):
+        """ 
+        Check the body is called incorrect when it has a missing element.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "metadata_bad_body_1.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_body()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_body_incorrect_2(self):
+        """ 
+        Check the body is called incorrect when it has a wrong type element.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "metadata_bad_body_2.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_body()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_update_cell_names_from_none(self):
+        """
+        Update cell names from a None value.
+        """
+        test_file = os.path.join("test_files", "metadata.txt")
+        test_file = PortalFiles.MetadataFile(test_file)
+        names = ",".join(sorted(test_file.cell_names))
+        test_file.cell_names = None
+        test_file.update_cell_names()
+        names_after = ",".join(sorted(test_file.cell_names))
+        self.assertTrue(names == names_after,
+                        "Updated cell names are correct.")
+
+    def test_update_cell_names_from_init(self):
+        """
+        Update cell names from an init value.
+        """
+        test_file = os.path.join("test_files", "metadata.txt")
+        test_file = PortalFiles.MetadataFile(test_file)
+        names = "".join(["CELL_0001,CELL_00010,CELL_00011,",
+                         "CELL_00012,CELL_00013,CELL_00014,",
+                         "CELL_00015,CELL_0002,CELL_0003,",
+                         "CELL_0004,CELL_0005,CELL_0006,",
+                         "CELL_0007,CELL_0008,CELL_0009"])
+        test_file.update_cell_names()
+        test_file.update_cell_names()
+        test_file.update_cell_names()
+        names_after = ",".join(sorted(test_file.cell_names))
+        self.assertTrue(names == names_after,
+                        "Updated cell names are correct.")
+
+    def test_deidentify_cells(self):
+        """
+        Test deidentify file.
+        """
+        test_file_name = os.path.join("test_files", "metadata.txt")
+        deid_file = os.path.join("test_files",
+                                 "metadata"+PortalFiles.c_DEID_POSTFIX+".txt")
+        map_file = os.path.join("test_files",
+                                "metadata"+PortalFiles.c_MAP_POSTFIX+".txt")
+        correct_file = os.path.join("test_files",
+                                    "metadata_deidentifed_correct.txt")
+        correct_map = os.path.join("test_files",
+                                   "metadata_mapping_correct.txt")
+        # Remove the test files if the exist
+        if(os.path.exists(deid_file)):
+            os.remove(deid_file)
+        if(os.path.exists(map_file)):
+            os.remove(map_file)
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        deid_file_name = test_file.deidentify_cell_names()["name"]
+        self.assertTrue(files_are_equivalent(file_path_1=deid_file_name,
+                                             file_path_2=correct_file) and
+                        files_are_equivalent(file_path_1=map_file,
+                                             file_path_2=correct_map),
+                                             "Can not deidentify file.")
+
+    def test_deidentify_cells_check_created_names(self):
+        """
+        Test deidentify file. Check to make sure cell
+        names are created and passed.
+        """
+        test_file_name = os.path.join("test_files", "metadata.txt")
+        deid_file = os.path.join("test_files",
+                                 "metadata"+PortalFiles.c_DEID_POSTFIX+".txt")
+        map_file = os.path.join("test_files",
+                                "metadata"+PortalFiles.c_MAP_POSTFIX+".txt")
+        cell_mappings_truth = sorted(["CELL_0001:cell_0", "CELL_0002:cell_1", "CELL_0003:cell_2",
+                               "CELL_0004:cell_3", "CELL_0005:cell_4", "CELL_0006:cell_5",
+                               "CELL_0007:cell_6", "CELL_0008:cell_7", "CELL_0009:cell_8",
+                               "CELL_00010:cell_9", "CELL_00011:cell_10", "CELL_00012:cell_11",
+                               "CELL_00013:cell_12", "CELL_00014:cell_13", "CELL_00015:cell_14"])
+        cell_mappings_truth = ",".join(cell_mappings_truth)
+        # Remove the test files if the exist
+        if(os.path.exists(deid_file)):
+            os.remove(deid_file)
+        if(os.path.exists(map_file)):
+            os.remove(map_file)
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        deid_info = test_file.deidentify_cell_names()
+        deid_file_mapping = deid_info["mapping"]
+        cell_mappings = []
+        for sorted_key in deid_file_mapping.keys():
+            cell_mappings.append(str(sorted_key)+":"+str(deid_file_mapping[sorted_key]))
+        cell_mappings = ",".join(sorted(cell_mappings))
+        self.assertTrue(cell_mappings == cell_mappings_truth,
+                        "Returned mappings were not expected.="+cell_mappings)
+
+    def test_deidentify_cells_precreated_names(self):
+        """
+        Test deidentify file with cell already made.
+        """
+        test_file_name = os.path.join("test_files", "metadata.txt")
+        deid_file = os.path.join("test_files",
+                                 "metadata"+PortalFiles.c_DEID_POSTFIX+".txt")
+        map_file = os.path.join("test_files",
+                                "metadata"+PortalFiles.c_MAP_POSTFIX+".txt")
+        correct_file = os.path.join("test_files",
+                                    "metadata_deidentifed_precreated_correct.txt")
+        correct_map = os.path.join("test_files",
+                                   "metadata_mapping_precreated_correct.txt")
+        # Remove the test files if the exist
+        if(os.path.exists(deid_file)):
+            os.remove(deid_file)
+        if(os.path.exists(map_file)):
+            os.remove(map_file)
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        names = dict(zip(test_file.cell_names, [str(i) for i in range(len(test_file.cell_names))]))
+        deid_file_name = test_file.deidentify_cell_names(cell_names_change=names)["name"]
+        self.assertTrue(files_are_equivalent(file_path_1=deid_file_name,
+                                             file_path_2=correct_file) and
+                        files_are_equivalent(file_path_1=map_file,
+                                             file_path_2=correct_map),
+                                             "Can not deidentify file.")
+
+    def test_deidentify_cells_for_existing_files(self):
+        """
+        Test deidentify file but with the files that are to be made already
+        there so an error should occur.
+        """
+        test_file_name = os.path.join("test_files", "metadata.txt")
+        deid_file = os.path.join("test_files",
+                                 "metadata"+PortalFiles.c_DEID_POSTFIX+".txt")
+        map_file = os.path.join("test_files",
+                                "metadata"+PortalFiles.c_MAP_POSTFIX+".txt")
+        correct_file = os.path.join("test_files",
+                                    "metadata_deidentifed_correct.txt")
+        correct_map = os.path.join("test_files",
+                                   "metadata_mapping_correct.txt")
+        # Make sure the files to be created exist so an error will occur
+        if(not os.path.exists(deid_file)):
+            with(open(deid_file, 'w')) as pre_exist_file:
+                pre_exist_file.write(["    "])
+        if(not os.path.exists(map_file)):
+            with(open(map_file, 'w')) as pre_exist_file:
+                pre_exist_file.write(["    "])
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        deid_file_name = test_file.deidentify_cell_names()
+        self.assertFalse((not deid_file_name is None) and
+                          not files_are_equivalent(file_path_1=deid_file_name,
+                                                   file_path_2=correct_file) and
+                          not files_are_equivalent(file_path_1=map_file,
+                                                   file_path_2=correct_map),
+                          "Deidentify should not occur when the files being made exist.")
+
 # Creates a suite of tests
 def suite():
     loader = unittest.TestLoader()
     tests = loader.loadTestsFromTestCase(CoordinatesFileTester)
-    tests.addTests(loader.loadTestsFromTestCase(ClusterFileTester))
     tests.addTests(loader.loadTestsFromTestCase(ExpressionFileTester))
+    tests.addTests(loader.loadTestsFromTestCase(MetadataFileTester))
     return(tests)

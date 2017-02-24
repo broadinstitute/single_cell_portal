@@ -1,0 +1,17 @@
+NAME	Cluster	Sub-Cluster	Average Intensity
+TYPE	group	group	numeric
+cell_0	CLST_A	CLST_A_1	7.742
+cell_1	CLST_A	CLST_A_1	-13.745
+cell_2	CLST_A	CLST_A_1	-0.375
+cell_3	CLST_A	CLST_A_2	9.188
+cell_4	CLST_A	CLST_A_2	9.652
+cell_5	CLST_B	CLST_B_1	-4.125
+cell_6	CLST_B	CLST_B_1	-2.275
+cell_7	CLST_B	CLST_B_2	-12.606
+cell_8	CLST_B	CLST_B_2	3.675
+cell_9	CLST_B	CLST_B_2	-2.116
+cell_10	CLST_C	CLST_C_1	0.638
+cell_11	CLST_C	CLST_C_1	8.888
+cell_12	CLST_C	CLST_C_1	-2.27
+cell_13	CLST_C	CLST_C_2	-2.606
+cell_14	CLST_C	CLST_C_2	-9.089

@@ -1,4 +1,5 @@
-CELL-NAME	X	Y
+NAMES	X	Y
+TYPE	numeric	numeric
 Cell_A	1.2	0.8
 Cell_B	0.6	0.5
 Cell_C	0.8	0.5

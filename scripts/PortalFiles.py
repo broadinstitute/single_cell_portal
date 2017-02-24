@@ -13,27 +13,31 @@ import os
 # Constants
 # The expected header
 c_CELL_ID = "cell"
-c_COORDINATES_HEADER = ["CELL_NAME", "X", "Y"]
+c_COORDINATES_HEADER = ["NAME", "X", "Y"]
+c_COORDINATES_OPTIONAL_Z = "Z"
 c_COORDINATES_HEADER_LENGTH = len(c_COORDINATES_HEADER)
-c_CLUSTER_HEADER = ["CELL_NAME", "CLUSTER", "SUB-CLUSTER"]
-c_CLUSTER_HEADER_LENGTH = len(c_CLUSTER_HEADER)
 c_DEFAULT_DELIM = "\t"
 c_DEID_POSTFIX = "_deidentifed"
 c_EXPRESSION_00_ELEMENT = "GENE"
 c_MAP_DELIM = "\t->\t"
 c_MAP_POSTFIX = "_mapping"
+c_METADATA_00_ELEMENT = "NAME"
 c_REPORT_LINE_NUMBER_BLOCK = 500
+c_TYPE_HEADER_ID = "TYPE"
+c_TYPE_NUMERIC = "numeric"
+c_TYPE_GROUP = "group"
+c_VALID_TYPES = [c_TYPE_NUMERIC, c_TYPE_GROUP]
 
 # Demo links
-c_CLUSTER_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/cluster_assignments_example.txt"
-c_COORDINATES_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/cluster_coordinates_example.txt"
-c_EXPRESSION_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/expression_matrix_example.txt"
+c_METADATA_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/metadata_example.txt"
+c_COORDINATES_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/coordinates_example.txt"
+c_EXPRESSION_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/expression_example.txt"
 
 coordinates_file_has_error = False
 coordinates_cell_names = []
 
-cluster_file_has_error = False
-cluster_cell_names = []
+metadata_file_has_error = False
+metadata_cell_names = []
 
 expression_file_has_error = False
 expression_cell_names = []
@@ -41,7 +45,9 @@ expression_cell_names = []
 
 class ParentPortalFile:
 
-    def __init__(self, file_name, file_delimiter,
+    def __init__(self, file_name,
+                 file_delimiter,
+                 has_type=True,
                  expected_header=None,
                  demo_file_link=None):
         """
@@ -55,7 +61,9 @@ class ParentPortalFile:
         self.expected_header = expected_header
         self.expected_header_length = len(expected_header) if expected_header else 0
         self.file_name = file_name
-        self.header = next(self.csv_handle)
+        init_handle = self.csv_handle
+        self.header = next(init_handle)
+        self.type_header = next(init_handle) if has_type else None
         self.header_length = len(self.header)
         self.line_number = 1
         self.cell_names = None
@@ -69,28 +77,14 @@ class ParentPortalFile:
         """
         return(csv.reader(open(self.file_name, 'r'), delimiter=self.delimiter))
 
+    @abc.abstractmethod
     def check_header(self):
         """
         Check header of the file. If an error occurs set the object
         indicate an error occured. (file_has_error attribute).
-        Tested
+        Must be over written per file given files have different formats.
         """
-        if len(self.expected_header) != self.header_length:
-            self.file_has_error = True
-            print(" ".join(["Error!\tExpected to receive a file with",
-                            str(len(self.expected_header)),
-                            "columns. Instead received",
-                            str(self.header_length), "columns."]))
-
-        if self.expected_header:
-            for idx in range(self.header_length):
-                if self.header[idx] != self.expected_header[idx]:
-                    self.file_has_error = True
-                    print("".join(["Error!\tExpected the column value \"",
-                                   self.expected_header[idx],
-                                   "\" but received \"",
-                                   self.header[idx], "\"."]))
-        return(self.file_has_error)
+        return()
 
     @abc.abstractmethod
     def check_body(self):
@@ -145,6 +139,32 @@ class ParentPortalFile:
             self.file_has_error = True
         return(self.file_has_error)
 
+    def check_type_row(self):
+        """
+        Check a row of types
+        """
+        # Check the type header
+        if self.type_header[0] != c_TYPE_HEADER_ID:
+            self.file_has_error = True
+            print(" ".join(["Error!\tExpected the ID for",
+                            "the second header row to be",
+                            c_TYPE_HEADER_ID,
+                            "but was instead",
+                            self.type_header[0],
+                            "please update."]))
+        # Check the type values
+        incorrect_types = []
+        for type_token in self.type_header[1:]:
+            if not type_token in c_VALID_TYPES:
+                incorrect_types.append(type_token)
+                self.file_has_error = True
+        if incorrect_types:
+            print(" ".join(["Error!\tThe following types are not recognized:",
+                            ",".join(incorrect_types), ".",
+                            "Please use any of the following types:",
+                            ",".join(c_VALID_TYPES), "."]))
+        return(self.file_has_error)
+
     def compare_cell_names(self, portal_file):
         """
         Check cell names of this portal file wih another.
@@ -183,7 +203,7 @@ class ParentPortalFile:
         Tested
         """
         if not self.cell_names:
-            self.cell_names = [line[0] for line in self.csv_handle][1:]
+            self.cell_names = [line[0] for line in self.csv_handle][2:]
 
     @abc.abstractmethod
     def deidentify_cell_names(self):
@@ -207,29 +227,60 @@ class ParentPortalFile:
         contents.append("CellNames:"+str(self.cell_names))
         return("; ".join(contents))
 
+class MetadataFile(ParentPortalFile):
 
-class CoordinatesFile(ParentPortalFile):
-
-    def __init__(self, file_name, file_delimiter=c_DEFAULT_DELIM,
-                 expected_header=c_COORDINATES_HEADER,
-                 demo_file_link=c_COORDINATES_DEMO_LINK):
+    def __init__(self, file_name,
+                 file_delimiter=c_DEFAULT_DELIM,
+                 expected_header=None,
+                 demo_file_link=c_METADATA_DEMO_LINK):
         """
-        Represents a coordinate file used for visualizations in the portal.
-        Tested
+        Represents a metadata file used for visualization in the portal.
         """
-        ParentPortalFile.__init__(self, file_name, file_delimiter,
+        ParentPortalFile.__init__(self, file_name,
+                                  file_delimiter,
+                                  has_type=True,
                                   expected_header=expected_header,
                                   demo_file_link=demo_file_link)
         self.update_cell_names()
 
+    def check_header(self):
+        """
+        Check header of the file. If an error occurs set the object
+        indicate an error occured. (file_has_error attribute).
+        """
+
+        # Check the minimal header
+        if self.header[0] != c_METADATA_00_ELEMENT:
+            self.file_has_error = True
+            print(" ".join(["Error!\tExpected the first row,",
+                            "first column element to be",
+                            c_METADATA_00_ELEMENT]))
+        if len(self.header) < 2:
+            self.file_has_error = True
+            print(" ".join(["Error!\tInvalid metadata file.",
+                            "Need atleast a cell ID column",
+                            "and 1 metadata column"]))
+        # Check that the metadata are unique.
+        duplicates = self.get_duplicates(self.header)
+        if len(duplicates):
+            self.file_has_error = True
+            print(" ".join(["Error!\tDuplicate metadata were found",
+                  "in your header of your metadata file.",
+                  "The duplicate headers are:",
+                  ",".join(duplicates)]))
+        # Check type row
+        self.check_type_row()
+        return(self.file_has_error)
+
     def check_body(self):
         """
         Check body of file.
-        Tested.
         """
         check_handle = self.csv_handle
-        # Need to skip the header
+        # Need to skip the 2 header rows
         next(check_handle)
+        next(check_handle)
+        type_checks = [ float if type_value == c_TYPE_NUMERIC else str for type_value in self.type_header ]
         for file_line in check_handle:
             self.line_number += 1
             if len(file_line) != self.expected_header_length:
@@ -239,15 +290,15 @@ class CoordinatesFile(ParentPortalFile):
                                 "Expected", str(self.expected_header_length),
                                 "columns but received",
                                 str(len(file_line)), "."]))
-
-            for token in file_line[1:3]:
+            for token in range(len(file_line)):
                 try:
-                    float(token)
+                    type_checks[token](file_line[token])
                 except ValueError:
                     self.file_has_error = True
-                    print(" ".join(["Error!\tExpected a float. Line:",
+                    print(" ".join(["Error!\tUnexpected type. Line:",
                                     str(self.line_number),
-                                    "Value:", token]))
+                                    "Value:", file_line[token],
+                                    "Expected Type:", self.type_header[token]]))
 
     def deidentify_cell_names(self, cell_names_change=None):
         """
@@ -257,7 +308,8 @@ class CoordinatesFile(ParentPortalFile):
         """
         new_file_lines = []
         self.update_cell_names()
-        update_names = {c_COORDINATES_HEADER[0]: c_COORDINATES_HEADER[0]}
+        update_names = {c_METADATA_00_ELEMENT: c_METADATA_00_ELEMENT,
+                        c_TYPE_HEADER_ID: c_TYPE_HEADER_ID}
         if not cell_names_change:
             cell_names_change = {}
         if not len(cell_names_change):
@@ -283,7 +335,6 @@ class CoordinatesFile(ParentPortalFile):
                             "rename the file:",
                             os.path.abspath(new_mapping_file)]))
             return(None)
-
         # Write deidentified file
         with open(deid_file_name + c_DEID_POSTFIX + deid_file_ext, 'w') as deid_file:
             write_deid = self.csv_handle
@@ -297,39 +348,91 @@ class CoordinatesFile(ParentPortalFile):
                                       in update_names.items()])))
         return({"name": deid_file.name, "mapping": cell_names_change})
 
+class CoordinatesFile(ParentPortalFile):
 
-class ClusterFile(ParentPortalFile):
-
-    def __init__(self, file_name, file_delimiter=c_DEFAULT_DELIM,
-                 expected_header=c_CLUSTER_HEADER,
-                 demo_file_link=c_CLUSTER_DEMO_LINK):
+    def __init__(self, file_name,
+                 file_delimiter=c_DEFAULT_DELIM,
+                 expected_header=c_COORDINATES_HEADER,
+                 demo_file_link=c_COORDINATES_DEMO_LINK):
         """
-        Represents a cluster / metadata file used for visualizations.
+        Represents a coordinate file used for visualizations in the portal.
         Tested
         """
-        ParentPortalFile.__init__(self, file_name, file_delimiter,
+        ParentPortalFile.__init__(self, file_name,
+                                  file_delimiter,
+                                  has_type=True,
                                   expected_header=expected_header,
                                   demo_file_link=demo_file_link)
         self.update_cell_names()
 
+    def check_header(self):
+        """
+        Check header of the file. If an error occurs set the object
+        indicate an error occured. (file_has_error attribute).
+        Tested
+        """
+        # Check the minimal header
+        if len(self.expected_header) > self.header_length:
+            self.file_has_error = True
+            print(" ".join(["Error!\tExpected to receive a file with",
+                            "ateast", str(len(self.expected_header)),
+                            "columns. Instead received",
+                            str(self.header_length), "columns."]))
+        # Check the header is correct for the required section
+        if self.expected_header:
+            for idx in range(0, len(self.expected_header)):
+                if self.header[idx] != self.expected_header[idx]:
+                    self.file_has_error = True
+                    print("".join(["Error!\tExpected the column value \"",
+                                   self.expected_header[idx],
+                                   "\" but received \"",
+                                   self.header[idx], "\"."]))
+        # Check for Z coordinates and if so give feed back for 3D
+        if c_COORDINATES_OPTIONAL_Z in self.header:
+            print(" ".join(["Note: You included a Z coordinate",
+                            "in the file:",
+                            self.file_name,
+                            "expect a 3D plot to be",
+                            "generated from this file."]))
+        # Check that the coordinates metadata are unique.
+        duplicates = self.get_duplicates(self.header)
+        if len(duplicates):
+            self.file_has_error = True
+            print(" ".join(["Error!\tDuplicate metadata were found",
+                  "in your header of your metadata file.",
+                  "The duplicate headers are:",
+                  ",".join(duplicates)]))
+        # Check type row
+        self.check_type_row()
+        return(self.file_has_error)
+
     def check_body(self):
         """
         Check body of file.
-        Tested.
         """
         check_handle = self.csv_handle
-        # Need to skip the header
+        # Need to skip the 2 header rows
         next(check_handle)
+        next(check_handle)
+        type_checks = [ float if type_value == c_TYPE_NUMERIC else str for type_value in self.type_header ]
         for file_line in check_handle:
-            self.line_number = self.line_number + 1
-            if len(file_line) != self.expected_header_length:
+            self.line_number += 1
+            if len(file_line) != self.header_length:
                 self.file_has_error = True
                 print(" ".join(["Error!\tLine:",
                                 str(self.line_number),
-                                "Expected",
-                                str(self.expected_header_length),
+                                "Expected", str(self.header_length),
                                 "columns but received",
                                 str(len(file_line)), "."]))
+            for token in range(0,len(file_line)):
+                try:
+                    type_checks[token](file_line[token])
+                except ValueError:
+                    self.file_has_error = True
+                    print(" ".join(["Error!\tUnexpected type. Line:",
+                                    str(self.line_number),
+                                    "Value:", file_line[token],
+                                    "Expected Type:", self.type_header[token]]))
 
     def deidentify_cell_names(self, cell_names_change=None):
         """
@@ -339,7 +442,8 @@ class ClusterFile(ParentPortalFile):
         """
         new_file_lines = []
         self.update_cell_names()
-        update_names = {c_CLUSTER_HEADER[0]: c_CLUSTER_HEADER[0]}
+        update_names = {c_COORDINATES_HEADER[0]: c_COORDINATES_HEADER[0],
+                        c_TYPE_HEADER_ID: c_TYPE_HEADER_ID}
         if not cell_names_change:
             cell_names_change = {}
         if not len(cell_names_change):
@@ -365,7 +469,6 @@ class ClusterFile(ParentPortalFile):
                             "rename the file:",
                             os.path.abspath(new_mapping_file)]))
             return(None)
-
         # Write deidentified file
         with open(deid_file_name + c_DEID_POSTFIX + deid_file_ext, 'w') as deid_file:
             write_deid = self.csv_handle
@@ -382,14 +485,17 @@ class ClusterFile(ParentPortalFile):
 
 class ExpressionFile(ParentPortalFile):
 
-    def __init__(self, file_name, file_delimiter=c_DEFAULT_DELIM,
+    def __init__(self, file_name,
+                 file_delimiter=c_DEFAULT_DELIM,
                  expected_header=None,
                  demo_file_link=c_EXPRESSION_DEMO_LINK):
         """
         Represents an expression file holding measurements.
         Tested
         """
-        ParentPortalFile.__init__(self, file_name, file_delimiter,
+        ParentPortalFile.__init__(self, file_name,
+                                  file_delimiter,
+                                  has_type=False,
                                   expected_header=expected_header,
                                   demo_file_link=demo_file_link)
         self.update_cell_names()
