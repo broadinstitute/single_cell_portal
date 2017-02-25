@@ -739,6 +739,22 @@ class ExpressionFileTester(unittest.TestCase):
                                                    file_path_2=correct_map),
                           "Deidentify should not occur when the files being made exist.")
 
+    def test_get_gene_names(self):
+        """
+        Confirm that genes names are returned correctly from am good file.
+        """
+        expected_gene_names = ["Itm2a", "Sergef", "Chil5", "Fam109a",
+                               "Dhx9", "Ssu72", "Olfr1018", "Fam71e2",
+                               "Eif2b2", "1700061E18Rik", "Mks1",
+                               "Gm12000", "Hebp2", "Gm14444", "Vps28",
+                               "Setd6", "Gstm2", "Spn-ps", "Psma4"]
+        test_file_name = os.path.join("test_files", "expression.txt")
+        test_file = PortalFiles.ExpressionFile(test_file_name)
+        str_truth = ",".join(sorted(expected_gene_names))
+        str_received = ",".join(sorted(test_file.get_gene_names()))
+        self.assertTrue(str_truth == str_received,
+                        "Did not receive the expected gene names.")
+
 class MetadataFileTester(unittest.TestCase):
     """
     Tests the Metadata File object.
@@ -815,6 +831,67 @@ class MetadataFileTester(unittest.TestCase):
         test_file.check_header()
         self.assertTrue(test_file.file_has_error,
                         "Should have reached an error state.")
+
+    def test_check_type_row_correct(self):
+        """
+        Check the type row is called correct when it is.
+        """
+        test_file_name = os.path.join("test_files", "metadata.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_type_row()
+        self.assertTrue(not test_file.file_has_error,
+                        "Should not have reached an error state.")
+
+    def test_check_type_row_bad_type(self):
+        """
+        Check the type row is called error when one of the types are incorrect.
+        """
+        test_file_name = os.path.join("test_files", "metadata_bad_type.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_type_row()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_type_row_bad_type_id(self):
+        """
+        Check the type row is called error when the type id is not correct
+        """
+        test_file_name = os.path.join("test_files", "metadata_bad_type_id.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_type_row()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_type_row_bad_row_length(self):
+        """
+        Check the type row is called error when the type row is a wrong length
+        """
+        test_file_name = os.path.join("test_files", "metadata_bad_type_row_length.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_type_row()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_body_correct(self):
+        """ 
+        Check the body is called correct when it is
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "metadata.txt")
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_body()
+        self.assertTrue(not test_file.file_has_error,
+                        "Should have not reached an error state.")
 
     def test_check_body_incorrect_1(self):
         """ 
@@ -987,10 +1064,244 @@ class MetadataFileTester(unittest.TestCase):
                                                    file_path_2=correct_map),
                           "Deidentify should not occur when the files being made exist.")
 
+    def test_get_labels_correct(self):
+        """ 
+        Check to make sure labels are returned correctly with a good file
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "metadata.txt")
+        truth = ["CLST_A", "CLST_B", "CLST_C",
+                 "CLST_A_1", "CLST_A_2", "CLST_B_1",
+                 "CLST_B_2", "CLST_C_1", "CLST_C_2"]
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        received_labels = test_file.get_labels()
+        truth_str = ",".join(sorted(truth))
+        received_str = ",".join(sorted(received_labels))
+        self.assertTrue(truth_str == received_str,
+                        "Did not receive the expected labels.")
+
+
+class GeneListFileTester(unittest.TestCase):
+    """
+    Tests the Gene list file object.
+    """
+
+    def test_get_gene_names(self):
+        """
+        Confirm that genes names are returned correctly from am good file.
+        """
+        expected_gene_names = ["Itm2a", "Sergef", "Chil5", "Fam109a",
+                               "Dhx9", "Ssu72", "Olfr1018", "Fam71e2",
+                               "Eif2b2", "1700061E18Rik", "Mks1",
+                               "Gm12000", "Hebp2", "Gm14444", "Vps28",
+                               "Setd6", "Gstm2", "Spn-ps", "Psma4"]
+        test_file_name = os.path.join("test_files", "gene_list.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        str_truth = ",".join(sorted(expected_gene_names))
+        str_received = ",".join(sorted(test_file.get_gene_names()))
+        self.assertTrue(str_truth == str_received,
+                        "Did not receive the expected gene names.")
+
+    def test_check_header_correct(self):
+        """
+        Check the header is called correct when it is.
+        """
+        test_file_name = os.path.join("test_files", "gene_list.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_header()
+        self.assertTrue(not test_file.file_has_error,
+                        "Should not have reached an error state.")
+
+    def test_check_header_bad_00(self):
+        """
+        Check the header is called error when the 00 element is wrong.
+        """
+        test_file_name = os.path.join("test_files", "gene_list_bad_header.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_header()
+        self.assertTrue(test_file.file_has_error,
+                        "Should not have reached an error state.")
+
+    def test_check_body_correct(self):
+        """ 
+        Check the body is called correct when it is correct.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_body()
+        self.assertTrue(not test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_body_incorrect_type(self):
+        """ 
+        Check the body is called correct when it is correct.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list_bad_type.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_body()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_body_incorrect_value_empty(self):
+        """ 
+        Check the body is called correct when one value is empty.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list_bad_empty_value.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_body()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_check_body_incorrect_row_length(self):
+        """ 
+        Check the body is called correct when one row is too long.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list_bad_row_length.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.check_body()
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_deidentify_cells(self):
+        """
+        Test deidentify file.
+        """
+        test_file_name = os.path.join("test_files", "gene_list.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        deid_result = test_file.deidentify_cell_names()
+        self.assertTrue((deid_result["name"] is None) and
+                        (deid_result["mapping"] is None), 
+                        "Should not have attempted to deid file, there are no cell names.")
+
+    def test_compare_gene_names_for_good(self):
+        """ 
+        Check compare gene names for a good file.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list.txt")
+        test_expression_file_name = os.path.join("test_files", "expression.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        expr_file = PortalFiles.ExpressionFile(test_expression_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.compare_gene_names(expr_file)
+        self.assertTrue(not test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_compare_gene_names_for_good_2(self):
+        """ 
+        Check compare gene names for a good file, expression file having more genes then gene list.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list_minus_one.txt")
+        test_expression_file_name = os.path.join("test_files", "expression.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        expr_file = PortalFiles.ExpressionFile(test_expression_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.compare_gene_names(expr_file)
+        self.assertTrue(not test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_compare_gene_names_for_none_expression(self):
+        """ 
+        Check compare gene names for a none expression file.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        expr_file = None
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.compare_gene_names(expr_file)
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_compare_gene_names_for_missing_in_expression(self):
+        """ 
+        Check compare gene names for an expression file missing a gene in the gene list.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list_plus_one.txt")
+        test_expression_file_name = os.path.join("test_files", "expression.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        expr_file = PortalFiles.ExpressionFile(test_expression_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.compare_gene_names(expr_file)
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_compare_cluster_labels_for_good(self):
+        """ 
+        Check compare cluster labels for good files
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list.txt")
+        test_metadata_file_name = os.path.join("test_files", "metadata.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        meta_file = PortalFiles.MetadataFile(test_metadata_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.compare_cluster_labels(meta_file)
+        self.assertTrue(not test_file.file_has_error,
+                        "Should not have reached an error state.")
+
+    def test_compare_cluster_labels_for_missing_label(self):
+        """ 
+        Check compare cluster labels for a missing
+        label that is only found in the gene list file.
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list_additional_label.txt")
+        test_metadata_file_name = os.path.join("test_files", "metadata.txt")
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        meta_file = PortalFiles.MetadataFile(test_metadata_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        test_file.compare_cluster_labels(meta_file)
+        self.assertTrue(test_file.file_has_error,
+                        "Should have reached an error state.")
+
+    def test_get_labels_correct(self):
+        """ 
+        Check to make sure labels are returned correctly with a good file
+        """ 
+        test_file_name = os.path.join("test_files",
+                                      "gene_list.txt")
+        truth = ["CLST_B", "CLST_C", "CLST_A"]
+        test_file = PortalFiles.GeneListFile(test_file_name)
+        if test_file.file_has_error:
+            self.assertTrue(False, "Did not start test with a no error state.")
+        received_labels = test_file.get_labels()
+        truth_str = ",".join(sorted(truth))
+        received_str = ",".join(sorted(received_labels))
+        self.assertTrue(truth_str == received_str,
+                        "Did not receive the expected labels.")
+
 # Creates a suite of tests
 def suite():
     loader = unittest.TestLoader()
     tests = loader.loadTestsFromTestCase(CoordinatesFileTester)
     tests.addTests(loader.loadTestsFromTestCase(ExpressionFileTester))
     tests.addTests(loader.loadTestsFromTestCase(MetadataFileTester))
+    tests.addTests(loader.loadTestsFromTestCase(GeneListFileTester))
     return(tests)

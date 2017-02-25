@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 import abc
 import argparse
 import csv
+import itertools
 import os
 
 # Constants
@@ -19,6 +20,7 @@ c_COORDINATES_HEADER_LENGTH = len(c_COORDINATES_HEADER)
 c_DEFAULT_DELIM = "\t"
 c_DEID_POSTFIX = "_deidentifed"
 c_EXPRESSION_00_ELEMENT = "GENE"
+c_GENE_LIST_00_ELEMENT = "GENE NAMES"
 c_MAP_DELIM = "\t->\t"
 c_MAP_POSTFIX = "_mapping"
 c_METADATA_00_ELEMENT = "NAME"
@@ -32,6 +34,7 @@ c_VALID_TYPES = [c_TYPE_NUMERIC, c_TYPE_GROUP]
 c_METADATA_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/metadata_example.txt"
 c_COORDINATES_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/coordinates_example.txt"
 c_EXPRESSION_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/expression_example.txt"
+c_GENELIST_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/genelist_example.txt"
 
 coordinates_file_has_error = False
 coordinates_cell_names = []
@@ -142,7 +145,15 @@ class ParentPortalFile:
     def check_type_row(self):
         """
         Check a row of types
+        Tested
         """
+        # Check the length
+        if self.header_length != len(self.type_header):
+            self.file_has_error = True
+            print(" ".join(["Error!\tExpected a type row length of",
+                            str(self.header_length),
+                            "but received a length of",
+                            str(len(self.type_header))]))
         # Check the type header
         if self.type_header[0] != c_TYPE_HEADER_ID:
             self.file_has_error = True
@@ -227,6 +238,135 @@ class ParentPortalFile:
         contents.append("CellNames:"+str(self.cell_names))
         return("; ".join(contents))
 
+class GeneListFile(ParentPortalFile):
+
+    def __init__(self, file_name,
+                 file_delimiter=c_DEFAULT_DELIM,
+                 demo_file_link=c_GENELIST_DEMO_LINK):
+        """
+        Represents a gene list file used for visualization in the portal.
+        Used in test
+        """
+        ParentPortalFile.__init__(self, file_name,
+                                  file_delimiter,
+                                  has_type=False,
+                                  expected_header=None,
+                                  demo_file_link=demo_file_link)
+        self.update_cell_names()
+
+    def check_header(self):
+        """
+        Check header of the file. If an error occurs set the object
+        indicate an error occured. (file_has_error attribute).
+        Tested
+        """
+        if self.header[0] != c_GENE_LIST_00_ELEMENT:
+            self.file_has_error = True
+            print("".join(["Error!\tExpected the column value \"",
+                           c_GENE_LIST_00_ELEMENT,
+                           "\" but received \"",
+                           self.header[0], "\"."]))
+
+    def check_body(self):
+        """
+        Check body of file.
+        Tested
+        """
+        check_handle = self.csv_handle
+        # Need to skip the header row
+        next(check_handle)
+        for file_line in check_handle:
+            self.line_number += 1
+            if len(file_line) != self.header_length:
+                self.file_has_error = True
+                print(" ".join(["Error!\tLine:",
+                                str(self.line_number),
+                                "Expected", str(self.header_length),
+                                "columns but received",
+                                str(len(file_line)), "."]))
+            for token in range(1,len(file_line)):
+                if not file_line[token]:
+                    self.file_has_error = True
+                    print(" ".join(["Expected a value for entry: line",
+                                    str(self.line_number+1), ", element",
+                                    str(token+1)]))
+                else:
+                    try:
+                        float(file_line[token])
+                    except ValueError:
+                        self.file_has_error = True
+                        print(" ".join(["Error!\tUnexpected type. Line:",
+                                        str(self.line_number),
+                                        "Value:", file_line[token],
+                                        "Expected to be a numeric value."]))
+
+    def compare_gene_names(self,expression_file=None):
+        """
+        Compare that the genes in the gene list are in the expression file.
+        Tested
+        """
+        if expression_file is None:
+            self.file_has_error = True
+            print("None expression file was given so no checking could occur.")
+
+        if expression_file:
+            exp_genes = expression_file.get_gene_names()
+            for gene in self.get_gene_names():
+                if gene not in exp_genes:
+                    self.file_has_error = True
+                    print(" ".join([gene,
+                                    "is a gene in the genelist file",
+                                    "but not found in the expression file."]))
+
+    def compare_cluster_labels(self,metadata_file=None):
+        """
+        Compare that the cluster labels in the gene list
+        file are in the supplied metadata file.
+        Tested
+        """
+        if metadata_file is None:
+            self.file_has_error = True
+            print("None metadata file was given so no checking could occur.")
+
+        if metadata_file:
+            metadata_labels = metadata_file.get_labels()
+            gene_labels = self.get_labels()
+            for gene_label in gene_labels:
+                if gene_label not in metadata_labels:
+                    self.file_has_error = True
+                    print(" ".join(["The following group/cluster",
+                                    "label was not found in the",
+                                    "metadata file:",
+                                    gene_label]))
+
+    def deidentify_cell_names(self, cell_names_change=None):
+        """
+        Deidentify cell names which should not exist in this file type so
+        a warning for calling the method is given saying cells names
+        are not included but nothing else is done.
+        Tested
+        """
+        print(" ".join(["Please note the gene lists should not",
+                        "have cell names so no deidentification is needed."]))
+        return({"name": None, "mapping": None})
+
+    def get_gene_names(self):
+        """
+        Returns the gene names in the file.
+        Tested
+        """
+        check_handle = self.csv_handle
+        # Need to skip the 2 header rows
+        next(check_handle)
+        return([file_line[0] for file_line in check_handle])
+
+    def get_labels(self):
+        """
+        Returns all cluster/group names in the file as unique value.
+        Test
+        """
+        return(list(set(self.header[1:])))
+
 class MetadataFile(ParentPortalFile):
 
     def __init__(self, file_name,
@@ -235,6 +375,7 @@ class MetadataFile(ParentPortalFile):
                  demo_file_link=c_METADATA_DEMO_LINK):
         """
         Represents a metadata file used for visualization in the portal.
+        Tested
         """
         ParentPortalFile.__init__(self, file_name,
                                   file_delimiter,
@@ -247,6 +388,7 @@ class MetadataFile(ParentPortalFile):
         """
         Check header of the file. If an error occurs set the object
         indicate an error occured. (file_has_error attribute).
+        Tested
         """
 
         # Check the minimal header
@@ -275,6 +417,7 @@ class MetadataFile(ParentPortalFile):
     def check_body(self):
         """
         Check body of file.
+        Tested
         """
         check_handle = self.csv_handle
         # Need to skip the 2 header rows
@@ -283,28 +426,36 @@ class MetadataFile(ParentPortalFile):
         type_checks = [ float if type_value == c_TYPE_NUMERIC else str for type_value in self.type_header ]
         for file_line in check_handle:
             self.line_number += 1
-            if len(file_line) != self.expected_header_length:
+            if len(file_line) != self.header_length:
                 self.file_has_error = True
                 print(" ".join(["Error!\tLine:",
                                 str(self.line_number),
-                                "Expected", str(self.expected_header_length),
+                                "Expected", str(self.header_length),
                                 "columns but received",
                                 str(len(file_line)), "."]))
             for token in range(len(file_line)):
-                try:
-                    type_checks[token](file_line[token])
-                except ValueError:
+                if not file_line[token]:
                     self.file_has_error = True
-                    print(" ".join(["Error!\tUnexpected type. Line:",
-                                    str(self.line_number),
-                                    "Value:", file_line[token],
-                                    "Expected Type:", self.type_header[token]]))
+                    print(" ".join(["Expected a value for entry: line",
+                                    str(self.line_number+1), ", element",
+                                    str(token+1)]))
+                else:
+                    try:
+                        type_checks[token](file_line[token])
+                    except ValueError:
+                        self.file_has_error = True
+                        print(file_line[token])
+                        print(" ".join(["Error!\tUnexpected type. Line:",
+                                        str(self.line_number),
+                                        "Value:", file_line[token],
+                                        "Expected Type:", self.type_header[token]]))
 
     def deidentify_cell_names(self, cell_names_change=None):
         """
         Deidentify cell names. Create a new file that is deidentified and
         write a mapping file of the names. Do not change the original file.
         If cell names is given, those mappings will be used.
+        Tested
         """
         new_file_lines = []
         self.update_cell_names()
@@ -322,7 +473,7 @@ class MetadataFile(ParentPortalFile):
         # New deidentified file, check to make sure it does not exist
         new_deid_file = deid_file_name + c_DEID_POSTFIX + deid_file_ext
         if os.path.exists(new_deid_file):
-            print(" ".join(["ERROR: Can not deidentify file, the file to be",
+            print(" ".join(["ERROR!\tCan not deidentify file, the file to be",
                             "written already exists. Please move or",
                             "rename the file:",
                             os.path.abspath(new_deid_file)]))
@@ -330,7 +481,7 @@ class MetadataFile(ParentPortalFile):
         # Mapping file, check to make sure it does not exist
         new_mapping_file = deid_file_name + c_MAP_POSTFIX + deid_file_ext
         if os.path.exists(new_mapping_file):
-            print(" ".join(["ERROR: Can not deidentify file, the mapping",
+            print(" ".join(["ERROR!\tCan not deidentify file, the mapping",
                             "file already exists. Please move or",
                             "rename the file:",
                             os.path.abspath(new_mapping_file)]))
@@ -347,6 +498,22 @@ class MetadataFile(ParentPortalFile):
                                       for name_key, name_value
                                       in update_names.items()])))
         return({"name": deid_file.name, "mapping": cell_names_change})
+
+    def get_labels(self):
+        """
+        Get all the labels for all the metadata returned as a unique values.
+        Tested
+        """
+        labels = []
+        check_handle = self.csv_handle
+        # Need to skip the 2 header rows
+        next(check_handle)
+        column_types = next(check_handle)
+        type_idx = [col_type == c_TYPE_GROUP for col_type in column_types]
+        for file_line in check_handle:
+            labels.extend(list(itertools.compress(file_line,type_idx)))
+            labels = list(set(labels))
+        return(labels)
 
 class CoordinatesFile(ParentPortalFile):
 
@@ -409,6 +576,7 @@ class CoordinatesFile(ParentPortalFile):
     def check_body(self):
         """
         Check body of file.
+        Tested
         """
         check_handle = self.csv_handle
         # Need to skip the 2 header rows
@@ -439,6 +607,7 @@ class CoordinatesFile(ParentPortalFile):
         Deidentify cell names. Create a new file that is deidentified and
         write a mapping file of the names. Do not change the original file.
         If cell names is given, those mappings will be used.
+        Tested
         """
         new_file_lines = []
         self.update_cell_names()
@@ -456,7 +625,7 @@ class CoordinatesFile(ParentPortalFile):
         # New deidentified file, check to make sure it does not exist
         new_deid_file = deid_file_name + c_DEID_POSTFIX + deid_file_ext
         if os.path.exists(new_deid_file):
-            print(" ".join(["ERROR: Can not deidentify file, the file to be",
+            print(" ".join(["ERROR!\tCan not deidentify file, the file to be",
                             "written already exists. Please move or",
                             "rename the file:",
                             os.path.abspath(new_deid_file)]))
@@ -464,7 +633,7 @@ class CoordinatesFile(ParentPortalFile):
         # Mapping file, check to make sure it does not exist
         new_mapping_file = deid_file_name + c_MAP_POSTFIX + deid_file_ext
         if os.path.exists(new_mapping_file):
-            print(" ".join(["ERROR: Can not deidentify file, the mapping",
+            print(" ".join(["ERROR!\tCan not deidentify file, the mapping",
                             "file already exists. Please move or",
                             "rename the file:",
                             os.path.abspath(new_mapping_file)]))
@@ -487,7 +656,6 @@ class ExpressionFile(ParentPortalFile):
 
     def __init__(self, file_name,
                  file_delimiter=c_DEFAULT_DELIM,
-                 expected_header=None,
                  demo_file_link=c_EXPRESSION_DEMO_LINK):
         """
         Represents an expression file holding measurements.
@@ -496,7 +664,7 @@ class ExpressionFile(ParentPortalFile):
         ParentPortalFile.__init__(self, file_name,
                                   file_delimiter,
                                   has_type=False,
-                                  expected_header=expected_header,
+                                  expected_header=None,
                                   demo_file_link=demo_file_link)
         self.update_cell_names()
 
@@ -575,7 +743,7 @@ class ExpressionFile(ParentPortalFile):
         # New deidentified file, check to make sure it does not exist
         new_deid_file = deid_file_name + c_DEID_POSTFIX + deid_file_ext
         if os.path.exists(new_deid_file):
-            print(" ".join(["ERROR: Can not deidentify file, the file to be",
+            print(" ".join(["ERROR!\tCan not deidentify file, the file to be",
                             "written already exists. Please move or",
                             "rename the file:",
                             os.path.abspath(new_deid_file)]))
@@ -583,7 +751,7 @@ class ExpressionFile(ParentPortalFile):
         # Mapping file, check to make sure it does not exist
         new_mapping_file = deid_file_name + c_MAP_POSTFIX + deid_file_ext
         if os.path.exists(new_mapping_file):
-            print(" ".join(["ERROR: Can not deidentify file, the mapping",
+            print(" ".join(["ERROR!\tCan not deidentify file, the mapping",
                             "file already exists. Please move or",
                             "rename the file:",
                             os.path.abspath(new_mapping_file)]))
@@ -604,3 +772,13 @@ class ExpressionFile(ParentPortalFile):
                                       for name_key, name_value
                                       in update_names.items()])))
         return({"name": deid_file.name, "mapping": cell_names_change})
+
+    def get_gene_names(self):
+        """
+        Returns the gene names in the file.
+        Tested
+        """
+        check_handle = self.csv_handle
+        # Need to skip the 2 header rows
+        next(check_handle)
+        return([file_line[0] for file_line in check_handle])
