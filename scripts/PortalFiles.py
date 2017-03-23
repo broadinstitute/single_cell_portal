@@ -439,7 +439,7 @@ class MetadataFile(ParentPortalFile):
                     print(" ".join(["Expected a value for entry: line",
                                     str(self.line_number+1), ", element",
                                     str(token+1)]))
-                else:
+                elif file_line[token] not in ["NA","nA","Na","na"]:
                     try:
                         type_checks[token](file_line[token])
                     except ValueError:
