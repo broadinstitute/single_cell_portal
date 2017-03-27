@@ -33,6 +33,17 @@ def files_are_equivalent(file_path_1, file_path_2):
         raise IOError("Missing file: " + file_path_1)
     if not os.path.exists(file_path_2):
         raise IOError("Missing file: " + file_path_2)
+ 
+    # Check if file lines counts are not the same.
+    with open(file_path_1) as count_file_1:
+        with open(file_path_2) as count_file_2:
+            count_1 = sum(1 for line in count_file_1)
+            count_2 = sum(1 for line in count_file_2)
+            if count_1 != count_2:
+                print("::Expected files to be the same size::")
+                print("::File 1 line count::"+ str(count_1))
+                print("::File 2 line count::"+ str(count_2))
+                return(False)
 
     # Compare line by line and short circuit on a mismatched line.
     with open(file_path_1) as check_file_1:
@@ -390,31 +401,66 @@ class CoordinatesFileTester(unittest.TestCase):
         self.assertTrue(names == names_after,
                         "Updated cell names are correct.")
 
+    def test_subset_cells_one(self):
+        """
+        Test subset cells to 1 cell.
+        """
+        test_file_name = os.path.join("test_files", "coordinates.txt")
+        correct_file = os.path.join("test_files",
+                                    "coordinates_subset_1_correct.txt")
+        keep_cells = ["CELL_0009"]
+        test_file = PortalFiles.CoordinatesFile(test_file_name)
+        subset_file_name = test_file.subset_cells(keep_cells)
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=subset_file_name,
+                                         file_path_2=correct_file)
+        # Remove the test files
+        if(os.path.exists(subset_file_name)):
+            os.remove(subset_file_name)
+        self.assertTrue(pass_test, "Can not subset file.")
+
+    def test_subset_cells_many(self):
+        """
+        Test subset cells to 3 cell.
+        """
+        test_file_name = os.path.join("test_files", "coordinates.txt")
+        correct_file = os.path.join("test_files",
+                                    "coordinates_subset_3_correct.txt")
+        keep_cells = ["CELL_0009","CELL_0002","CELL_0005"]
+        test_file = PortalFiles.CoordinatesFile(test_file_name)
+        subset_file_name = test_file.subset_cells(keep_cells)
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=subset_file_name,
+                                         file_path_2=correct_file)
+        # Remove the test files
+        if(os.path.exists(subset_file_name)):
+            os.remove(subset_file_name)
+        self.assertTrue(pass_test, "Can not subset file.")
+
     def test_deidentify_cells(self):
         """
         Test deidentify file.
         """
         test_file_name = os.path.join("test_files", "coordinates.txt")
-        deid_file = os.path.join("test_files",
-                                 "coordinates"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "coordinates"+PortalFiles.c_MAP_POSTFIX+".txt")
         correct_file = os.path.join("test_files",
                                     "coordinates_deidentifed_correct.txt")
         correct_map = os.path.join("test_files",
                                    "coordinates_mapping_correct.txt")
-        # Remove the test files if the exist
-        if(os.path.exists(deid_file)):
-            os.remove(deid_file)
-        if(os.path.exists(map_file)):
-            os.remove(map_file)
         test_file = PortalFiles.CoordinatesFile(test_file_name)
-        deid_file_name = test_file.deidentify_cell_names()["name"]
-        self.assertTrue(files_are_equivalent(file_path_1=deid_file_name,
-                                             file_path_2=correct_file) and
-                        files_are_equivalent(file_path_1=map_file,
-                                             file_path_2=correct_map),
-                                             "Can not deidentify file.")
+        deid_return = test_file.deidentify_cell_names()
+        deid_file_name = deid_return["name"]
+        map_file_name = deid_return["mapping_file"]
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=deid_file_name,
+                                         file_path_2=correct_file)
+        pass_test = pass_test and files_are_equivalent(file_path_1=map_file_name,
+                                                       file_path_2=correct_map)
+        # Remove the test files
+        if(os.path.exists(deid_file_name)):
+            os.remove(deid_file_name)
+        if(os.path.exists(map_file_name)):
+            os.remove(map_file_name)
+        self.assertTrue(pass_test, "Can not deidentify file.")
 
     def test_deidentify_cells_check_created_names(self):
         """
@@ -422,28 +468,27 @@ class CoordinatesFileTester(unittest.TestCase):
         names are created and passed.
         """
         test_file_name = os.path.join("test_files", "coordinates.txt")
-        deid_file = os.path.join("test_files",
-                                 "coordinates"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "coordinates"+PortalFiles.c_MAP_POSTFIX+".txt")
         cell_mappings_truth = ["CELL_0001:cell_0", "CELL_0002:cell_1", "CELL_0003:cell_2",
                                "CELL_0004:cell_3", "CELL_0005:cell_4", "CELL_0006:cell_5",
                                "CELL_0007:cell_6", "CELL_0008:cell_7", "CELL_0009:cell_8",
                                "CELL_00010:cell_9", "CELL_00011:cell_10", "CELL_00012:cell_11",
                                "CELL_00013:cell_12", "CELL_00014:cell_13", "CELL_00015:cell_14"]
         cell_mappings_truth = ",".join(sorted(cell_mappings_truth))
-        # Remove the test files if the exist
-        if(os.path.exists(deid_file)):
-            os.remove(deid_file)
-        if(os.path.exists(map_file)):
-            os.remove(map_file)
         test_file = PortalFiles.CoordinatesFile(test_file_name)
-        deid_info = test_file.deidentify_cell_names()
-        deid_file_mapping = deid_info["mapping"]
+        deid_return = test_file.deidentify_cell_names()
+        deid_file_name = deid_return["name"]
+        map_file_name = deid_return["mapping_file"]
+        deid_file_mapping = deid_return["mapping"]
+        # Test files
         cell_mappings = []
         for sorted_key in deid_file_mapping.keys():
             cell_mappings.append(str(sorted_key)+":"+str(deid_file_mapping[sorted_key]))
         cell_mappings = ",".join(sorted(cell_mappings))
+        # Remove the test files
+        if(os.path.exists(deid_file_name)):
+            os.remove(deid_file_name)
+        if(os.path.exists(map_file_name)):
+            os.remove(map_file_name)
         self.assertTrue(cell_mappings == cell_mappings_truth,
                         "Returned mappings were not expected.="+cell_mappings)
 
@@ -452,58 +497,26 @@ class CoordinatesFileTester(unittest.TestCase):
         Test deidentify file with cell already made.
         """
         test_file_name = os.path.join("test_files", "coordinates.txt")
-        deid_file = os.path.join("test_files",
-                                 "coordinates"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "coordinates"+PortalFiles.c_MAP_POSTFIX+".txt")
         correct_file = os.path.join("test_files",
                                     "coordinates_deidentifed_precreated_correct.txt")
         correct_map = os.path.join("test_files",
                                    "coordinates_mapping_precreated_correct.txt")
-        # Remove the test files if the exist
-        if(os.path.exists(deid_file)):
-            os.remove(deid_file)
-        if(os.path.exists(map_file)):
-            os.remove(map_file)
         test_file = PortalFiles.CoordinatesFile(test_file_name)
         names = dict(zip(test_file.cell_names, [str(i) for i in range(len(test_file.cell_names))]))
-        deid_file_name = test_file.deidentify_cell_names(cell_names_change=names)["name"]
-        self.assertTrue(files_are_equivalent(file_path_1=deid_file_name,
-                                             file_path_2=correct_file) and
-                        files_are_equivalent(file_path_1=map_file,
-                                             file_path_2=correct_map),
-                                             "Can not deidentify file.")
-
-    def test_deidentify_cells_for_existing_files(self):
-        """
-        Test deidentify file but with the files that are to be made already
-        there so an error should occur.
-        """
-        test_file_name = os.path.join("test_files", "coordinates.txt")
-        deid_file = os.path.join("test_files",
-                                 "coordinates"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "coordinates"+PortalFiles.c_MAP_POSTFIX+".txt")
-        correct_file = os.path.join("test_files",
-                                    "coordinates_deidentifed_correct.txt")
-        correct_map = os.path.join("test_files",
-                                   "coordinates_mapping_correct.txt")
-        # Make sure the files to be created exist so an error will occur
-        if(not os.path.exists(deid_file)):
-            with(open(deid_file, 'w')) as pre_exist_file:
-                pre_exist_file.write(["    "])
-        if(not os.path.exists(map_file)):
-            with(open(map_file, 'w')) as pre_exist_file:
-                pre_exist_file.write(["    "])
-        test_file = PortalFiles.CoordinatesFile(test_file_name)
-        deid_file_name = test_file.deidentify_cell_names()
-        self.assertFalse((not deid_file_name is None) and
-                          not files_are_equivalent(file_path_1=deid_file_name,
-                                                   file_path_2=correct_file) and
-                          not files_are_equivalent(file_path_1=map_file,
-                                                   file_path_2=correct_map),
-                          "Deidentify should not occur when the files being made exist.")
-
+        deid_return = test_file.deidentify_cell_names(cell_names_change=names)
+        deid_file_name = deid_return["name"]
+        map_file_name = deid_return["mapping_file"]
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=deid_file_name,
+                                         file_path_2=correct_file)
+        pass_test = pass_test and files_are_equivalent(file_path_1=map_file_name,
+                                                       file_path_2=correct_map)
+        # Remove the test files
+        if(os.path.exists(deid_file_name)):
+            os.remove(deid_file_name)
+        if(os.path.exists(map_file_name)):
+            os.remove(map_file_name)
+        self.assertTrue(pass_test, "Can not deidentify file.")
 
 class ExpressionFileTester(unittest.TestCase):
     """
@@ -630,26 +643,25 @@ class ExpressionFileTester(unittest.TestCase):
         Test deidentify file.
         """
         test_file_name = os.path.join("test_files", "expression.txt")
-        deid_file = os.path.join("test_files",
-                                 "expression"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "expression"+PortalFiles.c_MAP_POSTFIX+".txt")
         correct_file = os.path.join("test_files",
                                     "expression_deidentifed_correct.txt")
         correct_map = os.path.join("test_files",
                                    "expression_mapping_correct.txt")
-        # Remove the test files if the exist
-        if(os.path.exists(deid_file)):
-            os.remove(deid_file)
-        if(os.path.exists(map_file)):
-            os.remove(map_file)
         test_file = PortalFiles.ExpressionFile(test_file_name)
-        deid_file_name = test_file.deidentify_cell_names()["name"]
-        self.assertTrue(files_are_equivalent(file_path_1=deid_file_name,
-                                             file_path_2=correct_file) and
-                        files_are_equivalent(file_path_1=map_file,
-                                             file_path_2=correct_map),
-                                             "Can not deidentify file.")
+        deid_return = test_file.deidentify_cell_names()
+        deid_file_name = deid_return["name"]
+        map_file_name = deid_return["mapping_file"]
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=deid_file_name,
+                                         file_path_2=correct_file)
+        pass_test = pass_test and files_are_equivalent(file_path_1=map_file_name,
+                                                       file_path_2=correct_map)
+        # Remove the test files
+        if(os.path.exists(deid_file_name)):
+            os.remove(deid_file_name)
+        if(os.path.exists(map_file_name)):
+            os.remove(map_file_name)
+        self.assertTrue(pass_test, "Can not deidentify file.")
 
     def test_deidentify_cells_check_created_names(self):
         """
@@ -667,18 +679,21 @@ class ExpressionFileTester(unittest.TestCase):
                                "CELL_00010:cell_9", "CELL_00011:cell_10", "CELL_00012:cell_11",
                                "CELL_00013:cell_12", "CELL_00014:cell_13", "CELL_00015:cell_14"])
         cell_mappings_truth = ",".join(cell_mappings_truth)
-        # Remove the test files if the exist
-        if(os.path.exists(deid_file)):
-            os.remove(deid_file)
-        if(os.path.exists(map_file)):
-            os.remove(map_file)
         test_file = PortalFiles.ExpressionFile(test_file_name)
-        deid_info = test_file.deidentify_cell_names()
-        deid_file_mapping = deid_info["mapping"]
+        deid_return = test_file.deidentify_cell_names()
+        deid_file_name = deid_return["name"]
+        map_file_name = deid_return["mapping_file"]
+        deid_file_mapping = deid_return["mapping"]
+        # Test files
         cell_mappings = []
         for sorted_key in deid_file_mapping.keys():
             cell_mappings.append(str(sorted_key)+":"+str(deid_file_mapping[sorted_key]))
         cell_mappings = ",".join(sorted(cell_mappings))
+        # Remove the test files
+        if(os.path.exists(deid_file_name)):
+            os.remove(deid_file_name)
+        if(os.path.exists(map_file_name)):
+            os.remove(map_file_name)
         self.assertTrue(cell_mappings == cell_mappings_truth,
                         "Returned mappings were not expected.="+cell_mappings)
 
@@ -687,57 +702,26 @@ class ExpressionFileTester(unittest.TestCase):
         Test deidentify file with cell already made.
         """
         test_file_name = os.path.join("test_files", "expression.txt")
-        deid_file = os.path.join("test_files",
-                                 "expression"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "expression"+PortalFiles.c_MAP_POSTFIX+".txt")
         correct_file = os.path.join("test_files",
                                     "expression_deidentifed_precreated_correct.txt")
         correct_map = os.path.join("test_files",
                                    "expression_mapping_precreated_correct.txt")
-        # Remove the test files if the exist
-        if(os.path.exists(deid_file)):
-            os.remove(deid_file)
-        if(os.path.exists(map_file)):
-            os.remove(map_file)
         test_file = PortalFiles.ExpressionFile(test_file_name)
         names = dict(zip(test_file.cell_names, [str(i) for i in range(len(test_file.cell_names))]))
-        deid_file_name = test_file.deidentify_cell_names(cell_names_change=names)["name"]
-        self.assertTrue(files_are_equivalent(file_path_1=deid_file_name,
-                                             file_path_2=correct_file) and
-                        files_are_equivalent(file_path_1=map_file,
-                                             file_path_2=correct_map),
-                                             "Can not deidentify file.")
-
-    def test_deidentify_cells_for_existing_files(self):
-        """
-        Test deidentify file but with the files that are to be made already
-        there so an error should occur.
-        """
-        test_file_name = os.path.join("test_files", "expression.txt")
-        deid_file = os.path.join("test_files",
-                                 "expression"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "expression"+PortalFiles.c_MAP_POSTFIX+".txt")
-        correct_file = os.path.join("test_files",
-                                    "expression_deidentifed_correct.txt")
-        correct_map = os.path.join("test_files",
-                                   "expression_mapping_correct.txt")
-        # Make sure the files to be created exist so an error will occur
-        if(not os.path.exists(deid_file)):
-            with(open(deid_file, 'w')) as pre_exist_file:
-                pre_exist_file.write(["    "])
-        if(not os.path.exists(map_file)):
-            with(open(map_file, 'w')) as pre_exist_file:
-                pre_exist_file.write(["    "])
-        test_file = PortalFiles.ExpressionFile(test_file_name)
-        deid_file_name = test_file.deidentify_cell_names()
-        self.assertFalse((not deid_file_name is None) and
-                          not files_are_equivalent(file_path_1=deid_file_name,
-                                                   file_path_2=correct_file) and
-                          not files_are_equivalent(file_path_1=map_file,
-                                                   file_path_2=correct_map),
-                          "Deidentify should not occur when the files being made exist.")
+        deid_return = test_file.deidentify_cell_names(cell_names_change=names)
+        deid_file_name = deid_return["name"]
+        map_file_name = deid_return["mapping_file"]
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=deid_file_name,
+                                         file_path_2=correct_file)
+        pass_test = pass_test and files_are_equivalent(file_path_1=map_file_name,
+                                                       file_path_2=correct_map)
+        # Remove the test files
+        if(os.path.exists(deid_file_name)):
+            os.remove(deid_file_name)
+        if(os.path.exists(map_file_name)):
+            os.remove(map_file_name)
+        self.assertTrue(pass_test, "Can not deidentify file.")
 
     def test_get_gene_names(self):
         """
@@ -754,6 +738,42 @@ class ExpressionFileTester(unittest.TestCase):
         str_received = ",".join(sorted(test_file.get_gene_names()))
         self.assertTrue(str_truth == str_received,
                         "Did not receive the expected gene names.")
+
+    def test_subset_cells_one(self):
+        """
+        Test subset cells to 1 cell.
+        """
+        test_file_name = os.path.join("test_files", "expression.txt")
+        correct_file = os.path.join("test_files",
+                                    "expression_subset_1_correct.txt")
+        keep_cells = ["CELL_0002"]
+        test_file = PortalFiles.ExpressionFile(test_file_name)
+        subset_file_name = test_file.subset_cells(keep_cells)
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=subset_file_name,
+                                         file_path_2=correct_file)
+        # Remove the test files
+        if(os.path.exists(subset_file_name)):
+            os.remove(subset_file_name)
+        self.assertTrue(pass_test, "Can not subset file.")
+
+    def test_subset_cells_many(self):
+        """
+        Test subset cells to 4 cell.
+        """
+        test_file_name = os.path.join("test_files", "expression.txt")
+        correct_file = os.path.join("test_files",
+                                    "expression_subset_4_correct.txt")
+        keep_cells = ["CELL_0002","CELL_0004","CELL_0006","CELL_0008"]
+        test_file = PortalFiles.ExpressionFile(test_file_name)
+        subset_file_name = test_file.subset_cells(keep_cells)
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=subset_file_name,
+                                         file_path_2=correct_file)
+        # Remove the test files
+        if(os.path.exists(subset_file_name)):
+            os.remove(subset_file_name)
+        self.assertTrue(pass_test, "Can not subset file.")
 
 class MetadataFileTester(unittest.TestCase):
     """
@@ -955,26 +975,25 @@ class MetadataFileTester(unittest.TestCase):
         Test deidentify file.
         """
         test_file_name = os.path.join("test_files", "metadata.txt")
-        deid_file = os.path.join("test_files",
-                                 "metadata"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "metadata"+PortalFiles.c_MAP_POSTFIX+".txt")
         correct_file = os.path.join("test_files",
                                     "metadata_deidentifed_correct.txt")
         correct_map = os.path.join("test_files",
                                    "metadata_mapping_correct.txt")
-        # Remove the test files if the exist
-        if(os.path.exists(deid_file)):
-            os.remove(deid_file)
-        if(os.path.exists(map_file)):
-            os.remove(map_file)
         test_file = PortalFiles.MetadataFile(test_file_name)
-        deid_file_name = test_file.deidentify_cell_names()["name"]
-        self.assertTrue(files_are_equivalent(file_path_1=deid_file_name,
-                                             file_path_2=correct_file) and
-                        files_are_equivalent(file_path_1=map_file,
-                                             file_path_2=correct_map),
-                                             "Can not deidentify file.")
+        deid_return = test_file.deidentify_cell_names()
+        deid_file_name = deid_return["name"]
+        map_file_name = deid_return["mapping_file"]
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=deid_file_name,
+                                         file_path_2=correct_file)
+        pass_test = pass_test and files_are_equivalent(file_path_1=map_file_name,
+                                                       file_path_2=correct_map)
+        # Remove the test files
+        if(os.path.exists(deid_file_name)):
+            os.remove(deid_file_name)
+        if(os.path.exists(map_file_name)):
+            os.remove(map_file_name)
+        self.assertTrue(pass_test, "Can not deidentify file.")
 
     def test_deidentify_cells_check_created_names(self):
         """
@@ -982,28 +1001,27 @@ class MetadataFileTester(unittest.TestCase):
         names are created and passed.
         """
         test_file_name = os.path.join("test_files", "metadata.txt")
-        deid_file = os.path.join("test_files",
-                                 "metadata"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "metadata"+PortalFiles.c_MAP_POSTFIX+".txt")
         cell_mappings_truth = sorted(["CELL_0001:cell_0", "CELL_0002:cell_1", "CELL_0003:cell_2",
                                "CELL_0004:cell_3", "CELL_0005:cell_4", "CELL_0006:cell_5",
                                "CELL_0007:cell_6", "CELL_0008:cell_7", "CELL_0009:cell_8",
                                "CELL_00010:cell_9", "CELL_00011:cell_10", "CELL_00012:cell_11",
                                "CELL_00013:cell_12", "CELL_00014:cell_13", "CELL_00015:cell_14"])
         cell_mappings_truth = ",".join(cell_mappings_truth)
-        # Remove the test files if the exist
-        if(os.path.exists(deid_file)):
-            os.remove(deid_file)
-        if(os.path.exists(map_file)):
-            os.remove(map_file)
         test_file = PortalFiles.MetadataFile(test_file_name)
-        deid_info = test_file.deidentify_cell_names()
-        deid_file_mapping = deid_info["mapping"]
+        deid_return = test_file.deidentify_cell_names()
+        deid_file_name = deid_return["name"]
+        map_file_name = deid_return["mapping_file"]
+        deid_file_mapping = deid_return["mapping"]
+        # Test files
         cell_mappings = []
         for sorted_key in deid_file_mapping.keys():
             cell_mappings.append(str(sorted_key)+":"+str(deid_file_mapping[sorted_key]))
         cell_mappings = ",".join(sorted(cell_mappings))
+        # Remove the test files
+        if(os.path.exists(deid_file_name)):
+            os.remove(deid_file_name)
+        if(os.path.exists(map_file_name)):
+            os.remove(map_file_name)
         self.assertTrue(cell_mappings == cell_mappings_truth,
                         "Returned mappings were not expected.="+cell_mappings)
 
@@ -1012,57 +1030,26 @@ class MetadataFileTester(unittest.TestCase):
         Test deidentify file with cell already made.
         """
         test_file_name = os.path.join("test_files", "metadata.txt")
-        deid_file = os.path.join("test_files",
-                                 "metadata"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "metadata"+PortalFiles.c_MAP_POSTFIX+".txt")
         correct_file = os.path.join("test_files",
                                     "metadata_deidentifed_precreated_correct.txt")
         correct_map = os.path.join("test_files",
                                    "metadata_mapping_precreated_correct.txt")
-        # Remove the test files if the exist
-        if(os.path.exists(deid_file)):
-            os.remove(deid_file)
-        if(os.path.exists(map_file)):
-            os.remove(map_file)
         test_file = PortalFiles.MetadataFile(test_file_name)
         names = dict(zip(test_file.cell_names, [str(i) for i in range(len(test_file.cell_names))]))
-        deid_file_name = test_file.deidentify_cell_names(cell_names_change=names)["name"]
-        self.assertTrue(files_are_equivalent(file_path_1=deid_file_name,
-                                             file_path_2=correct_file) and
-                        files_are_equivalent(file_path_1=map_file,
-                                             file_path_2=correct_map),
-                                             "Can not deidentify file.")
-
-    def test_deidentify_cells_for_existing_files(self):
-        """
-        Test deidentify file but with the files that are to be made already
-        there so an error should occur.
-        """
-        test_file_name = os.path.join("test_files", "metadata.txt")
-        deid_file = os.path.join("test_files",
-                                 "metadata"+PortalFiles.c_DEID_POSTFIX+".txt")
-        map_file = os.path.join("test_files",
-                                "metadata"+PortalFiles.c_MAP_POSTFIX+".txt")
-        correct_file = os.path.join("test_files",
-                                    "metadata_deidentifed_correct.txt")
-        correct_map = os.path.join("test_files",
-                                   "metadata_mapping_correct.txt")
-        # Make sure the files to be created exist so an error will occur
-        if(not os.path.exists(deid_file)):
-            with(open(deid_file, 'w')) as pre_exist_file:
-                pre_exist_file.write(["    "])
-        if(not os.path.exists(map_file)):
-            with(open(map_file, 'w')) as pre_exist_file:
-                pre_exist_file.write(["    "])
-        test_file = PortalFiles.MetadataFile(test_file_name)
-        deid_file_name = test_file.deidentify_cell_names()
-        self.assertFalse((not deid_file_name is None) and
-                          not files_are_equivalent(file_path_1=deid_file_name,
-                                                   file_path_2=correct_file) and
-                          not files_are_equivalent(file_path_1=map_file,
-                                                   file_path_2=correct_map),
-                          "Deidentify should not occur when the files being made exist.")
+        deid_return = test_file.deidentify_cell_names(cell_names_change=names)
+        deid_file_name = deid_return["name"]
+        map_file_name = deid_return["mapping_file"]
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=deid_file_name,
+                                         file_path_2=correct_file)
+        pass_test = pass_test and files_are_equivalent(file_path_1=map_file_name,
+                                                       file_path_2=correct_map)
+        # Remove the test files
+        if(os.path.exists(deid_file_name)):
+            os.remove(deid_file_name)
+        if(os.path.exists(map_file_name)):
+            os.remove(map_file_name)
+        self.assertTrue(pass_test, "Can not deidentify file.")
 
     def test_get_labels_correct(self):
         """ 
@@ -1082,6 +1069,41 @@ class MetadataFileTester(unittest.TestCase):
         self.assertTrue(truth_str == received_str,
                         "Did not receive the expected labels.")
 
+    def test_subset_cells_one(self):
+        """
+        Test subset cells to 1 cell.
+        """
+        test_file_name = os.path.join("test_files", "metadata.txt")
+        correct_file = os.path.join("test_files",
+                                    "metadata_subset_1_correct.txt")
+        keep_cells = ["CELL_0001"]
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        subset_file_name = test_file.subset_cells(keep_cells)
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=subset_file_name,
+                                         file_path_2=correct_file)
+        # Remove the test files
+        if(os.path.exists(subset_file_name)):
+            os.remove(subset_file_name)
+        self.assertTrue(pass_test, "Can not subset file.")
+
+    def test_subset_cells_many(self):
+        """
+        Test subset cells to 2 cell.
+        """
+        test_file_name = os.path.join("test_files", "metadata.txt")
+        correct_file = os.path.join("test_files",
+                                    "metadata_subset_2_correct.txt")
+        keep_cells = ["CELL_0001","CELL_00015"]
+        test_file = PortalFiles.MetadataFile(test_file_name)
+        subset_file_name = test_file.subset_cells(keep_cells)
+        # Test files
+        pass_test = files_are_equivalent(file_path_1=subset_file_name,
+                                         file_path_2=correct_file)
+        # Remove the test files
+        if(os.path.exists(subset_file_name)):
+            os.remove(subset_file_name)
+        self.assertTrue(pass_test, "Can not subset file.")
 
 class GeneListFileTester(unittest.TestCase):
     """

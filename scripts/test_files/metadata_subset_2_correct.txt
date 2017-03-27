@@ -1,0 +1,4 @@
+NAME	Cluster	Sub-Cluster	Average Intensity
+TYPE	group	group	numeric
+CELL_0001	CLST_A	CLST_A_1	7.742
+CELL_00015	CLST_C	CLST_C_2	-9.089

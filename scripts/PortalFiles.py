@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 import abc
 import argparse
 import csv
+import time
 import itertools
 import os
 
@@ -25,6 +26,7 @@ c_MAP_DELIM = "\t->\t"
 c_MAP_POSTFIX = "_mapping"
 c_METADATA_00_ELEMENT = "NAME"
 c_REPORT_LINE_NUMBER_BLOCK = 500
+c_SUBSET_POSTFIX = "_subset"
 c_TYPE_HEADER_ID = "TYPE"
 c_TYPE_NUMERIC = "numeric"
 c_TYPE_GROUP = "group"
@@ -207,6 +209,37 @@ class ParentPortalFile:
                             portal_file.file_name,
                             ":"]+list(difference)))
         return(compare_error)
+
+    def create_safe_file_name(self,file_name):
+        """
+        Using a given file name
+        create a new file name that is unique
+        so collisions do not occur.
+        """
+
+        if not file_name:
+            return(None)
+
+        file_base,file_ext = os.path.splitext(file_name)
+        current_time = time.strftime("%Y_%m_%d_%H_%M_%S",time.gmtime())
+        new_file_name = file_base + "_" + current_time + file_ext
+
+        if os.path.exists(new_file_name):
+            print(" ".join(["ERROR!\tCan not find a safe file name, ",
+                            "the file to be written already exists. ",
+                            "Please move or rename the file:",
+                            os.path.abspath(new_file_name)]))
+            return(None)
+        return(new_file_name)
+        
+
+    @abc.abstractmethod
+    def subset_cells(self, reduce_cells):
+        """
+        Reduce file to a subset of cells.
+        Must be over written per file given files have different formats.
+        """
+        return()
 
     def update_cell_names(self):
         """
@@ -472,22 +505,16 @@ class MetadataFile(ParentPortalFile):
         deid_file_name, deid_file_ext = os.path.splitext(self.file_name)
         # New deidentified file, check to make sure it does not exist
         new_deid_file = deid_file_name + c_DEID_POSTFIX + deid_file_ext
-        if os.path.exists(new_deid_file):
-            print(" ".join(["ERROR!\tCan not deidentify file, the file to be",
-                            "written already exists. Please move or",
-                            "rename the file:",
-                            os.path.abspath(new_deid_file)]))
+        new_deid_file = self.create_safe_file_name(new_deid_file)
+        if new_deid_file is None:
             return(None)
         # Mapping file, check to make sure it does not exist
         new_mapping_file = deid_file_name + c_MAP_POSTFIX + deid_file_ext
-        if os.path.exists(new_mapping_file):
-            print(" ".join(["ERROR!\tCan not deidentify file, the mapping",
-                            "file already exists. Please move or",
-                            "rename the file:",
-                            os.path.abspath(new_mapping_file)]))
+        new_mapping_file = self.create_safe_file_name(new_mapping_file)
+        if new_mapping_file is None:
             return(None)
         # Write deidentified file
-        with open(deid_file_name + c_DEID_POSTFIX + deid_file_ext, 'w') as deid_file:
+        with open(new_deid_file, 'w') as deid_file:
             write_deid = self.csv_handle
             for file_line in write_deid:
                 new_file_lines.append(self.delimiter.join([update_names[file_line[0]]]+file_line[1:]))
@@ -497,7 +524,7 @@ class MetadataFile(ParentPortalFile):
             map_file.write("\n".join(sorted([name_key+c_MAP_DELIM+name_value
                                       for name_key, name_value
                                       in update_names.items()])))
-        return({"name": deid_file.name, "mapping": cell_names_change})
+        return({"name": new_deid_file, "mapping": cell_names_change, "mapping_file": new_mapping_file})
 
     def get_labels(self):
         """
@@ -514,6 +541,29 @@ class MetadataFile(ParentPortalFile):
             labels.extend(list(itertools.compress(file_line,type_idx)))
             labels = list(set(labels))
         return(labels)
+
+    def subset_cells(self, keep_cells):
+        """
+        Write a file reduce to just the given cells
+        """
+
+        keep_cells = set(keep_cells)
+        orig_file_name, orig_file_ext = os.path.splitext(self.file_name)
+        subset_file_name =  orig_file_name + c_SUBSET_POSTFIX + orig_file_ext
+        subset_file_name = self.create_safe_file_name(subset_file_name)
+        if subset_file_name is None:
+            return(None)
+
+        with open(subset_file_name,"w") as csvwriter:
+            file_writer = csv.writer(csvwriter, delimiter=self.delimiter)
+            check_handle = self.csv_handle
+            # Need to add the 2 header rows
+            file_writer.writerow(next(check_handle))
+            file_writer.writerow(next(check_handle))
+            for file_line in check_handle:
+                if file_line[0] in keep_cells:
+                    file_writer.writerow(file_line)
+        return(subset_file_name)
 
 class CoordinatesFile(ParentPortalFile):
 
@@ -578,6 +628,7 @@ class CoordinatesFile(ParentPortalFile):
         Check body of file.
         Tested
         """
+
         check_handle = self.csv_handle
         # Need to skip the 2 header rows
         next(check_handle)
@@ -622,24 +673,17 @@ class CoordinatesFile(ParentPortalFile):
                                                        str(len(cell_names_change))]))
         update_names.update(cell_names_change)
         deid_file_name, deid_file_ext = os.path.splitext(self.file_name)
-        # New deidentified file, check to make sure it does not exist
         new_deid_file = deid_file_name + c_DEID_POSTFIX + deid_file_ext
-        if os.path.exists(new_deid_file):
-            print(" ".join(["ERROR!\tCan not deidentify file, the file to be",
-                            "written already exists. Please move or",
-                            "rename the file:",
-                            os.path.abspath(new_deid_file)]))
+        new_deid_file = self.create_safe_file_name(new_deid_file)
+        if new_deid_file is None:
             return(None)
         # Mapping file, check to make sure it does not exist
         new_mapping_file = deid_file_name + c_MAP_POSTFIX + deid_file_ext
-        if os.path.exists(new_mapping_file):
-            print(" ".join(["ERROR!\tCan not deidentify file, the mapping",
-                            "file already exists. Please move or",
-                            "rename the file:",
-                            os.path.abspath(new_mapping_file)]))
+        new_mapping_file = self.create_safe_file_name(new_mapping_file)
+        if new_mapping_file is None:
             return(None)
         # Write deidentified file
-        with open(deid_file_name + c_DEID_POSTFIX + deid_file_ext, 'w') as deid_file:
+        with open(new_deid_file, 'w') as deid_file:
             write_deid = self.csv_handle
             for file_line in write_deid:
                 new_file_lines.append(self.delimiter.join([update_names[file_line[0]]]+file_line[1:]))
@@ -649,8 +693,30 @@ class CoordinatesFile(ParentPortalFile):
             map_file.write("\n".join(sorted([name_key+c_MAP_DELIM+name_value
                                       for name_key, name_value
                                       in update_names.items()])))
-        return({"name": deid_file.name, "mapping": cell_names_change})
+        return({"name": new_deid_file, "mapping": cell_names_change, "mapping_file": new_mapping_file})
 
+    def subset_cells(self, keep_cells):
+        """
+        Write a file reduce to just the given cells
+        """
+
+        keep_cells = set(keep_cells)
+        orig_file_name, orig_file_ext = os.path.splitext(self.file_name)
+        subset_file_name = orig_file_name + c_SUBSET_POSTFIX + orig_file_ext
+        subset_file_name = self.create_safe_file_name(subset_file_name)
+        if subset_file_name is None:
+            return(None)
+
+        with open(subset_file_name,"w") as filewriter:
+            csvwriter = csv.writer(filewriter, delimiter=self.delimiter)
+            orig_handle = self.csv_handle
+            # Need to add the 2 header rows
+            csvwriter.writerow(next(orig_handle))
+            csvwriter.writerow(next(orig_handle))
+            for file_line in orig_handle:
+                if file_line[0] in keep_cells:
+                    csvwriter.writerow(file_line)
+        return(subset_file_name)
 
 class ExpressionFile(ParentPortalFile):
 
@@ -742,19 +808,13 @@ class ExpressionFile(ParentPortalFile):
         deid_file_name, deid_file_ext = os.path.splitext(self.file_name)
         # New deidentified file, check to make sure it does not exist
         new_deid_file = deid_file_name + c_DEID_POSTFIX + deid_file_ext
-        if os.path.exists(new_deid_file):
-            print(" ".join(["ERROR!\tCan not deidentify file, the file to be",
-                            "written already exists. Please move or",
-                            "rename the file:",
-                            os.path.abspath(new_deid_file)]))
+        new_deid_file = self.create_safe_file_name(new_deid_file)
+        if new_deid_file is None:
             return(None)
         # Mapping file, check to make sure it does not exist
         new_mapping_file = deid_file_name + c_MAP_POSTFIX + deid_file_ext
-        if os.path.exists(new_mapping_file):
-            print(" ".join(["ERROR!\tCan not deidentify file, the mapping",
-                            "file already exists. Please move or",
-                            "rename the file:",
-                            os.path.abspath(new_mapping_file)]))
+        new_mapping_file = self.create_safe_file_name(new_mapping_file)
+        if new_mapping_file is None:
             return(None)
 
         # Write deidentified file
@@ -771,7 +831,7 @@ class ExpressionFile(ParentPortalFile):
             map_file.write("\n".join(sorted([name_key+c_MAP_DELIM+name_value
                                       for name_key, name_value
                                       in update_names.items()])))
-        return({"name": deid_file.name, "mapping": cell_names_change})
+        return({"name": new_deid_file, "mapping": cell_names_change, "mapping_file": new_mapping_file})
 
     def get_gene_names(self):
         """
@@ -782,3 +842,27 @@ class ExpressionFile(ParentPortalFile):
         # Need to skip the 2 header rows
         next(check_handle)
         return([file_line[0] for file_line in check_handle])
+
+    def subset_cells(self, keep_cells):
+        """
+        Write a file reduce to just the given cells
+        """
+
+        keep_cells = set(keep_cells)
+        orig_file_name, orig_file_ext = os.path.splitext(self.file_name)
+        subset_file_name =  orig_file_name + c_SUBSET_POSTFIX + orig_file_ext
+        subset_file_name = self.create_safe_file_name(subset_file_name)
+        if subset_file_name is None:
+            return(None)
+
+        with open(subset_file_name,"w") as file_writer:
+            csv_writer = csv.writer(file_writer, delimiter=self.delimiter)
+            check_handle = self.csv_handle
+            keep_cells.add(c_EXPRESSION_00_ELEMENT)
+            header = next(check_handle)
+            header_index = [cell in keep_cells for cell in header]
+            # Need to add the header rows
+            csv_writer.writerow(list(itertools.compress(header,header_index)))
+            for file_line in check_handle:
+                csv_writer.writerow(list(itertools.compress(file_line,header_index)))
+        return(subset_file_name)

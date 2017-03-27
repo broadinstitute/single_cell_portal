@@ -1,0 +1,3 @@
+NAME	X	Y	Z	Category	Intensity
+TYPE	numeric	numeric	numeric	group	numeric
+CELL_0009	-48.601	-13.512	-51.659	A	0.778
