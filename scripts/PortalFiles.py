@@ -8,9 +8,11 @@ from __future__ import unicode_literals
 import abc
 import argparse
 import csv
-import time
+import gzip
 import itertools
 import os
+import random
+import time
 
 # Constants
 # The expected header
@@ -65,7 +67,7 @@ class ParentPortalFile:
         self.demo_file = demo_file_link
         self.expected_header = expected_header
         self.expected_header_length = len(expected_header) if expected_header else 0
-        self.file_name = file_name
+        self.file_name = os.path.abspath(file_name)
         init_handle = self.csv_handle
         self.header = next(init_handle)
         self.type_header = next(init_handle) if has_type else None
@@ -80,7 +82,13 @@ class ParentPortalFile:
         fresh handle at the beginning of the file.
         Tested
         """
-        return(csv.reader(open(self.file_name, 'r'), delimiter=self.delimiter))
+        
+        file_handle = None
+        if ".gz" == os.path.splitext(self.file_name)[-1]:
+            file_handle = gzip.open(self.file_name, 'rt')
+        else:
+            file_handle = open(self.file_name, 'r')
+        return(csv.reader(file_handle, delimiter=self.delimiter))
 
     @abc.abstractmethod
     def check_header(self):
@@ -220,9 +228,11 @@ class ParentPortalFile:
         if not file_name:
             return(None)
 
-        file_base,file_ext = os.path.splitext(file_name)
+        file_pieces = file_name.split(".")
+        file_base = file_pieces[0]
+        file_ext = ".".join(file_pieces[1:])
         current_time = time.strftime("%Y_%m_%d_%H_%M_%S",time.gmtime())
-        new_file_name = file_base + "_" + current_time + file_ext
+        new_file_name = file_base + "_" + current_time + "." + file_ext
 
         if os.path.exists(new_file_name):
             print(" ".join(["ERROR!\tCan not find a safe file name, ",
@@ -231,7 +241,20 @@ class ParentPortalFile:
                             os.path.abspath(new_file_name)]))
             return(None)
         return(new_file_name)
-        
+
+    def tag_file_name(self,tag):
+        """
+        Add a tag to a file name and return a safe version of the file name.
+        """        
+
+        if not tag:
+            return(None)
+
+        file_pieces = self.file_name.split(".")
+        file_base = file_pieces[0]
+        file_ext = ".".join(file_pieces[1:])
+        new_file = file_base + tag + "." + file_ext
+        return(self.create_safe_file_name(new_file))
 
     @abc.abstractmethod
     def subset_cells(self, reduce_cells):
@@ -502,10 +525,8 @@ class MetadataFile(ParentPortalFile):
                                              "_".join([c_CELL_ID,
                                                        str(len(cell_names_change))]))
         update_names.update(cell_names_change)
-        deid_file_name, deid_file_ext = os.path.splitext(self.file_name)
-        # New deidentified file, check to make sure it does not exist
-        new_deid_file = deid_file_name + c_DEID_POSTFIX + deid_file_ext
-        new_deid_file = self.create_safe_file_name(new_deid_file)
+
+        new_deid_file = self.tag_file_name(c_DEID_POSTFIX)
         if new_deid_file is None:
             return(None)
         # Mapping file, check to make sure it does not exist
@@ -548,9 +569,7 @@ class MetadataFile(ParentPortalFile):
         """
 
         keep_cells = set(keep_cells)
-        orig_file_name, orig_file_ext = os.path.splitext(self.file_name)
-        subset_file_name =  orig_file_name + c_SUBSET_POSTFIX + orig_file_ext
-        subset_file_name = self.create_safe_file_name(subset_file_name)
+        subset_file_name = self.tag_file_name(c_SUBSET_POSTFIX)
         if subset_file_name is None:
             return(None)
 
@@ -564,6 +583,45 @@ class MetadataFile(ParentPortalFile):
                 if file_line[0] in keep_cells:
                     file_writer.writerow(file_line)
         return(subset_file_name)
+
+    def select_subsample_cells(self, number, metadata):
+        """
+        Randomly subsample cells within a given metadata for a total number of cells.
+        Return a list of cells to keep.
+        """
+
+        selected = []
+        subsample_handle = self.csv_handle
+        subsample_header = next(subsample_handle)
+        next(subsample_handle)
+        try:
+            metadata_index = subsample_header.index(metadata)
+        except:
+            print("Not able to find that metadata group in the header of the metadata file.")
+            print("No subsampling will occur.")
+            return(selected)
+
+        if metadata_index < 0:
+            print( "Could not file the metadata \'"+metadata+"\'to subsample with; no subsampling performed." )
+            return(None)
+        else:
+            # Store rows by metadata value
+            rows_by_metadata = dict()
+            for entries in subsample_handle:
+                metadatum = entries[metadata_index]
+                if metadatum in rows_by_metadata:
+                    rows_by_metadata[metadatum].append(entries[0])
+                else:
+                    rows_by_metadata[metadatum] = [entries[0]]
+
+            # Calculate number of metadata to sample.
+            number_metadata_values = len(rows_by_metadata.keys())
+            sample_amount = round(number/number_metadata_values)
+
+            # Sample cells within each metadata value
+            for value_list in rows_by_metadata.values():
+                selected.extend(random.sample(value_list,sample_amount))
+        return(selected)
 
 class CoordinatesFile(ParentPortalFile):
 
@@ -672,9 +730,7 @@ class CoordinatesFile(ParentPortalFile):
                                              "_".join([c_CELL_ID,
                                                        str(len(cell_names_change))]))
         update_names.update(cell_names_change)
-        deid_file_name, deid_file_ext = os.path.splitext(self.file_name)
-        new_deid_file = deid_file_name + c_DEID_POSTFIX + deid_file_ext
-        new_deid_file = self.create_safe_file_name(new_deid_file)
+        new_deid_file = self.tag_file_name(c_DEID_POSTFIX)
         if new_deid_file is None:
             return(None)
         # Mapping file, check to make sure it does not exist
@@ -701,9 +757,7 @@ class CoordinatesFile(ParentPortalFile):
         """
 
         keep_cells = set(keep_cells)
-        orig_file_name, orig_file_ext = os.path.splitext(self.file_name)
-        subset_file_name = orig_file_name + c_SUBSET_POSTFIX + orig_file_ext
-        subset_file_name = self.create_safe_file_name(subset_file_name)
+        subset_file_name = self.tag_file_name(c_SUBSET_POSTFIX)
         if subset_file_name is None:
             return(None)
 
@@ -805,10 +859,13 @@ class ExpressionFile(ParentPortalFile):
                                                        str(len(cell_names_change))]))
         update_names.update(cell_names_change)
 
-        deid_file_name, deid_file_ext = os.path.splitext(self.file_name)
+        deid_file_pieces = self.file_name.split(".")
+        deid_file_name = deid_file_pieces[0]
+        deid_file_ext = ".".join(deid_file_pieces[1:])
         # New deidentified file, check to make sure it does not exist
-        new_deid_file = deid_file_name + c_DEID_POSTFIX + deid_file_ext
+        new_deid_file = deid_file_name + c_DEID_POSTFIX + "." + deid_file_ext
         new_deid_file = self.create_safe_file_name(new_deid_file)
+
         if new_deid_file is None:
             return(None)
         # Mapping file, check to make sure it does not exist
@@ -818,13 +875,23 @@ class ExpressionFile(ParentPortalFile):
             return(None)
 
         # Write deidentified file
-        with open(new_deid_file, 'w') as deid_file:
-            write_deid = self.csv_handle
-            new_file_lines.append(self.delimiter.join([update_names[name]
+        if os.path.splitext(new_deid_file)[-1] == ".gz":
+            with gzip.open(new_deid_file, 'wt') as deid_file:
+                write_deid = self.csv_handle
+                new_file_lines.append(self.delimiter.join([update_names[name]
+                                      for name in next(write_deid)]))
+                for file_line in write_deid:
+                    new_file_lines.append(self.delimiter.join(file_line))
+                deid_file.write("\n".join(new_file_lines))
+
+        else:
+            with open(new_deid_file, 'w') as deid_file:
+                write_deid = self.csv_handle
+                new_file_lines.append(self.delimiter.join([update_names[name]
                                   for name in next(write_deid)]))
-            for file_line in write_deid:
-                new_file_lines.append(self.delimiter.join(file_line))
-            deid_file.write("\n".join(new_file_lines))
+                for file_line in write_deid:
+                    new_file_lines.append(self.delimiter.join(file_line))
+                deid_file.write("\n".join(new_file_lines))
 
         # Write mapping file
         with open(new_mapping_file, 'w') as map_file:
@@ -849,20 +916,31 @@ class ExpressionFile(ParentPortalFile):
         """
 
         keep_cells = set(keep_cells)
-        orig_file_name, orig_file_ext = os.path.splitext(self.file_name)
-        subset_file_name =  orig_file_name + c_SUBSET_POSTFIX + orig_file_ext
-        subset_file_name = self.create_safe_file_name(subset_file_name)
+        subset_file_name = self.tag_file_name(c_SUBSET_POSTFIX)
         if subset_file_name is None:
             return(None)
 
-        with open(subset_file_name,"w") as file_writer:
-            csv_writer = csv.writer(file_writer, delimiter=self.delimiter)
-            check_handle = self.csv_handle
-            keep_cells.add(c_EXPRESSION_00_ELEMENT)
-            header = next(check_handle)
-            header_index = [cell in keep_cells for cell in header]
-            # Need to add the header rows
-            csv_writer.writerow(list(itertools.compress(header,header_index)))
-            for file_line in check_handle:
-                csv_writer.writerow(list(itertools.compress(file_line,header_index)))
+        if os.path.splitext(subset_file_name)[-1] == ".gz":
+            with gzip.open(subset_file_name,"wt") as file_writer:
+                csv_writer = csv.writer(file_writer, delimiter=self.delimiter)
+                check_handle = self.csv_handle
+                keep_cells.add(c_EXPRESSION_00_ELEMENT)
+                header = next(check_handle)
+                header_index = [cell in keep_cells for cell in header]
+                # Need to add the header rows
+                csv_writer.writerow(list(itertools.compress(header,header_index)))
+                for file_line in check_handle:
+                    csv_writer.writerow(list(itertools.compress(file_line,header_index)))
+        else:
+            with open(subset_file_name,"w") as file_writer:
+                csv_writer = csv.writer(file_writer, delimiter=self.delimiter)
+                check_handle = self.csv_handle
+                keep_cells.add(c_EXPRESSION_00_ELEMENT)
+                header = next(check_handle)
+                header_index = [cell in keep_cells for cell in header]
+                # Need to add the header rows
+                csv_writer.writerow(list(itertools.compress(header,header_index)))
+                for file_line in check_handle:
+                    csv_writer.writerow(list(itertools.compress(file_line,header_index)))
+
         return(subset_file_name)
