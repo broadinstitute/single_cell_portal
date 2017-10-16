@@ -120,6 +120,18 @@ prsr_arguments.add_argument("--sampling_metadata",
                             type=str,
                             help="The metadata to use to sample within, currently only supporting factors not numeric metadata.")
 
+prsr_arguments.add_argument("--subsample_cells_list",
+                            default=None,
+                            dest="subsample_list",
+                            type=str,
+                            help="A list of cell names to keep when subsampling. Allows one to specifically indicate which cells to subsample to. This take precident over random sampling; if this is specified no random sampling can occur.")
+
+prsr_arguments.add_argument("--no_checking",
+                            default=True,
+                            dest="check_files",
+                            action="store_false",
+                            help="Turn off checking of files.")
+
 prs_args = prsr_arguments.parse_args()
 
 
@@ -134,38 +146,43 @@ if prs_args.coordinates_file_group:
         coordinates_portal_file = PortalFiles.CoordinatesFile(coordinates_file,
                                               file_delimiter=prs_args.file_delimiter,
                                               expected_header=PortalFiles.c_COORDINATES_HEADER)
-        coordinates_portal_file.check()
+        if prs_args.check_files:
+            coordinates_portal_file.check()
         coordinates_files.append(coordinates_portal_file)
 
 if prs_args.metadata_file:
     metadata_portal_file = PortalFiles.MetadataFile(prs_args.metadata_file,
                                       file_delimiter=prs_args.file_delimiter)
-    metadata_portal_file.check()
+    if prs_args.check_files:
+        metadata_portal_file.check()
 
 if prs_args.expression_file:
     for expression_file in prs_args.expression_file:
         expression_portal_file = PortalFiles.ExpressionFile(expression_file,
                                             file_delimiter=prs_args.file_delimiter)
-        expression_portal_file.check()
+        if prs_args.check_files:
+            expression_portal_file.check()
         expression_portal_files.append(expression_portal_file)
 
 if prs_args.gene_list_group:
     for gene_list in prs_args.gene_list_group:
         gene_list_file = PortalFiles.GeneListFile(gene_list,
                                                   file_delimiter=prs_args.file_delimiter)
-        gene_list_file.check()
+        if prs_args.check_files:
+            gene_list_file.check()
         gene_list_files.append(gene_list_file)
 
-check_cell_names(expression_files=expression_portal_files,
-                 coordinates_file_group=coordinates_files,
-                 metadata_file=metadata_portal_file)
+if prs_args.check_files:
+    check_cell_names(expression_files=expression_portal_files,
+                     coordinates_file_group=coordinates_files,
+                     metadata_file=metadata_portal_file)
 
-check_gene_names(expression_files=expression_portal_files,
-                 gene_files=gene_list_files)
+    check_gene_names(expression_files=expression_portal_files,
+                     gene_files=gene_list_files)
 
 # Subsample based on metadatum
-if not prs_args.subsample is None or not prs_args.subsample_metadata is None:
-    if prs_args.subsample is None or prs_args.subsample_metadata is None:
+if not prs_args.subsample is None or not prs_args.subsample_metadata is None or not prs_args.subsample_list is None:
+    if (prs_args.subsample is None or prs_args.subsample_metadata is None) and prs_args.subsample_list is None:
         print("".join(["In order to subsample please provide both an amount",
                        "to subsample and a metadata to use in subsampling"]))
     else:
@@ -174,7 +191,14 @@ if not prs_args.subsample is None or not prs_args.subsample_metadata is None:
         sampled_coordinates_files = []
 
         print("Sampling cells.")
-        sampled_cells = metadata_portal_file.select_subsample_cells(prs_args.subsample,prs_args.subsample_metadata)
+        sampled_cells = []
+        if not prs_args.subsample_list is None:
+            with open(prs_args.subsample_list,'r') as gene_name_reader:
+                for line in csv.reader(gene_name_reader,delimiter=prs_args.file_delimiter):
+                    sampled_cells.extend(line)
+            print(sampled_cells)
+        else:
+            sampled_cells = metadata_portal_file.select_subsample_cells(prs_args.subsample,prs_args.subsample_metadata)
         if len(sampled_cells) < 1:
             print("No sampling occured.")
         else:
@@ -261,8 +285,9 @@ if prs_args.do_deidentify_cell:
             deid_expression_portal_file.check()
             deid_expression_portal_files.append(deid_expression_portal_file)
 
-    print("If multiple files are given, checking among files.")
-    check_cell_names(expression_files=deid_expression_portal_files,
-                     coordinates_file_group=deid_coordinates_files,
-                     metadata_file=deid_metadata_portal_file)
+    if prs_args.check_files:
+        print("If multiple files are given, checking among files.")
+        check_cell_names(expression_files=deid_expression_portal_files,
+                         coordinates_file_group=deid_coordinates_files,
+                         metadata_file=deid_metadata_portal_file)
 print("Completed.")
