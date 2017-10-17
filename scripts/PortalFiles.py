@@ -616,7 +616,7 @@ class MetadataFile(ParentPortalFile):
 
             # Calculate number of metadata to sample.
             number_metadata_values = len(rows_by_metadata.keys())
-            sample_amount = round(number/number_metadata_values)
+            sample_amount = int(round(number/number_metadata_values))
 
             # Sample cells within each metadata value
             for value_list in rows_by_metadata.values():
