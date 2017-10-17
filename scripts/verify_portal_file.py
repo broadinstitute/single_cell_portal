@@ -196,15 +196,17 @@ if not prs_args.subsample is None or not prs_args.subsample_metadata is None or 
             with open(prs_args.subsample_list,'r') as gene_name_reader:
                 for line in csv.reader(gene_name_reader,delimiter=prs_args.file_delimiter):
                     sampled_cells.extend(line)
-            print(sampled_cells)
         else:
             sampled_cells = metadata_portal_file.select_subsample_cells(prs_args.subsample,prs_args.subsample_metadata)
+            with open(metadata_portal_file.create_safe_file_name("sampled_cells.txt"),'wb') as write_sampled_cells:
+                csv.writer(write_sampled_cells).writerows([[cell] for cell in sampled_cells])
         if len(sampled_cells) < 1:
             print("No sampling occured.")
         else:
             print("Subsampling metadata file.")
-            metadata_portal_file_name = metadata_portal_file.subset_cells(sampled_cells)
-            metadata_portal_file = PortalFiles.MetadataFile(metadata_portal_file_name,
+            if prs_args.metadata_file:
+                metadata_portal_file_name = metadata_portal_file.subset_cells(sampled_cells)
+                metadata_portal_file = PortalFiles.MetadataFile(metadata_portal_file_name,
                                               file_delimiter=prs_args.file_delimiter)
             for expression_file in expression_portal_files:
                 print("Subsampling expression matrix: "+expression_file.file_name)
