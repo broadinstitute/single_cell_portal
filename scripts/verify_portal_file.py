@@ -132,6 +132,12 @@ prsr_arguments.add_argument("--no_checking",
                             action="store_false",
                             help="Turn off checking of files.")
 
+prsr_arguments.add_argument("--add_gene_keyword",
+                            default=False,
+                            dest="add_expression_header_keyword",
+                            action="store_true",
+                            help="Adds the keyword in the 0,0 element of expression matrices to a copy of the expression matrices and then exists.")
+
 prs_args = prsr_arguments.parse_args()
 
 
@@ -160,9 +166,15 @@ if prs_args.expression_file:
     for expression_file in prs_args.expression_file:
         expression_portal_file = PortalFiles.ExpressionFile(expression_file,
                                             file_delimiter=prs_args.file_delimiter)
-        if prs_args.check_files:
-            expression_portal_file.check()
-        expression_portal_files.append(expression_portal_file)
+
+        if prs_args.add_expression_header_keyword:
+            expression_portal_file.add_expression_header_keyword()
+        else:
+            if prs_args.check_files:
+                expression_portal_file.check()
+            expression_portal_files.append(expression_portal_file)
+    if prs_args.add_expression_header_keyword:
+        exit(0)
 
 if prs_args.gene_list_group:
     for gene_list in prs_args.gene_list_group:

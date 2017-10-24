@@ -82,7 +82,7 @@ class ParentPortalFile:
         fresh handle at the beginning of the file.
         Tested
         """
-        
+
         file_handle = None
         if ".gz" == os.path.splitext(self.file_name)[-1]:
             file_handle = gzip.open(self.file_name, 'rt')
@@ -242,10 +242,20 @@ class ParentPortalFile:
             return(None)
         return(new_file_name)
 
+    def get_write_handle(self,new_file_name):
+        """
+        Get a gzip or standard handle to a file with write functionality.
+        """
+
+        if os.path.splitext(self.file_name)[-1] == ".gz":
+            return(gzip.open(new_file_name,"wt"))
+        else:
+            return(open(new_file_name, 'wb'))
+
     def tag_file_name(self,tag):
         """
         Add a tag to a file name and return a safe version of the file name.
-        """        
+        """
 
         if not tag:
             return(None)
@@ -788,6 +798,27 @@ class ExpressionFile(ParentPortalFile):
                                   demo_file_link=demo_file_link)
         self.update_cell_names()
 
+    def add_expression_header_keyword(self):
+        """
+        If the matrix is lacking a 0,0 element, add it.
+        """
+
+        if self.header[0] != c_EXPRESSION_00_ELEMENT:
+            this_hndl = self.csv_handle
+            header = this_hndl.next()
+            row_1 = this_hndl.next()
+            if len(header) + 1 == len(row_1):
+                updated_file = self.create_safe_file_name(self.file_name)
+                print("Updating file to have the expression 0,0 element.")
+                print("Writing new file"+updated_file+", did not affect input files.")
+                self.header = [c_EXPRESSION_00_ELEMENT]+self.header
+                self.header_length = len(self.header)
+                with self.get_write_handle(updated_file) as hnld_correct:
+                    csv_correct = csv.writer(hnld_correct,delimiter=self.delimiter)
+                    csv_correct.writerow(self.header)
+                    csv_correct.writerow(row_1)
+                    csv_correct.writerows([row for row in this_hndl])
+
     def check_header(self):
         """
         Check header of the file. If an error occurs set the object
@@ -875,23 +906,13 @@ class ExpressionFile(ParentPortalFile):
             return(None)
 
         # Write deidentified file
-        if os.path.splitext(new_deid_file)[-1] == ".gz":
-            with gzip.open(new_deid_file, 'wt') as deid_file:
-                write_deid = self.csv_handle
-                new_file_lines.append(self.delimiter.join([update_names[name]
-                                      for name in next(write_deid)]))
-                for file_line in write_deid:
-                    new_file_lines.append(self.delimiter.join(file_line))
-                deid_file.write("\n".join(new_file_lines))
-
-        else:
-            with open(new_deid_file, 'w') as deid_file:
-                write_deid = self.csv_handle
-                new_file_lines.append(self.delimiter.join([update_names[name]
+        with self.get_write_handle(new_deid_file) as deid_file:
+            write_deid = self.csv_handle
+            new_file_lines.append(self.delimiter.join([update_names[name]
                                   for name in next(write_deid)]))
-                for file_line in write_deid:
-                    new_file_lines.append(self.delimiter.join(file_line))
-                deid_file.write("\n".join(new_file_lines))
+            for file_line in write_deid:
+                new_file_lines.append(self.delimiter.join(file_line))
+            deid_file.write("\n".join(new_file_lines))
 
         # Write mapping file
         with open(new_mapping_file, 'w') as map_file:
@@ -912,7 +933,7 @@ class ExpressionFile(ParentPortalFile):
 
     def subset_cells(self, keep_cells):
         """
-        Write a file reduce to just the given cells
+        Write a file reduced to just the given cells
         """
 
         keep_cells = set(keep_cells)
@@ -920,27 +941,18 @@ class ExpressionFile(ParentPortalFile):
         if subset_file_name is None:
             return(None)
 
-        if os.path.splitext(subset_file_name)[-1] == ".gz":
-            with gzip.open(subset_file_name,"wt") as file_writer:
-                csv_writer = csv.writer(file_writer, delimiter=self.delimiter)
-                check_handle = self.csv_handle
-                keep_cells.add(c_EXPRESSION_00_ELEMENT)
-                header = next(check_handle)
-                header_index = [cell in keep_cells for cell in header]
-                # Need to add the header rows
-                csv_writer.writerow(list(itertools.compress(header,header_index)))
-                for file_line in check_handle:
-                    csv_writer.writerow(list(itertools.compress(file_line,header_index)))
-        else:
-            with open(subset_file_name,"w") as file_writer:
-                csv_writer = csv.writer(file_writer, delimiter=self.delimiter)
-                check_handle = self.csv_handle
-                keep_cells.add(c_EXPRESSION_00_ELEMENT)
-                header = next(check_handle)
-                header_index = [cell in keep_cells for cell in header]
-                # Need to add the header rows
-                csv_writer.writerow(list(itertools.compress(header,header_index)))
-                for file_line in check_handle:
-                    csv_writer.writerow(list(itertools.compress(file_line,header_index)))
-
+        with self.get_write_handle(subset_file_name) as file_writer:
+            csv_writer = csv.writer(file_writer, delimiter=self.delimiter)
+            check_handle = self.csv_handle
+            keep_cells.add(c_EXPRESSION_00_ELEMENT)
+            header = next(check_handle)
+            row_1 = next(check_handle)
+            if (len(header) == (len(row_1) - 1)) and (c_EXPRESSION_00_ELEMENT not in header):
+                header = [c_EXPRESSION_00_ELEMENT] + header
+            header_index = [cell in keep_cells for cell in header]
+            # Need to add the header rows
+            csv_writer.writerow(list(itertools.compress(header,header_index)))
+            csv_writer.writerow(list(itertools.compress(row_1,header_index)))
+            for file_line in check_handle:
+                csv_writer.writerow(list(itertools.compress(file_line,header_index)))
         return(subset_file_name)
