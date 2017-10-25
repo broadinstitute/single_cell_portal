@@ -3,48 +3,78 @@
 """
 Generate data to simulate large study, e.g. to test download features.
 
-Example:
+This data is structurally similar to real data, but otherwise semantic and
+statistical noise.
+
+Examples:
+
+# Generate 3 files, 25 MB each
 python make_toy_data.py
+
+# Generate 6 files, 2 MB each
+python make_toy_data.py --num_files=3 --size_per_file=2_MB
+
+# Generate 1 file named AB_meso.txt, 2 GB in raw size, then compress it
+python make_toy_data.py --num_files=1 filename_leaf="meso" --size_per_file=2_GB --gzip
 """
 
 from random import randrange, uniform
 import argparse
 import multiprocessing
+import gzip
 
 args = argparse.ArgumentParser(
-    prog="make_toy_data.py",
-    description=(
-        "Generate data to simulate large study, e.g. to test download " +
-        "features."
-    ),
-    formatter_class=argparse.HelpFormatter
+    prog='make_toy_data.py',
+    description=__doc__,
+    formatter_class=argparse.RawDescriptionHelpFormatter
 )
 args.add_argument(
-    "--num_files", default=3, type=int, dest="num_files",
-    help="Number of toy data files output",
+    '--num_files', default=3, type=int, dest='num_files',
+    help='Number of toy data files to output'
 )
 args.add_argument(
-    "--num_cores", default=None, type=int, dest="num_cores",
-    help="Number of CPUs to use",
+    '--filename_leaf', default='signature_50000', dest='filename_leaf',
+    help=(
+        '"Leaf" to distinguish this file set from others.  ' +
+        'File naming pattern: AB_<leaf>.txt, CD_<leaf>.txt, ...'
+    )
+)
+args.add_argument(
+    '--size_per_file', default="25_MB", dest='size_per_file',
+    help=(
+        '<filesize_value>_<filesize_unit_symbol>, ' +
+        'e.g. 300_MB means 300 megabytes per file.'
+    )
+)
+args.add_argument(
+    '--gzip', action='store_true', dest='gzip_files',
+    help='Flag: compress files with gzip?'
+)
+args.add_argument(
+    '--num_cores', default=None, type=int, dest='num_cores',
+    help=(
+        'Number of CPUs to use.  ' +
+        'Defaults to number of CPUs in machine, minus 1 (if multicore).'
+    )
 )
 parsed_args = args.parse_args()
 num_files = parsed_args.num_files
+filename_leaf = parsed_args.filename_leaf
+size_per_file = parsed_args.size_per_file
+gzip_files = parsed_args.gzip_files
 num_cores = parsed_args.num_cores
 
 def get_signature_content(prefix):
     """
     Generates "signature" data, incorporating a given prefix.
 
-    This data is structurally similar to real data, but otherwise semantic
-    and statistical noise.
-
-    :param prefix: String of two uppercase letters, e.g. 'AB'
+    :param prefix: String of two uppercase letters, e.g. "AB"
     :return: String of signature content, ~25 MB in size
     """
 
     letters = ['A', 'B', 'C', 'D']
 
-    num_columns = 16584
+    num_columns = 16584 # ~1.5 KB per row, uncompressed
     num_rows = 80
 
     # Generate header
@@ -80,14 +110,41 @@ def pool_processing(prefix):
     """ Function called by each CPU core in our pool of available CPUs
     """
     content = get_signature_content(prefix)
-    file_name = prefix + '_toy_data_signature_50000.txt'
+    file_name = prefix + '_toy_data_' + filename_leaf + '.txt'
     with open(file_name, 'w') as f:
         f.write(content)
         print('Wrote ' + file_name)
 
+
+def parse_filesize_string(filesize_string):
+    """ Parses a file-size string for use in downstream math operations
+
+    Example:
+    parse_filesize_string('300_MB') # Returns [300.0, 1E6]
+
+    In the above case, 300 is an floating-point number representing filesize
+    value, and 1E6 (scientific notation for 1,000,000) is number of bytes
+    for the given SI prefix "M" (mega).
+
+    :param filesize_string: Filesize string, e.g. '300_MB'
+    :return: List of filesize_value and filesize_unit_multiplier
+    """
+    fss = filesize_string.split('_') # e.g. ['300', 'MB']
+    filesize_value = float(fss[0]) # e.g. 300.0
+    filesize_unit_symbol = fss[1][0] # e.g. 'M'
+
+    unit_multipliers = {
+        '': '1', 'K': '1E3', 'M': '1E6', 'G': '1E9', 'T': '1E12'
+    }
+    filesize_unit_multiplier = unit_multipliers[filesize_unit_symbol]
+
+    return filesize_value, filesize_unit_multiplier
+
+filesize_value, filesize_unit_symbol = parse_filesize_string(size_per_file)
+
 prefixes = []
 
-# Produce a number of text files, each ~25 MB
+# Available prefix characters for output toy data file names
 alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 for i in range(0, num_files):
     index = i*2
