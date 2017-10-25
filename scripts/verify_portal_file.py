@@ -44,7 +44,7 @@ def check_gene_names(expression_files=None,
                     print(" ".join(["Comparing gene names in",
                                     gene_list.file_name,
                                     "with the expression file:",
-                                    expression_file.file_name]))
+                                    exp_file.file_name]))
                     gene_list.compare_gene_names(exp_file)
 
 prsr_arguments = argparse.ArgumentParser(
