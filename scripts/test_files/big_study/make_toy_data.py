@@ -12,10 +12,10 @@ Examples:
 python make_toy_data.py
 
 # Generate 6 files, 2 MB each
-python make_toy_data.py --num_files=3 --size_per_file=2_MB
+python make_toy_data.py --num_files=6 --size_per_file=2_MB
 
 # Generate 1 file named AB_meso.txt, 2 GB in raw size, then compress it
-python make_toy_data.py --num_files=1 filename_leaf="meso" --size_per_file=2_GB --gzip
+python make_toy_data.py --num_files=1 --filename_leaf="meso" --size_per_file=2_GB --gzip
 """
 
 from random import randrange, uniform
@@ -116,9 +116,14 @@ def pool_processing(prefix):
     """
     content = get_signature_content(prefix)
     file_name = prefix + '_toy_data_' + filename_leaf + '.txt'
-    with open(file_name, 'w') as f:
-        f.write(content)
-        print('Wrote ' + file_name)
+    if gzip_files:
+        file_name += '.gz'
+        with gzip.open(file_name, 'wb') as f:
+            f.write(content)
+    else:
+        with open(file_name, 'w') as f:
+            f.write(content)
+    print('Wrote ' + file_name)
 
 
 def parse_filesize_string(filesize_string):
@@ -136,7 +141,7 @@ def parse_filesize_string(filesize_string):
     filesize_value = float(fss[0])  # e.g. 300.0
     filesize_unit_symbol = fss[1][0]  # e.g. 'M'
 
-    # Unit prefix: binary multiplier (in scientific notation)
+    # Unit prefix: binary multiplier (in scientific E-notation)
     unit_multipliers = {'': 1, 'K': 1.024E3, 'M': 1.024E6, 'G': 1.024E9, 'T': 1.024E12}
     filesize_unit_multiplier = unit_multipliers[filesize_unit_symbol]
 
