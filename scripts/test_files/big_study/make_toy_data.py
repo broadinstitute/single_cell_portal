@@ -10,10 +10,10 @@ Examples:
 python make_toy_data.py
 
 # Generate 6 files, 2 MB each
-python make_toy_data.py --num_files=6 --size_per_file=2_MB
+python make_toy_data.py --num_files=6 --size_per_file=2_MiB
 
 # Generate 1 file named AB_meso.txt, 2 GB in raw size, then compress it
-python make_toy_data.py --num_files=1 --filename_leaf="meso" --size_per_file=2_GB --gzip
+python make_toy_data.py --num_files=1 --filename_leaf="meso" --size_per_file=2_GiB --gzip
 """
 
 from random import randrange, uniform
@@ -38,13 +38,10 @@ args.add_argument(
     )
 )
 args.add_argument(
-    '--size_per_file', default="25_MB", dest='size_per_file',
+    '--size_per_file', default="25_MiB", dest='size_per_file',
     help=(
         '<filesize_value>_<filesize_unit_symbol>, ' +
-        'e.g. 300_MB means 300 megabytes per file.  ' +
-        'Note that we implicitly convert decimal units to binary units ' +
-        '(e.g. MB -> MiB) because 1) most filesystems misreport binary as ' +
-        'decimal and 2) understanding of binary prefixes is not widespread.'
+        'e.g. 300_MiB means 300 mebibytes per file.  '
     )
 )
 args.add_argument(
@@ -131,11 +128,7 @@ def pool_processing(prefix):
 def parse_filesize_string(filesize_string):
     """ Returns number of bytes specified in a human-readable filesize string
 
-    Note that we implicitly convert decimal units to binary units
-    (e.g. MB -> MiB) because 1) most filesystems misreport binary as decimal,
-    and 2) understanding of binary prefixes is not widespread.
-
-    :param filesize_string: Filesize string, e.g. '300_MB'
+    :param filesize_string: Filesize string, e.g. '300_MiB'
     :return: num_bytes: Integer number of bytes, e.g. 307200000
 
     """
