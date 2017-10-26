@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Generate data to simulate large study, e.g. to test download features.
 
@@ -79,7 +77,9 @@ def get_signature_content(prefix):
     letters = ['A', 'B', 'C', 'D']
 
     num_rows = 80
-    bytes_per_column = 1.315*1024  # ~1.315 KB (KiB) per column, uncompressed
+
+    bytes_per_column = 1.64*1024  # ~1.64 KB (KiB) per column, uncompressed
+
     num_columns = int(bytes_per_file/bytes_per_column)
 
     # Generate header
