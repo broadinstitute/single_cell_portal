@@ -78,7 +78,7 @@ def get_signature_content(prefix):
 
     num_rows = 80
 
-    bytes_per_column = 1.64*1024  # ~1.64 KB (KiB) per column, uncompressed
+    bytes_per_column = 1.65*1024  # ~1.65 KB (KiB) per column, uncompressed
 
     num_columns = int(bytes_per_file/bytes_per_column)
 
@@ -101,11 +101,13 @@ def get_signature_content(prefix):
 
     # Generate values below header
     values = ''
-    for i in range(1, num_rows):
+    for i in range(1, num_rows + 1):
         for j in range(1, num_columns):
             # Random number between 0 and -0.099999999999999
             random_small_float = uniform(0, 0.1) * -1
             values += str(random_small_float) + '\t'
+        values += '\n'
+
 
     signature_data = header + '\n' + values
     return signature_data
