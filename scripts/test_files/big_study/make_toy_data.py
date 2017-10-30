@@ -97,14 +97,16 @@ def get_signature_content(prefix):
         )
 
     # Generate values below header
-    values = ''
+    values = []
     for i in range(1, num_rows + 1):
+        value = ''
         for j in range(1, num_columns):
             # Random number between 0 and -0.099999999999999
             random_small_float = uniform(0, 0.1) * -1
-            values += str(random_small_float) + '\t'
-        values += '\n'
+            value += str(random_small_float) + '\t'
+        values.append(value)
 
+    values = '\n'.join(values)
 
     signature_data = header + '\n' + values
     return signature_data
