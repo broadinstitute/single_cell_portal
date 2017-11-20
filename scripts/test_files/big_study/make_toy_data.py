@@ -20,6 +20,8 @@ from random import randrange, uniform
 import argparse
 import multiprocessing
 import gzip
+import json
+from urllib import request, parse
 
 args = argparse.ArgumentParser(
     prog='make_toy_data.py',
@@ -63,6 +65,35 @@ gzip_files = parsed_args.gzip_files
 num_cores = parsed_args.num_cores
 
 
+def fetch_genes():
+    """
+    Retrieve names (i.e. HUGO symbols) for all human genes from NCBI
+
+    :return: List of gene symbols
+    """
+
+    genes = []
+
+    eutils = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
+    esearch = eutils + 'esearch.fcgi?retmode=json'
+    esummary = eutils + 'esummary.fcgi?retmode=json'
+    gene_search = esearch + '&db=gene&retmax=100&term="Homo%20sapiens"%5BOrganism%5D%20AND%20alive%5Bprop%5D'
+
+    response = request.urlopen(gene_search).read().decode()
+    gene_ids = json.loads(response)['esearchresult']['idlist']
+
+    gene_summary = esummary + '&db=gene&retmax=100&id=' + ','.join(gene_ids)
+    response = request.urlopen(gene_summary).read().decode()
+    results = json.loads(response)['result']
+    for gene_id in results:
+        if gene_id == 'uids':
+            continue
+        result = results[gene_id]
+        genes.append(result['name'])
+
+    return genes
+
+
 def get_signature_content(prefix):
     """
     Generates "signature" data, incorporating a given prefix.
@@ -100,7 +131,8 @@ def get_signature_content(prefix):
     values = []
     for i in range(1, num_rows + 1):
         value = ''
-        for j in range(1, num_columns):
+        value += genes[i] + '\t'  # First column is a gene symbol
+        for j in range(2, num_columns):
             # Random number between 0 and -0.099999999999999
             random_small_float = uniform(0, 0.1) * -1
             value += str(random_small_float) + '\t'
@@ -149,6 +181,8 @@ def parse_filesize_string(filesize_string):
 
 bytes_per_file = parse_filesize_string(size_per_file)
 prefixes = []
+
+genes = fetch_genes()
 
 # Available prefix characters for output toy data file names
 alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
