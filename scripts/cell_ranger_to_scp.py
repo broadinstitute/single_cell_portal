@@ -10,9 +10,10 @@ METADATA_GROUP ="group"
 
 class Matrix:
 
-    row_ids = {}
-    col_ids = {}
-    data = {}
+    def __init__(self):
+        self.row_ids = {}
+        self.col_ids = {}
+        self.data = {}
 
     def add_value(self, feature, column, value):
         if feature and column:
@@ -40,6 +41,7 @@ class Matrix:
         with open(file,'w') as file_open:
             file_writer = csv.writer(file_open, delimiter = "\t")
             file_writer.writerows(output)
+            print("Wrote file "+str(file))
         return(True)
 
 
@@ -179,11 +181,20 @@ prs_args = prsr_arguments.parse_args()
 
 ## Move files that the portal does not interact with to an known output space
 for file in prs_args.other:
-    try:
-        shutil.move(file, other_dir_name)
-    except:
-        print("Could not move file="+str(file))
-    exit(96)
+    if file:
+        if not prs_args.other_dir_name:
+            print("Other directory should be given if other files are specified.")
+            exit(89)
+        if not os.path.exists(prs_args.other_dir_name):
+            os.makedirs(prs_args.other_dir_name)
+        try:
+            shutil.move(file, prs_args.other_dir_name)
+
+            print("Moved "+str(file))
+        except EnvironmentError as err:
+            print("Could not move file="+str(file))
+            print(err)
+            exit(96)
 
 ## Make metadata matrix
 metadata = Matrix()
