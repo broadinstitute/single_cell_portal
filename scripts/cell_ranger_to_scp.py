@@ -6,7 +6,9 @@ import shutil
 CLUSTER_DELIM = ","
 METADATA_FILE_ID = "NAME"
 METADATA_TYPE = "TYPE"
-METADATA_GROUP ="group"
+METADATA_GROUP = "group"
+CLUSTER_GROUP = "numeric"
+CLUSTER_HEADERS = ['X', 'Y', 'Z']
 
 class Matrix:
 
@@ -26,7 +28,7 @@ class Matrix:
         else:
             return(False)
 
-    def write_to_file(self, file):
+    def write_to_file(self, file, file_type='metadata'):
         if os.path.exists(file):
             print("File already exists, will not write over files. File:"+str(file))
             return(False)
@@ -34,8 +36,16 @@ class Matrix:
         rows = [i for i in self.row_ids.keys()]
 
         output = []
-        output.append([METADATA_FILE_ID] + cols)
-        output.append([METADATA_TYPE] + [METADATA_GROUP]*len(cols))
+        if file_type == 'metadata':
+            output.append([METADATA_FILE_ID] + cols)
+            output.append([METADATA_TYPE] + [METADATA_GROUP]*len(cols))
+        elif file_type == 'cluster':
+            if len(cols) > 3:
+                print("Cannot create a cluster file with more than 3 dimensions.")
+                return(False)
+            output.append([METADATA_FILE_ID] + CLUSTER_HEADERS[:len(cols)])
+            output.append([METADATA_TYPE] + [CLUSTER_GROUP] * len(cols))
+
         for row in rows:
             output.append([row] + [ self.data[col_id][row] for col_id in cols ])
         with open(file,'w') as file_open:
@@ -62,7 +72,6 @@ def add_metadata_file(file, num_col, matrix, key=""):
             for col_id in range(1,num_col+1):
                 matrix.add_value(line[0],headers[col_id],line[col_id])
     return(True)
-
 
 prsr_arguments = argparse.ArgumentParser(
     prog="cell_ranger_to_scp.py",
@@ -226,7 +235,7 @@ if not prs_args.pca is None:
     if not success:
         print("Failed to add " + str(prs_args.pca))
         exit(98)
-    cluster.write_to_file(prs_args.pca_file_name)
+    cluster.write_to_file(prs_args.pca_file_name, 'cluster')
 
 if not prs_args.tsne is None:
     if prs_args.tsne_file_name is None:
@@ -237,4 +246,4 @@ if not prs_args.tsne is None:
     if not success:
         print("Failed to add " + str(prs_args.tsne))
         exit(97)
-    cluster.write_to_file(prs_args.tsne_file_name)
+    cluster.write_to_file(prs_args.tsne_file_name, 'cluster')
