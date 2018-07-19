@@ -1,3 +1,6 @@
+"""Convert Cell Ranger output to SCP file formats
+"""
+
 import argparse
 import csv
 import os
@@ -59,7 +62,7 @@ class Matrix:
 def add_metadata_file(file, num_col, matrix, key=''):
     if not file or not os.path.exists(file):
         print('Could not find file:' + str(file))
-        return(False)
+        return False
     with open(file, 'r') as open_file:
         contents = csv.reader(open_file, delimiter=CLUSTER_DELIM)
         headers = next(contents)
@@ -70,16 +73,17 @@ def add_metadata_file(file, num_col, matrix, key=''):
             num_col = len(headers) - 1
             print('Only storing ' + str(num_col) + ' columns.')
         for line in contents:
-            for col_id in range(1,num_col+1):
+            for col_id in range(1, num_col + 1):
                 matrix.add_value(line[0], headers[col_id], line[col_id])
     return True
 
 
 prsr_arguments = argparse.ArgumentParser(
     prog='cell_ranger_to_scp.py',
-    description='Convert Cell Ranger output to SCP file formats',
+    description=__doc__,
     conflict_handler='resolve',
-    formatter_class=argparse.HelpFormatter)
+    formatter_class=argparse.RawDescriptionHelpFormatter
+    )
 
 # New file names
 prsr_arguments.add_argument('--tsne_coordinates_file',
