@@ -10,6 +10,7 @@ METADATA_GROUP = "group"
 CLUSTER_GROUP = "numeric"
 CLUSTER_HEADERS = ['X', 'Y', 'Z']
 
+
 class Matrix:
 
     def __init__(self):
@@ -31,7 +32,7 @@ class Matrix:
     def write_to_file(self, file, file_type='metadata'):
         if os.path.exists(file):
             print("File already exists, will not write over files. File:" + str(file))
-            return(False)
+            return False
         cols = [i for i in self.col_ids.keys()]
         rows = [i for i in self.row_ids.keys()]
 
@@ -42,7 +43,7 @@ class Matrix:
         elif file_type == 'cluster':
             if len(cols) > 3:
                 print("Cannot create a cluster file with more than 3 dimensions.")
-                return(False)
+                return False
             output.append([METADATA_FILE_ID] + CLUSTER_HEADERS[:len(cols)])
             output.append([METADATA_TYPE] + [CLUSTER_GROUP] * len(cols))
 
@@ -118,10 +119,6 @@ prsr_arguments.add_argument("--kmeans_3",
                             dest="kmeans_3",
                             help="outs/analysis/clustering/kmeans_3_clusters/clusters.csv file")
 
-prsr_arguments.add_argument("--kmeans_3",
-                            dest="kmeans_3",
-                            help="outs/analysis/clustering/kmeans_3_clusters/clusters.csv file")
-
 prsr_arguments.add_argument("--kmeans_4",
                             dest="kmeans_4",
                             help="outs/analysis/clustering/kmeans_4_clusters/clusters.csv file")
@@ -154,7 +151,9 @@ prsr_arguments.add_argument("--other_files",
                             default = [],
                             dest="other",
                             nargs="*",
-                            help="Files that are not asked for specifically in this argument parser but are output and should be organized by this script.")
+                            help=("Files that are not asked for specifically in this argument parser but are output " +
+                                  "and should be organized by this script."))
+
 
 prs_args = prsr_arguments.parse_args()
 
@@ -169,7 +168,7 @@ for file in prs_args.other:
         try:
             shutil.move(file, prs_args.other_dir_name)
 
-            print("Moved "+str(file))
+            print("Moved " + str(file))
         except EnvironmentError as err:
             print("Could not move file=" + str(file))
             print(err)
@@ -193,7 +192,6 @@ if len(metadata_files) > 0:
             print("Failed to add " + str(metadata_file))
             exit(99)
     metadata.write_to_file(prs_args.metadata_file_name)
-metdata = None
 
 # Make cluster files
 if prs_args.pca is not None:
