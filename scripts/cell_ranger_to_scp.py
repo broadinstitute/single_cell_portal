@@ -24,13 +24,13 @@ class Matrix:
             if column not in self.col_ids:
                 self.col_ids[column] = None
             self.data.setdefault(column, {})[feature] = value
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def write_to_file(self, file, file_type='metadata'):
         if os.path.exists(file):
-            print("File already exists, will not write over files. File:"+str(file))
+            print("File already exists, will not write over files. File:" + str(file))
             return(False)
         cols = [i for i in self.col_ids.keys()]
         rows = [i for i in self.row_ids.keys()]
@@ -38,7 +38,7 @@ class Matrix:
         output = []
         if file_type == 'metadata':
             output.append([METADATA_FILE_ID] + cols)
-            output.append([METADATA_TYPE] + [METADATA_GROUP]*len(cols))
+            output.append([METADATA_TYPE] + [METADATA_GROUP] * len(cols))
         elif file_type == 'cluster':
             if len(cols) > 3:
                 print("Cannot create a cluster file with more than 3 dimensions.")
@@ -47,31 +47,32 @@ class Matrix:
             output.append([METADATA_TYPE] + [CLUSTER_GROUP] * len(cols))
 
         for row in rows:
-            output.append([row] + [ self.data[col_id][row] for col_id in cols ])
+            output.append([row] + [self.data[col_id][row] for col_id in cols])
         with open(file,'w') as file_open:
-            file_writer = csv.writer(file_open, delimiter = "\t")
+            file_writer = csv.writer(file_open, delimiter="\t")
             file_writer.writerows(output)
-            print("Wrote file "+str(file))
-        return(True)
+            print("Wrote file " + str(file))
+        return True
 
 
 def add_metadata_file(file, num_col, matrix, key=""):
-    if  not file or not os.path.exists(file):
-        print("Could not find file:"+str(file))
+    if not file or not os.path.exists(file):
+        print("Could not find file:" + str(file))
         return(False)
-    with open(file,'r') as open_file:
+    with open(file, 'r') as open_file:
         contents = csv.reader(open_file, delimiter=CLUSTER_DELIM)
         headers = next(contents)
         if key:
             headers = [key+"_"+header for header in headers]
         if num_col > len(headers)+1:
-            print("This file does not have "+str(num_col+1)+" columns.")
+            print("This file does not have " + str(num_col + 1) + " columns.")
             num_col = len(headers) - 1
-            print("Only storing "+str(num_col)+" columns.")
+            print("Only storing " + str(num_col) + " columns.")
         for line in contents:
             for col_id in range(1,num_col+1):
-                matrix.add_value(line[0],headers[col_id],line[col_id])
-    return(True)
+                matrix.add_value(line[0], headers[col_id], line[col_id])
+    return True
+
 
 prsr_arguments = argparse.ArgumentParser(
     prog="cell_ranger_to_scp.py",
@@ -96,7 +97,7 @@ prsr_arguments.add_argument("--other_directory",
                             dest="other_dir_name",
                             help="The directory to put other files in.")
 
-## Metadata
+# Metadata
 prsr_arguments.add_argument("--tsne",
                             dest="tsne",
                             help="outs/analysis/tsne/2_components/projection.csv file")
@@ -157,7 +158,7 @@ prsr_arguments.add_argument("--other_files",
 
 prs_args = prsr_arguments.parse_args()
 
-## Move files that the portal does not interact with to an known output space
+# Move files that the portal does not interact with to an known output space
 for file in prs_args.other:
     if file:
         if not prs_args.other_dir_name:
@@ -170,18 +171,18 @@ for file in prs_args.other:
 
             print("Moved "+str(file))
         except EnvironmentError as err:
-            print("Could not move file="+str(file))
+            print("Could not move file=" + str(file))
             print(err)
             exit(96)
 
-## Make metadata matrix
+# Make metadata matrix
 metadata = Matrix()
-metadata_files = [[prs_args.graphclust,"graph"], [prs_args.kmeans_2,"kmeans2"],
-                  [prs_args.kmeans_3,"kmeans3"], [prs_args.kmeans_4,"kmeans4"],
-                  [prs_args.kmeans_5,"kmeans5"], [prs_args.kmeans_6,"kmeans6"],
-                  [prs_args.kmeans_7,"kmeans7"], [prs_args.kmeans_8,"kmeans8"],
-                  [prs_args.kmeans_9,"kmeans9"], [prs_args.kmeans_10,"kmeans10"]]
-metadata_files = [ f for f in metadata_files if f[0] is not None ]
+metadata_files = [[prs_args.graphclust, "graph"], [prs_args.kmeans_2, "kmeans2"],
+                  [prs_args.kmeans_3, "kmeans3"], [prs_args.kmeans_4, "kmeans4"],
+                  [prs_args.kmeans_5, "kmeans5"], [prs_args.kmeans_6, "kmeans6"],
+                  [prs_args.kmeans_7, "kmeans7"], [prs_args.kmeans_8, "kmeans8"],
+                  [prs_args.kmeans_9, "kmeans9"], [prs_args.kmeans_10, "kmeans10"]]
+metadata_files = [f for f in metadata_files if f[0] is not None]
 if len(metadata_files) > 0:
     if prs_args.metadata_file_name is None:
         print("Please provide a metadata file to write.")
@@ -189,13 +190,13 @@ if len(metadata_files) > 0:
     for metadata_file, file_key in metadata_files:
         success = add_metadata_file(metadata_file, 1, metadata, file_key)
         if not success:
-            print("Failed to add "+str(metadata_file))
+            print("Failed to add " + str(metadata_file))
             exit(99)
     metadata.write_to_file(prs_args.metadata_file_name)
 metdata = None
 
-## Make cluster files
-if not prs_args.pca is None:
+# Make cluster files
+if prs_args.pca is not None:
     if prs_args.pca_file_name is None:
         print("Please provide a file to write the pca projections")
         exit(90)
@@ -206,7 +207,7 @@ if not prs_args.pca is None:
         exit(98)
     cluster.write_to_file(prs_args.pca_file_name, 'cluster')
 
-if not prs_args.tsne is None:
+if prs_args.tsne is not None:
     if prs_args.tsne_file_name is None:
         print("Please provide a file to write the tSNE projections.")
         exit(91)
