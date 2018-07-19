@@ -82,108 +82,90 @@ prsr_arguments = argparse.ArgumentParser(
 # New file names
 prsr_arguments.add_argument("--tsne_coordinates_file",
                             dest="tsne_file_name",
-                            type=str,
                             help="tSNE-base coordinates file")
 
 prsr_arguments.add_argument("--pca_coordinates_file",
                             dest="pca_file_name",
-                            type=str,
                             help="pca-base coordinates file")
 
 prsr_arguments.add_argument("--metadata_file",
                             dest="metadata_file_name",
-                            type=str,
                             help="metadata portal file")
 
 prsr_arguments.add_argument("--other_directory",
                             dest="other_dir_name",
-                            type=str,
                             help="The directory to put other files in.")
 
 ## Metadata
 prsr_arguments.add_argument("--tsne",
                             default=None,
                             dest="tsne",
-                            type=str,
                             help="outs/analysis/tsne/2_components/projection.csv file")
 
 prsr_arguments.add_argument("--pca",
                             default=None,
                             dest="pca",
-                            type=str,
                             help="outs/analysis/pca/10_components/projection.csv file")
 
 prsr_arguments.add_argument("--graphclust",
                             default=None,
                             dest="graphclust",
-                            type=str,
                             help="outs/analysis/clustering/graphclust/clusters.csv file")
 
 prsr_arguments.add_argument("--kmeans_2",
                             default=None,
                             dest="kmeans_2",
-                            type=str,
                             help="outs/analysis/clustering/kmeans_2_clusters/clusters.csv file")
 
 prsr_arguments.add_argument("--kmeans_3",
                             default=None,
                             dest="kmeans_3",
-                            type=str,
                             help="outs/analysis/clustering/kmeans_3_clusters/clusters.csv file")
 
 prsr_arguments.add_argument("--kmeans_3",
                             default=None,
                             dest="kmeans_3",
-                            type=str,
                             help="outs/analysis/clustering/kmeans_3_clusters/clusters.csv file")
 
 prsr_arguments.add_argument("--kmeans_4",
                             default=None,
                             dest="kmeans_4",
-                            type=str,
                             help="outs/analysis/clustering/kmeans_4_clusters/clusters.csv file")
 
 prsr_arguments.add_argument("--kmeans_5",
                             default=None,
                             dest="kmeans_5",
-                            type=str,
                             help="outs/analysis/clustering/kmeans_5_clusters/clusters.csv file")
 
 prsr_arguments.add_argument("--kmeans_6",
                             default=None,
                             dest="kmeans_6",
-                            type=str,
                             help="outs/analysis/clustering/kmeans_6_clusters/clusters.csv file")
 
 prsr_arguments.add_argument("--kmeans_7",
                             default=None,
                             dest="kmeans_7",
-                            type=str,
                             help="outs/analysis/clustering/kmeans_7_clusters/clusters.csv file")
 
 prsr_arguments.add_argument("--kmeans_8",
                             default=None,
                             dest="kmeans_8",
-                            type=str,
                             help="outs/analysis/clustering/kmeans_8_clusters/clusters.csv file")
 
 prsr_arguments.add_argument("--kmeans_9",
                             default=None,
                             dest="kmeans_9",
-                            type=str,
                             help="outs/analysis/clustering/kmeans_9_clusters/clusters.csv file")
 
 prsr_arguments.add_argument("--kmeans_10",
                             default=None,
                             dest="kmeans_10",
-                            type=str,
                             help="outs/analysis/clustering/kmeans_10_clusters/clusters.csv file")
 
 prsr_arguments.add_argument("--other_files",
                             default = [],
                             dest="other",
                             nargs="*",
-                            type=str,
                             help="Files that are not asked for specifically in this argument parser but are output and should be organized by this script.")
 
 prs_args = prsr_arguments.parse_args()
