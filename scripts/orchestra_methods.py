@@ -173,15 +173,17 @@ def orchestra_analysis_csv(masterCsv, h5s):
     df = pd.read_csv(masterCsv,header=0)
     # We don't need Flowcell, Lane or Index for Bo's Wdl
     df = df.drop(columns = ["Flowcell", "Lane", "Index"])
-    # Sort alphabetically- This may not be the best way to ensure we are matching h5s correctely
-    h5s = sorted(h5s)
-    sampleIds = set(df['Sample'].tolist())
-    #TODO Parse h5s to make sure it's matching the right one-- I think this is a good way to do it
+    # Sort by Sample Name
     df = df.sort_values(by=["Sample"]).drop_duplicates(subset=["Sample"])
-    # This is so ugly, replace cromwell root of local input files with gsurls
-    h5s = [h5.replace("/cromwell_root/", "gs://") for h5 in h5s]
+    sorted_h5s = []
+    # TODO this is more robust but still not good enough
+    for sample in df["Sample"]:
+        for h5 in h5s:
+            if sample in h5:
+                sorted_h5s = sorted_h5s + [h5.replace("/cromwell_root/", "gs://")]
+                break
     # Add the location column
-    df["Location"] = h5s
+    df["Location"] = sorted_h5s
     # Save the csv, output it
     df.to_csv("analysis.csv", index=False)
 
