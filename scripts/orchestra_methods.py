@@ -1,7 +1,32 @@
 #! /usr/bin/env python
 """Python Functions for CellRanger BCL->Fastq->SCP Pipeline
-    Arguments:
-    -c= command to be run
+Arguments:
+-c command to be run:
+    count:
+       -id, --sampleId  Id of sample being run
+       -cf, --commaFastqs  Comma seperated String with list of fastq directories
+       -fs, --fastqs  List of fastq directories
+       -E, --expectCells  Number of cells to expect
+       -F --forceCells  Force number of cells
+       -C, --chemistry  Chemistry of fastqs
+       -S, --secondary  Run cellranger secondary analysis
+       -tf, --transcriptome  Transcriptome file
+       -dfc, --doForceCells  Boolean to use force cells
+    mkfastq:
+       -b, --bcl  Location of bcl
+       -M, --masterCsv  Master Csv file containing maps of information
+       -O, --output_directory  List of fastq directories
+    parse:
+       -M, --masterCsv  Master Csv file containing maps of information
+    analysis:
+       -M, --masterCsv  Master Csv file containing maps of information
+       -hs, --h5s  H5 output files
+    filter:
+       -M, --masterCsv  Master Csv file containing maps of information
+       -p, --paths  Paths to fastq directories
+       -S, --sampleIds  help='List of sample names
+       -t, --transMap  CSV map of reference names to gsurls
+
 """
 # Imports
 import os
@@ -49,7 +74,7 @@ def cellranger_count(sample_id, transcriptome, comma_fastqs='',fastqs='', expect
 
     # create a unique list (set) of fastq directories and download them
     dirs = set()
-    if commaFastqs is not '':
+    if comma_fastqs is not '':
         fastqs = comma_fastqs.split(',')
     for fastq, i in enumerate(fastqs):
         # download the fastqs to a unique location and add that location to set
@@ -69,9 +94,9 @@ def cellranger_count(sample_id, transcriptome, comma_fastqs='',fastqs='', expect
     call_args.append('--fastqs=' + ','.join(dirs))
     if secondary is not 'true':
         call_args.append('--nosecondary')
-    if (forceCells is not '') and (do_force_cells is 'true'):
+    if (force_cells is not '') and (do_force_cells is 'true'):
         call_args.append('--force-cells=' + str(force_cells))
-    elif expectCells is not '':
+    elif expect_cells is not '':
         call_args.append('--expect-cells=' + str(expect_cells))
     if chemistry is not '':
         call_args.append('--chemistry=' + chemistry)
@@ -235,7 +260,7 @@ def __main__(argv):
     # the first command, -c, tells us which arguments we need to check for next, and which function we are going to call
     command = argv[1].replace('-c=', '')
     # create the argument parser
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
     if command == 'count':
         # CellRanger count method
         # add arguments
@@ -256,7 +281,6 @@ def __main__(argv):
     elif command == 'mkfastq':
         # CellRanger mkfastq method
         # add arguments
-        parser = argparse.ArgumentParser()
         parser.add_argument('--bcl', '-b', help='Location of bcl')
         parser.add_argument('--masterCsv', '-M', help='Master Csv file containing maps of information', default='')
         parser.add_argument('--output_directory', '-O', help='List of fastq directories', default='')
@@ -268,7 +292,6 @@ def __main__(argv):
     elif command == 'parse':
         # Orchestra parseCsv Method
         # add arguments
-        parser = argparse.ArgumentParser()
         parser.add_argument('--masterCsv', '-M', help='Master Csv file containing maps of information', default='')
         parser.add_argument('--command', '-c', help='Command to run', default = '')
         
@@ -278,7 +301,6 @@ def __main__(argv):
     elif command == 'analysis':
         # Orchestra generate analysis csv method
         # add arguments
-        parser = argparse.ArgumentParser()
         parser.add_argument('--masterCsv', '-M', help='Master Csv file containing maps of information', default='')
         parser.add_argument('--h5s', '-hs', help='H5 output files', nargs='+', default=[''])
         parser.add_argument('--command', '-c', help='Command to run', default = '')
@@ -289,7 +311,6 @@ def __main__(argv):
     elif command == 'filter':
         # Orchestra filter method
         # add arguments
-        parser = argparse.ArgumentParser()
         parser.add_argument('--masterCsv', '-M', help='Master Csv file containing maps of information', default='')
         parser.add_argument('--paths', '-p', help='Paths to fastq directories', nargs='+', default=[''])
         parser.add_argument('--sampleIds', '-S', help='List of sample names', nargs='+', default=[''])
@@ -299,10 +320,7 @@ def __main__(argv):
         # call the method with parsed args
         args = parser.parse_args()
         orchestra_filter(master_csv = args.masterCsv, paths = args.paths, sample_ids = args.sampleIds, trans_map = args.transMap)
-    else:
-        # Incorrectely formatted input
-        print('Error', command, 'Is not a registered command')
-
+    args = parser.parse_args()
 # python default
 if __name__ == '__main__':
     __main__(sys.argv)
