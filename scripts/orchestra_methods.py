@@ -76,7 +76,7 @@ def cellranger_count(sample_id, transcriptome, comma_fastqs='',fastqs='', expect
     dirs = set()
     if comma_fastqs is not '':
         fastqs = comma_fastqs.split(',')
-    for fastq, i in enumerate(fastqs):
+    for i, fastq in enumerate(fastqs):
         # download the fastqs to a unique location and add that location to set
         os.mkdir(str(i))
         call(['gsutil', '-q', '-m', 'cp', '-r', fastq, str(i)])
