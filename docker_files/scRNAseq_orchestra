@@ -1,0 +1,11 @@
+# Single Cell Portal scRNA-Seq Orchestra
+FROM regevlab/cellranger-2.1.1
+
+RUN mkdir -p /software/scripts
+ADD https://raw.githubusercontent.com/broadinstitute/single_cell_portal/master/scripts/orchestra_methods.py /software/scripts/orchestra_methods.py
+
+RUN chmod a+x /software/scripts/orchestra_methods.py
+
+ENV PATH "$PATH:/software/scripts"
+
+RUN apt-get -y update && apt-get -y install procps
