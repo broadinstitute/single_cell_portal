@@ -10,11 +10,11 @@ task TaskName {
 	    chmod u+x ${monitoringScript}
 	    ${monitoringScript} > monitoring.log &
 
-	    original_task commands...
+	    original task commands...
 	}
 
 	output {
-		...
+		original task outputs...
 		File monitoringLog = "monitoring.log"
 	}
 ~~~~
