@@ -141,9 +141,9 @@ def cellranger_mkfastq(bcl, master_csv, output_directory, samples_csv = 'sample.
     call(call_args)
 
     # move the fastqs to the output directory
-    call(['gsutil', '-q', '-m', 'rsync', '-r', '-d', os.path.join('fastqs', flowcell), output_directory])
+    call(['gsutil', '-q', '-m', 'mv', os.path.join('fastqs', flowcell), output_directory])
     # move and rename the qc summary file to fastq output directory, rename it so it doesn't get rewritten if there are multiple bcls
-    call(['gsutil', '-q', '-m', 'rsync', '-r', '-d', os.path.join(flowcell,'outs','qc_summary.json'), os.path.join(output_directory,flowcell + '_qc_summary.json')])
+    call(['gsutil', '-q', '-m', 'mv', os.path.join(flowcell,'outs','qc_summary.json'), os.path.join(output_directory,flowcell + '_qc_summary.json')])
     
     # write the path of fastqs for cromwell
     with open('path.txt', 'w')  as file:
@@ -151,7 +151,7 @@ def cellranger_mkfastq(bcl, master_csv, output_directory, samples_csv = 'sample.
 
     # move the undetermined fastqs over to the bucket
     try:
-        call(['gsutil', '-q', '-m', 'rsync', '-r', '-d', os.path.join('fastqs', 'Undetermined_*'), os.path.join(output_directory, flowcell + '_Undetermined', '')])
+        call(['gsutil', '-q', '-m', 'mv', os.path.join('fastqs', 'Undetermined_*'), os.path.join(output_directory, flowcell + '_Undetermined', '')])
         # write the undetermined fastqs path for cromwell
         with open('undetermined.txt', 'w') as file:
             file.write(os.path.join(output_directory, flowcell + '_Undetermined', ''))
