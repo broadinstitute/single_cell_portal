@@ -1,3 +1,6 @@
+"""Sort sparse expression matrix files by gene, barcode
+"""
+
 import pandas as pd
 import sys
 import argparse
