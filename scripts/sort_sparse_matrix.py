@@ -26,7 +26,7 @@ def sort_sparse_matrix(matrix_file, sorted_matrix_file=None):
         output_name = "gene_sorted-" + matrix_file
     # read sparse matrix
     print("Reading Sparse Matrix")
-    df = pd.read_table(matrix_file, sep=" ", header=3, names=['barcodes', 'genes', 'expr'])
+    df = pd.read_table(matrix_file, sep=" ", header=3, names=['genes', 'barcodes', 'expr'])
     # sort sparse matrix
     print("Sorting Sparse Matrix")
     df = df.sort_values(by=['genes', 'barcodes'])
