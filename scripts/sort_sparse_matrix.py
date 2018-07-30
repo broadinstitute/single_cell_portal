@@ -26,17 +26,24 @@ def sort_sparse_matrix(matrix_file, sorted_matrix_file=None):
 		output_name = "gene_sorted-" + matrix_file
 	# read sparse matrix
 	print("Reading Sparse Matrix")
+	headers = []
 	with open(matrix_file) as matrix:
-		head = [next(matrix) for x in range(3)]
-		df = pd.read_table(matrix, sep=" ", header=3, names=['genes', 'barcodes', 'expr'])
+		line = next(matrix)
+		i = 1
+		while line.startswith("%"):
+			headers = headers + [line]
+			line = next(matrix)
+			i += 1
+		headers = headers + [line]
+		df = pd.read_table(matrix, sep=" ", header=i, names=['genes', 'barcodes', 'expr'])
 	# sort sparse matrix
 	print("Sorting Sparse Matrix")
 	df = df.sort_values(by=['genes', 'barcodes'])
 	# save sparse matrix
 	print("Saving Sparse Matrix to:", output_name)
 	with open(output_name, "w+") as output:
-		print(''.join(head))
-		output.write(''.join(head))
+		print(''.join(headers))
+		output.write(''.join(headers))
 	df.to_csv(output_name, sep=' ', index=False, header=0, mode="a")
 
 
