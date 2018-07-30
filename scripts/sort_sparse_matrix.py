@@ -1,7 +1,4 @@
-"""Python Function to sort sparse expression matrix files
-Arguments:
-   matrix_file  sparse matrix file to sort
-   -o, --sorted_matrix_file  optional output path of sorted file, else "gene_sorted-" + matrix_file
+"""Python Function to sort sparse expression matrix files by gene, barcode
 """
 
 import pandas as pd
@@ -59,6 +56,7 @@ def __main__(argv):
 	# call sort_sparse_matrix with parsed args
 	args = parser.parse_args()
 	sort_sparse_matrix(matrix_file=args.matrix_file, sorted_matrix_file=args.sorted_matrix_file)
+	
 # python default
 if __name__ == '__main__':
 	__main__(sys.argv)
