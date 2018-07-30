@@ -1332,7 +1332,7 @@ class SortSparseMatrixTester(unittest.TestCase):
         SortSparseMatrix.sort_sparse_matrix(os.path.join("test_files", "test_sparse_matrix.mtx"), "sorted_test.mtx")
         
         self.assertTrue(files_are_equivalent(os.path.join("test_files", "gene_sorted-test_sparse_matrix.mtx"), "sorted_test.mtx"),
-                        "Should have reached an error state.")
+                        "Generated file and validation file are not equal.")
 
 # Creates a suite of tests
 def suite():
