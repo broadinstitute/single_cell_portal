@@ -4,7 +4,6 @@ Arguments:
    -o, --sorted_matrix_file  optional output path of sorted file, else "gene_sorted-" + matrix_file
 """
 
-# Imports
 import pandas as pd
 import sys
 import argparse
@@ -54,7 +53,7 @@ def __main__(argv):
 	"""
 	# create the argument parser
 	parser = argparse.ArgumentParser()
-	# add argumnets
+	# add arguments
 	parser.add_argument('matrix_file', help='Sparse Sparse Matrix file')
 	parser.add_argument('--sorted_matrix_file', '-o', help='Gene sorted sparse matrix file path', default=None)
 	# call sort_sparse_matrix with parsed args
