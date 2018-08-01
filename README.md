@@ -12,6 +12,7 @@ For tutorials and descriptions of files please go to: https://github.com/broadin
 
 ## Convenience Scripts
 Scripts to help when working with data files for the portal are made available in this repo and require __python 3.X__. Using these scripts to verify the format of input files can be found at https://github.com/broadinstitute/single_cell_portal/wiki/File-Definitions .
+We recommend using [`virtualenv`](https://virtualenv.pypa.io/en/stable/) for managing package dependencies, which are listed in `requirements.txt`
 
 To download:   
 use the download button at https://github.com/broadinstitute/single_cell_portal   
