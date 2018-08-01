@@ -32,7 +32,7 @@ def sort_sparse_matrix(matrix_file, sorted_matrix_file=None):
             headers = headers + [line]
             line = next(matrix)
         headers = headers + [line]
-    df = pd.read_table(matrix_file, sep="\s+", header=len(headers)-1, names=['genes', 'barcodes', 'expr'])
+        df = pd.read_table(matrix, sep="\s+", names=['genes', 'barcodes', 'expr'])
     # sort sparse matrix
     print("Sorting Sparse Matrix")
     df = df.sort_values(by=['genes', 'barcodes'])
