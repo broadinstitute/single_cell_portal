@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 
 import os
 import PortalFiles
+import SortSparseMatrix
 import unittest
 
 __author__ = "Timothy Tickle"
@@ -20,7 +21,7 @@ __status__ = "Development"
 
 def files_are_equivalent(file_path_1, file_path_2):
     """
-    Returns if the contents of to files are the same.
+    Returns if the contents of two files are the same.
     Errors if the files are missing.
     * str_file_path_1 : String
                         Path of the first of the files to compare to each other
@@ -1319,6 +1320,20 @@ class GeneListFileTester(unittest.TestCase):
         self.assertTrue(truth_str == received_str,
                         "Did not receive the expected labels.")
 
+class SortSparseMatrixTester(unittest.TestCase):
+    """
+    Tests the Sparse Matrix Sorting function.
+    """
+
+    def test_check_sort_sparse_matrix(self):
+        """
+        Check that the sparse matrix sorting function outputs a correctely sorted file.
+        """
+        SortSparseMatrix.sort_sparse_matrix(os.path.join("test_files", "test_sparse_matrix.mtx"), "sorted_test.mtx")
+        
+        self.assertTrue(files_are_equivalent(os.path.join("test_files", "gene_sorted-test_sparse_matrix.mtx"), "sorted_test.mtx"),
+                        "Generated file and validation file are not equal.")
+
 # Creates a suite of tests
 def suite():
     loader = unittest.TestLoader()
@@ -1326,4 +1341,5 @@ def suite():
     tests.addTests(loader.loadTestsFromTestCase(ExpressionFileTester))
     tests.addTests(loader.loadTestsFromTestCase(MetadataFileTester))
     tests.addTests(loader.loadTestsFromTestCase(GeneListFileTester))
+    tests.addTests(loader.loadTestsFromTestCase(SortSparseMatrixTester))
     return(tests)
