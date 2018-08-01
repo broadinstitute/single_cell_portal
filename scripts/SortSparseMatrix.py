@@ -3,6 +3,7 @@
 """
 
 import pandas as pd
+import os
 import sys
 import argparse
 
@@ -20,26 +21,24 @@ def sort_sparse_matrix(matrix_file, sorted_matrix_file=None):
         output_name = sorted_matrix_file
     else:
         # otherwise if the sorted path name is not provided, add "gene_sorted-" to the original path name
-        output_name = "gene_sorted-" + matrix_file
+        directory, base_name = os.path.split(matrix_file)
+        output_name = os.path.join(directory, "gene_sorted-" + base_name)
     # read sparse matrix
     print("Reading Sparse Matrix")
     headers = []
     with open(matrix_file) as matrix:
         line = next(matrix)
-        i = 1
         while line.startswith("%"):
             headers = headers + [line]
             line = next(matrix)
-            i += 1
         headers = headers + [line]
-        df = pd.read_table(matrix, sep=" ", header=i, names=['genes', 'barcodes', 'expr'])
+        df = pd.read_table(matrix, sep="\s+", names=['genes', 'barcodes', 'expr'])
     # sort sparse matrix
     print("Sorting Sparse Matrix")
     df = df.sort_values(by=['genes', 'barcodes'])
     # save sparse matrix
     print("Saving Sparse Matrix to:", output_name)
     with open(output_name, "w+") as output:
-        print(''.join(headers))
         output.write(''.join(headers))
     df.to_csv(output_name, sep=' ', index=False, header=0, mode="a")
 
