@@ -18,7 +18,14 @@ use the download button at https://github.com/broadinstitute/single_cell_portal
 
 To clone using git in a command line terminal:
 ```
-git clone https://github.com/broadinstitute/single_cell_portal.git
+$ git clone https://github.com/broadinstitute/single_cell_portal.git
+```
+
+We recommend using [`virtualenv`](https://virtualenv.pypa.io/en/stable/) for managing package dependencies.  To install all required packages, clone this repo as described above, then:
+```
+$ cd single_cell_portal
+$ virtualenv -p python3 env
+$ pip install -r requirements.txt
 ```
 
 ## Reporting Bugs and Improvements
