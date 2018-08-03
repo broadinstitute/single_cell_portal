@@ -249,12 +249,15 @@ def pool_processing(prefix):
 
             with gzip.open(genes_name, 'wb') as g, gzip.open(barcodes_name, 'wb') as b, gzip.open(matrix_name, 'wb') as m:
                 print("Writing Sparse Matrix Files")
+                print("Writing Genes")
                 g.write(bytes('\n'.join(genes[1:num_rows + 1]), "utf8"))
+                print("Writing Barcodes")
                 b.write(bytes('\n'.join(barcodes), "utf8"))
                 bar_len = len(barcodes)
                 sparse_str = ''
                 sparse_str += '% Toy data Sparse Matrix \n'
                 sparse_str += ' '.join([str(num_rows), str(bar_len), str(len(expr)), '\n'])
+                print("Creating Sparse Matrix String")
                 for i, expr in enumerate(expr):
                     # the gene number
                     if expr > 0:
@@ -265,6 +268,7 @@ def pool_processing(prefix):
                 split_cols = len(sparse_str) // max_write_size
                 split_seq_num = split_cols if split_cols > 1 else 1
                 print(split_seq_num, "Total Writes") 
+                print("Writing Sparse Matrix")
                 for i, string in enumerate(split_seq(sparse_str, split_seq_num)):
                     m.write(string)
                     print(i+1, "Writes Completed")
@@ -279,17 +283,20 @@ def pool_processing(prefix):
                     f.write(string)
                     print(i+1, "Writes Completed")
         if sparse:
+            print("Writing Sparse Matrix Files")
             genes_name = prefix + '_toy_data_' + filename_leaf + '.genes.tsv'
             barcodes_name = prefix + '_toy_data_' + filename_leaf + '.barcodes.tsv'
             matrix_name = prefix + '_toy_data_' + filename_leaf + '.matrix.mtx'
             with open(genes_name, 'w+') as g, open(barcodes_name, 'w+') as b, open(matrix_name, 'w+') as m:
-                print("Writing Sparse Matrix Files")
+                print("Writing Gene File")
                 g.write('\n'.join(genes[1:num_rows + 1]))
+                print("Writing Barcodes")
                 b.write('\n'.join(barcodes))
                 bar_len = len(barcodes)
                 sparse_str = ''
                 sparse_str += '% Toy data Sparse Matrix \n'
                 sparse_str += ' '.join([str(num_rows), str(bar_len), str(len(expr)), '\n'])
+                print("Creating Sparse Matrix String")
                 for i, expr in enumerate(expr):
 	                if expr > 0:
 	                    gene_num = str((i % num_rows) + 1)
@@ -298,6 +305,7 @@ def pool_processing(prefix):
 	                    sparse_str += line
                 split_cols = len(sparse_str) // max_write_size
                 split_seq_num = split_cols if split_cols > 1 else 1
+                print("Writing Sparse Matrix")
                 print(split_seq_num, "Total Writes") 
                 for i, string in enumerate(split_seq(sparse_str, split_seq_num)):
                     m.write(string)
