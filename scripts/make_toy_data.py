@@ -246,7 +246,7 @@ def get_signature_content(prefix):
 	# expr possible values
 	log_values = [0,2,3,4,5,6,7,8]
 	prob_not_zero = (1 - crush) /7
-	num_chunks = round((num_rows * num_columns) // 1e7) + 1
+	num_chunks = round((num_rows * num_columns) // 4e7) + 1
 	expr_probs = [crush, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero]
 	# Generate values below header
 	values = ''
@@ -260,7 +260,7 @@ def get_signature_content(prefix):
 		expr = np.append(expr, scores)
 		values += '\n'.join(joined_row)
 		if i % 10 == 0 and i > 0:
-			print("Joined", i, "Rows")
+			print("Joined", i, "Row Chunks")
 
 	print("Flattening Expression Scores")
 	expr = np.asarray(expr).flatten()
