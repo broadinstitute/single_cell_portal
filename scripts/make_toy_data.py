@@ -23,6 +23,7 @@ import gzip
 import json
 from urllib import request, parse
 import numpy as np
+import shutil
 
 def boolean_string(s):
 	if s not in {'False', 'True'}:
@@ -106,9 +107,15 @@ args.add_argument(
 	)
 )
 args.add_argument(
-	'--max_write_size', default=5e8, type=float, dest='max_write_size',
+	'--max_write_size', default=8e7, type=float, dest='max_write_size',
 	help=(
 		'Max Chunk Size (estimate) for writes'
+	)
+)
+args.add_argument(
+	'--random_seed', default=0, type=float, dest='random_seed',
+	help=(
+		'Random seed for number generation'
 	)
 )
 
@@ -127,9 +134,18 @@ dense = parsed_args.dense
 preloaded_genes = parsed_args.preloaded_genes
 preloaded_barcodes = parsed_args.preloaded_barcodes
 max_write_size = parsed_args.max_write_size
+random_seed = parsed_args.random_seed
 
-# http://code.activestate.com/recipes/425397/
+
+# set the seed for number generation
+np.random.seed(random_seed)
+
+
 def split_seq(li, cols=5):
+	"""
+	Chunk an array into an array of len cols + 1 (last element is remainder elements)
+	http://code.activestate.com/recipes/425397/
+	"""
 	start = 0
 	for i in range(cols):
 		stop = start + len(li[i::cols])
@@ -150,10 +166,11 @@ def fetch_genes():
 		with open(preloaded_genes) as f:
 			lines = f.readlines()
 			genes =  [line.strip() for line in lines if len(line) >2]
-			print("PreLoaded", len(genes), "Genes")
 			if num_rows > len(genes):
 				print("Not enough genes in preloaded file, reducing gene number to", len(genes))
 				num_rows = len(genes)
+			genes = genes[:num_rows]
+			print("PreLoaded", "{:,}".format(len(genes)), "Genes")
 			return genes
 	else:
 		genes = []
@@ -194,12 +211,11 @@ def fetch_genes():
 		return genes
 
 
-def get_signature_content(prefix):
+def fetch_cells(prefix):
 	"""
-	Generates "signature" data, incorporating a given prefix.
-
+	Retrieve/ Generate cell names 
 	:param prefix: String of two uppercase letters, e.g. "AB"
-	:return: String of signature content, ~25 MB in size
+	:return: List of barcodes
 	"""
 	print("Generating Matrix")
 	letters = ['A', 'B', 'C', 'D']
@@ -207,7 +223,7 @@ def get_signature_content(prefix):
 
 	bytes_per_column = 21.1 * num_rows  # ~1.65 KB (KiB) per 80 cells, uncompressed
 	global num_columns
-	if !num_columns:
+	if not num_columns:
 		num_columns = int(bytes_per_file/bytes_per_column)
 	# Generate header
 	barcodes = []
@@ -216,11 +232,12 @@ def get_signature_content(prefix):
 		with open(preloaded_barcodes) as f:
 			lines = f.readlines()
 			barcodes =  [line.strip() for line in lines if len(line) >2]
-			print("PreLoaded", len(barcodes), "Cells")
 			if num_columns > len(barcodes):
 				print("Not enough barcodes in preloaded file, reducing gene number to", len(genes))
 				num_columns = len(barcodes)
-			header += '\t.join'(barcodes)
+			barcodes = barcodes[:num_columns]
+			print("PreLoaded", "{:,}".format(len(barcodes)), "Cells")
+			header += '\t'.join(barcodes)
 	else:
 		for i in range(num_columns):
 			random_string = ''
@@ -240,141 +257,107 @@ def get_signature_content(prefix):
 				barcodes =  barcodes + [barcode]
 			header += barcode + '\t'
 			if i % 5000 == 0:
-				print("Created", i, "Cell Headers")
-		header = header[:-2]
+				print("Created", "{:,}".format(i), "Cell Headers")
+		header = header
 	print("Generated Cell Header")
-	# expr possible values
-	log_values = [0,2,3,4,5,6,7,8]
-	prob_not_zero = (1 - crush) /7
-	num_chunks = round((num_rows * num_columns) // 4e7) + 1
-	expr_probs = [crush, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero]
-	# Generate values below header
-	values = ''
-	expr = []
-	print("Number of Expression Generation Chunks", num_chunks)
-	for i, group_of_genes in enumerate(split_seq(genes[:num_rows], num_chunks)):
-		gene_row = np.asarray([group_of_genes])
-		scores = np.random.choice(log_values, size=(len(group_of_genes), num_columns), p=expr_probs)
-		rows = np.concatenate((gene_row.T, scores), axis=1)
-		joined_row = ['\t'.join(row) for row in rows]
-		expr = np.append(expr, scores)
-		values += '\n'.join(joined_row)
-		if i % 10 == 0 and i > 0:
-			print("Joined", i, "Row Chunks")
+	return header, barcodes
 
-	print("Flattening Expression Scores")
-	expr = np.asarray(expr).flatten()
-	print("Generating Dense Matrix String")
-	signature_data = header + '\n' + values
-	print("Matrix Values Generated")
-	return signature_data, barcodes, expr
+
+def get_signature_content(prefix):
+	"""
+	Generates "signature" data, incorporating a given prefix.
+
+	:param prefix: String of two uppercase letters, e.g. "AB"
+	:return: String of signature content, ~25 MB in size
+	"""
+	header, barcodes = fetch_cells(prefix)
+	num_chunks = round((num_rows * num_columns) // max_write_size) + 1
+	def row_generator(): 
+		# expr possible values
+		log_values = [0,1.0,1.58,2.0,2.32,2.58,2.81,3.0]
+		prob_not_zero = (1 - crush) /7
+		
+		expr_probs = [crush, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero]
+		# Generate values below header
+		values = header + '\n'
+		for i, group_of_genes in enumerate(split_seq(genes[:num_rows], num_chunks)):
+			expr = []
+			gene_row = np.asarray([group_of_genes])
+			scores = np.random.choice(log_values, size=(len(group_of_genes), num_columns), p=expr_probs)
+			rows = np.concatenate((gene_row.T, scores), axis=1)
+			joined_row = ['\t'.join(row) for row in rows]
+			expr = np.append(expr, scores)
+			values += '\n'.join(joined_row)
+			
+			yield values, np.asarray(expr).flatten()
+			values = ''
+			
+	return row_generator, barcodes, num_chunks
 
 
 def pool_processing(prefix):
 	""" Function called by each CPU core in our pool of available CPUs
 	"""
-	content, barcodes, expr = get_signature_content(prefix)
-	file_name = prefix + '_toy_data_' + filename_leaf + '.txt'
-	if gzip_files:
-		file_name += '.gz'
-		if dense:
-			with gzip.open(file_name, 'wb') as f:
-				print("Writing Dense Matrix", len(content))
-				split_cols = len(content) // max_write_size
-				split_seq_num = round(split_cols if split_cols > 1 else 1)
-				print(split_seq_num, "Total Writes")  
-				for i, string in enumerate(split_seq(content, split_seq_num)):
-					f.write(string)
-					print(i+1, "Writes Completed")
-		if sparse:
-			genes_name = prefix + '_toy_data_' + filename_leaf + '.genes.tsv.gz'
-			barcodes_name = prefix + '_toy_data_' + filename_leaf + '.barcodes.tsv.gz'
-			matrix_name = prefix + '_toy_data_' + filename_leaf + '.matrix.mtx.gz'
-
-			with gzip.open(genes_name, 'wb') as g: 
-				print("Writing Gene File")
-				g.write(bytes('\n'.join(genes[:num_rows]), "utf8"))
-			with gzip.open(barcodes_name, 'wb') as b:
-				print("Writing Barcodes")
-				b.write(bytes('\n'.join(barcodes), "utf8"))
-			with gzip.open(matrix_name, 'wb') as m:
-				bar_len = len(barcodes)
-				sparse_str = ''
-				sparse_str += '% Toy data Sparse Matrix \n'
-				sparse_str += ' '.join([str(num_rows), str(bar_len), str(len(expr)), '\n'])
-				print("Creating Sparse Matrix String")
-				num_writes = 0
-				expr_per_write = round(max_write_size / 16)
-				print("Number of Writes", (len(expr) // expr_per_write) + 1)
-				for i, expr in enumerate(expr):
-					if expr > 0:
-						gene_num = str((i % num_rows) + 1)
-						barcode_num = str((i // num_rows) + 1)
-						line = ' '.join([gene_num, barcode_num, str(expr), '\n'])
-						sparse_str += line
-						if i % expr_per_write == 0:
-							print("Writing", i, "Scores")
-							m.write(sparse_str)
-							sparse_str = ''
-							num_writes += 1
-							print(num_writes, "Writes Completed")
-				# Cleanup
-				m.write(sparse_str)
-				num_writes += 1
-				print(num_writes, "Writes Completed")
-	else:
-		if dense:
-			with open(file_name, 'w+') as f:
-				print("Writing Dense Matrix", len(content))
-				split_cols = len(content) // max_write_size
-				split_seq_num = round(split_cols if split_cols > 1 else 1)
-				print(split_seq_num, "Total Writes") 
-				for i, string in enumerate(split_seq(content, split_seq_num)):
-					f.write(string)
-					print(i+1, "Writes Completed")
-		if sparse:
-			print("Writing Sparse Matrix Files")
-			genes_name = prefix + '_toy_data_' + filename_leaf + '.genes.tsv'
-			barcodes_name = prefix + '_toy_data_' + filename_leaf + '.barcodes.tsv'
-			matrix_name = prefix + '_toy_data_' + filename_leaf + '.matrix.mtx'
-			with open(genes_name, 'w+') as g:
+	dense_name = prefix + '_toy_data_' + filename_leaf + '.txt'
+	genes_name = prefix + '_toy_data_' + filename_leaf + '.genes.tsv'
+	barcodes_name = prefix + '_toy_data_' + filename_leaf + '.barcodes.tsv'
+	matrix_name = prefix + '_toy_data_' + filename_leaf + '.matrix.mtx'
+	
+	row_generator, barcodes, num_chunks = get_signature_content(prefix)
+	bar_len = len(barcodes)
+	sparse_str = ''
+	sparse_str += '%%MatrixMarket matrix coordinate integer general\n'
+	sparse_str += ' '.join([str(num_rows), str(bar_len), str(round(num_rows*num_columns*(1-crush))), '\n'])
+	if sparse:
+		with open(genes_name, 'w+') as g:
 				print("Writing Gene File")
 				g.write('\n'.join(genes[:num_rows]))
-			with open(barcodes_name, 'w+') as b:
-				print("Writing Barcodes")
-				b.write('\n'.join(barcodes))
-			with open(matrix_name, 'w+') as m:
-				bar_len = len(barcodes)
-				sparse_str = ''
-				sparse_str += '% Toy data Sparse Matrix \n'
-				sparse_str += ' '.join([str(num_rows), str(bar_len), str(len(expr)), '\n'])
+		with open(barcodes_name, 'w+') as b:
+			print("Writing Barcodes")
+			b.write('\n'.join(barcodes))
+	exprs_written = 0
+	num_writes = 0
+	print("Number of writes:", "{:,}".format(num_chunks))
+	if sparse:
+		print("Writing Sparse Matrix")
+	if dense:
+		print("Writing Dense Matrix")
+	for content, exprs in row_generator():
+		if dense:
+			with open(dense_name, 'a+') as f:
+				print("Writing To Dense Matrix, @size:", "{:,}".format(len(content)))
+				f.write(content)
+		if sparse:
+			with open(matrix_name, 'a+') as m:
 				print("Creating Sparse Matrix String")
-				num_writes = 0
-				expr_per_write = round(max_write_size / 16)
-				print("Number of Writes", (len(expr) // expr_per_write) + 1)
-				for i, expr in enumerate(expr):
+				for i, expr in enumerate(exprs):
 					if expr > 0:
-						gene_num = str((i % num_rows) + 1)
-						barcode_num = str((i // num_rows) + 1)
+						gene_num = str(((i+exprs_written) // num_columns) + 1)
+						barcode_num = str((i % num_columns) + 1)
 						line = ' '.join([gene_num, barcode_num, str(expr), '\n'])
 						sparse_str += line
-						if i % expr_per_write == 0:
-							print("Writing", i, "Scores")
-							m.write(sparse_str)
-							sparse_str = ''
-							num_writes += 1
-							print(num_writes, "Writes Completed")
-				# Cleanup
+				
+				print("Writing", "{:,}".format(i+1), "Scores, @ size:", "{:,}".format(len(sparse_str)))
 				m.write(sparse_str)
-				num_writes += 1
-				print(num_writes, "Writes Completed")
-
-	if dense:
-		print('Wrote ' + file_name)
+				sparse_str = ''
+			exprs_written += len(exprs)
+		num_writes += 1
+		print(num_writes, "Writes Completed")
+	# get list of files we created and tell user
+	files_to_gzip = []
 	if sparse:
-		print('Wrote ' + matrix_name)
-		print('Wrote ' + genes_name)
-		print('Wrote ' + barcodes_name)
+		files_to_gzip = files_to_gzip + [matrix_name, genes_name, barcodes_name]
+	if dense:
+		files_to_gzip = files_to_gzip + [dense_name]
+	[print("Wrote File:", file) for file in files_to_gzip]
+
+	# gzip and overwrite file
+	if gzip_files:
+		for file in files_to_gzip: 
+			with open(file, 'rb') as f_in:
+				with gzip.open(file + '.gz', 'wb') as f_out:
+					shutil.copyfileobj(f_in, f_out)
+
 
 
 def parse_filesize_string(filesize_string):
@@ -401,7 +384,6 @@ bytes_per_file = parse_filesize_string(size_per_file)
 prefixes = []
 
 genes = fetch_genes()
-print(num_rows)
 
 # Available prefix characters for output toy data file names
 alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
