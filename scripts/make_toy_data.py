@@ -118,6 +118,12 @@ args.add_argument(
 		'Random seed for number generation'
 	)
 )
+args.add_argument(
+	'--visualize', default=False, type=boolean_string, dest='visualize',
+	help=(
+		'Generate cluster and metadata files.'
+	)
+)
 
 
 parsed_args = args.parse_args()
@@ -135,6 +141,7 @@ preloaded_genes = parsed_args.preloaded_genes
 preloaded_barcodes = parsed_args.preloaded_barcodes
 max_write_size = parsed_args.max_write_size
 random_seed = parsed_args.random_seed
+visualize = parsed_args.visualize
 
 
 # set the seed for number generation
@@ -165,13 +172,15 @@ def fetch_genes():
 	if preloaded_genes:
 		with open(preloaded_genes) as f:
 			lines = f.readlines()
-			genes =  [line.strip() for line in lines if len(line) >2]
+			ids = [[l.strip() for l in line.split()][0] for line in lines if len(line) > 2]
+			genes =  [[l.strip() for l in line.split()][1] for line in lines if len(line) > 2]
 			if num_rows > len(genes):
 				print("Not enough genes in preloaded file, reducing gene number to", len(genes))
 				num_rows = len(genes)
 			genes = genes[:num_rows]
+			ids = ids[:num_rows]
 			print("PreLoaded", "{:,}".format(len(genes)), "Genes")
-			return genes
+			return genes, ids
 	else:
 		genes = []
 
@@ -208,7 +217,7 @@ def fetch_genes():
 				result = results[gene_id]
 				genes.append(result['name'])
 		print("Received Gene List")
-		return genes
+		return genes, ["FAKE00" + str(i) for i in range(num_rows)]
 
 
 def fetch_cells(prefix):
@@ -259,7 +268,7 @@ def fetch_cells(prefix):
 			if i % 5000 == 0:
 				print("Created", "{:,}".format(i), "Cell Headers")
 		header = header
-	print("Generated Cell Header")
+		print("Generated Cell Headers")
 	return header, barcodes
 
 
@@ -280,7 +289,8 @@ def get_signature_content(prefix):
 		expr_probs = [crush, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero]
 		# Generate values below header
 		values = header + '\n'
-		for i, group_of_genes in enumerate(split_seq(genes[:num_rows], num_chunks)):
+		combined_gene_names = [genes[i] + "_" + ids[i] for i in range(num_rows)]
+		for i, group_of_genes in enumerate(split_seq(combined_gene_names, num_chunks)):
 			expr = []
 			gene_row = np.asarray([group_of_genes])
 			scores = np.random.choice(log_values, size=(len(group_of_genes), num_columns), p=expr_probs)
@@ -295,6 +305,41 @@ def get_signature_content(prefix):
 	return row_generator, barcodes, num_chunks
 
 
+def generate_metadata_and_cluster(barcodes):
+	metadata_header = "NAME\tCLUSTER\tSUBCLUSTER\nTYPE\tgroup\tgroup\n"
+	cluster_header = "NAME\tX\tY\tZ\nTYPE\tnumeric\tnumeric\tnumeric\n"
+
+	clusters = np.asarray(["P", "N"])
+	subclusters = np.asarray(["PPP", "PPN", "PNP", "PNN", "NPP", "NPN", "NNP", "NNN"])
+	
+	bar_length = len(barcodes)
+	barcodes_arr = np.asarray(barcodes).reshape(bar_length, 1)
+
+	cluster_length = bar_length / 2
+	subcluster_length = bar_length / 8
+
+	cluster_groups = np.repeat(clusters, cluster_length).reshape(bar_length, 1)
+	sub_cluster_groups = np.repeat(subclusters, subcluster_length).reshape(bar_length, 1)
+
+	metadata_table = np.concatenate((barcodes_arr, cluster_groups, sub_cluster_groups), axis=1)
+
+	print("Generating Cluster Coordinates")
+	cluster_coords = np.round(np.random.uniform(size=(bar_length, 3)), 4)
+	x_mod = np.repeat([1, -1], cluster_length)
+	y_mod = np.repeat([1, -1, 1, -1], cluster_length / 2)
+	z_mod = np.repeat([1, -1, 1, -1, 1, -1, 1, -1], subcluster_length)
+
+	print("Modifiying Cluster Coordinates")
+	mods = np.asarray([x_mod, y_mod, z_mod]).T
+	cluster_coords *= mods
+	cluster_table = np.concatenate((barcodes_arr, cluster_coords), axis=1)
+
+	print('Generating Cluster and metadata Strings')
+	metadata_string = metadata_header + '\n'.join(['\t'.join(row) for row in metadata_table])
+	cluster_string = cluster_header + '\n'.join(['\t'.join(row) for row in cluster_table])
+	return metadata_string, cluster_string
+
+
 def pool_processing(prefix):
 	""" Function called by each CPU core in our pool of available CPUs
 	"""
@@ -302,6 +347,8 @@ def pool_processing(prefix):
 	genes_name = prefix + '_toy_data_' + filename_leaf + '.genes.tsv'
 	barcodes_name = prefix + '_toy_data_' + filename_leaf + '.barcodes.tsv'
 	matrix_name = prefix + '_toy_data_' + filename_leaf + '.matrix.mtx'
+	cluster_name = prefix + '_toy_data_' + filename_leaf + '.Coordinates.txt'
+	metadata_name = prefix + '_toy_data_' + filename_leaf + '.Metadata.txt'
 	
 	row_generator, barcodes, num_chunks = get_signature_content(prefix)
 	bar_len = len(barcodes)
@@ -311,44 +358,56 @@ def pool_processing(prefix):
 	if sparse:
 		with open(genes_name, 'w+') as g:
 				print("Writing Gene File")
-				g.write('\n'.join(genes[:num_rows]))
+				[g.write(ids[i] + '\t' + genes[i] + '\n') for i in range(num_rows)]
 		with open(barcodes_name, 'w+') as b:
 			print("Writing Barcodes")
 			b.write('\n'.join(barcodes))
-	exprs_written = 0
-	num_writes = 0
-	print("Number of writes:", "{:,}".format(num_chunks))
+	
 	if sparse:
 		print("Writing Sparse Matrix")
 	if dense:
 		print("Writing Dense Matrix")
-	for content, exprs in row_generator():
-		if dense:
-			with open(dense_name, 'a+') as f:
-				print("Writing To Dense Matrix, @size:", "{:,}".format(len(content)))
-				f.write(content)
-		if sparse:
-			with open(matrix_name, 'a+') as m:
-				print("Creating Sparse Matrix String")
-				for i, expr in enumerate(exprs):
-					if expr > 0:
-						gene_num = str(((i+exprs_written) // num_columns) + 1)
-						barcode_num = str((i % num_columns) + 1)
-						line = ' '.join([gene_num, barcode_num, str(expr), '\n'])
-						sparse_str += line
-				
-				print("Writing", "{:,}".format(i+1), "Scores, @ size:", "{:,}".format(len(sparse_str)))
-				m.write(sparse_str)
-				sparse_str = ''
-			exprs_written += len(exprs)
-		num_writes += 1
-		print(num_writes, "Writes Completed")
+	if sparse or dense:
+		exprs_written = 0
+		num_writes = 0
+		print("Number of writes:", "{:,}".format(num_chunks))
+		for content, exprs in row_generator():
+			if dense:
+				with open(dense_name, 'a+') as f:
+					print("Writing To Dense Matrix, @size:", "{:,}".format(len(content)))
+					f.write(content)
+			if sparse:
+				with open(matrix_name, 'a+') as m:
+					print("Creating Sparse Matrix String")
+					for i, expr in enumerate(exprs):
+						if expr > 0:
+							gene_num = str(((i+exprs_written) // num_columns) + 1)
+							barcode_num = str((i % num_columns) + 1)
+							line = ' '.join([gene_num, barcode_num, str(expr) + '\n'])
+							sparse_str += line
+					
+					print("Writing", "{:,}".format(i+1), "Scores, @ size:", "{:,}".format(len(sparse_str)))
+					m.write(sparse_str)
+					sparse_str = ''
+				exprs_written += len(exprs)
+			num_writes += 1
+			print(num_writes, "Writes Completed")
+	if visualize:
+		print("Writing Metadata File")
+		metadata_string, cluster_string = generate_metadata_and_cluster(barcodes)
+		with open(metadata_name, 'w+') as md:
+			md.write(metadata_string)
+		print("Writing Cluster File")
+		with open(cluster_name, 'w+') as c:
+			c.write(cluster_string)
 	# get list of files we created and tell user
 	files_to_gzip = []
 	if sparse:
 		files_to_gzip = files_to_gzip + [matrix_name, genes_name, barcodes_name]
 	if dense:
 		files_to_gzip = files_to_gzip + [dense_name]
+	if visualize:
+		files_to_gzip = files_to_gzip + [metadata_name, cluster_name]
 	[print("Wrote File:", file) for file in files_to_gzip]
 
 	# gzip and overwrite file
@@ -383,7 +442,7 @@ def parse_filesize_string(filesize_string):
 bytes_per_file = parse_filesize_string(size_per_file)
 prefixes = []
 
-genes = fetch_genes()
+genes, ids = fetch_genes()
 
 # Available prefix characters for output toy data file names
 alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
