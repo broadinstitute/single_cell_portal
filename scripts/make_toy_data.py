@@ -24,6 +24,7 @@ import json
 from urllib import request, parse
 import numpy as np
 import shutil
+import os
 
 def boolean_string(s):
 	if s not in {'False', 'True'}:
@@ -40,7 +41,7 @@ args.add_argument(
 	help='Number of toy data files to output'
 )
 args.add_argument(
-	'--filename_leaf', default='signature_50000', dest='filename_leaf',
+	'--filename_leaf', default='toy', dest='filename_leaf',
 	help=(
 		'"Leaf" to distinguish this file set from others.  ' +
 		'File naming pattern: AB_<leaf>.txt, CD_<leaf>.txt, ...'
@@ -204,7 +205,7 @@ def fetch_genes():
 					result = results[gene_id]
 					genes.append(result['name'])
 				num_genes_received += len(gene_ids_group)
-				if i % 10 == 0:
+				if i > 0 and i % 10 == 0:
 					print("Received", num_genes_received, "Genes")
 			print("Received", num_genes_received, "Genes")
 		else:
@@ -230,7 +231,7 @@ def fetch_cells(prefix):
 	letters = ['A', 'B', 'C', 'D']
 
 
-	bytes_per_column = 21.1 * num_rows  # ~1.65 KB (KiB) per 80 cells, uncompressed
+	bytes_per_column = 4.7 * num_rows  # ~1.65 KB (KiB) per 80 cells, uncompressed
 	global num_columns
 	if not num_columns:
 		num_columns = int(bytes_per_file/bytes_per_column)
@@ -244,10 +245,16 @@ def fetch_cells(prefix):
 			if num_columns > len(barcodes):
 				print("Not enough barcodes in preloaded file, reducing gene number to", len(genes))
 				num_columns = len(barcodes)
+			if visualize and num_columns % 8 != 0:
+				num_columns -= num_columns % 8
+				print("Visualization relies on having 8 subclusters, reducing number of cells/columns to", num_columns)
 			barcodes = barcodes[:num_columns]
 			print("PreLoaded", "{:,}".format(len(barcodes)), "Cells")
 			header += '\t'.join(barcodes)
 	else:
+		if visualize and num_columns % 8 != 0:
+				num_columns -= num_columns % 8
+				print("Visualization relies on having 8 subclusters, reducing number of cells/columns to", num_columns)
 		for i in range(num_columns):
 			random_string = ''
 			for j in range(1, 16):
@@ -265,7 +272,7 @@ def fetch_cells(prefix):
 			if sparse:
 				barcodes =  barcodes + [barcode]
 			header += barcode + '\t'
-			if i % 5000 == 0:
+			if i % 10000 == 0 and i > 0:
 				print("Created", "{:,}".format(i), "Cell Headers")
 		header = header
 		print("Generated Cell Headers")
@@ -349,6 +356,21 @@ def pool_processing(prefix):
 	matrix_name = prefix + '_toy_data_' + filename_leaf + '.matrix.mtx'
 	cluster_name = prefix + '_toy_data_' + filename_leaf + '.Coordinates.txt'
 	metadata_name = prefix + '_toy_data_' + filename_leaf + '.Metadata.txt'
+
+	# get list of files we created and tell user
+	files_to_write = []
+	if sparse:
+		files_to_write = files_to_write + [matrix_name, genes_name, barcodes_name]
+	if dense:
+		files_to_write = files_to_write + [dense_name]
+	if visualize:
+		files_to_write = files_to_write + [metadata_name, cluster_name]
+
+	# delete existing files-- since we append files we don't want to append to existing ones
+	print("Deleting Existing Files with Same Name")
+	for file in files_to_write:
+		if os.path.exists(file):
+  			os.remove(file)
 	
 	row_generator, barcodes, num_chunks = get_signature_content(prefix)
 	bar_len = len(barcodes)
@@ -400,19 +422,13 @@ def pool_processing(prefix):
 		print("Writing Cluster File")
 		with open(cluster_name, 'w+') as c:
 			c.write(cluster_string)
-	# get list of files we created and tell user
-	files_to_gzip = []
-	if sparse:
-		files_to_gzip = files_to_gzip + [matrix_name, genes_name, barcodes_name]
-	if dense:
-		files_to_gzip = files_to_gzip + [dense_name]
-	if visualize:
-		files_to_gzip = files_to_gzip + [metadata_name, cluster_name]
-	[print("Wrote File:", file) for file in files_to_gzip]
+	
+	[print("Wrote File:", file) for file in files_to_write]
 
 	# gzip and overwrite file
 	if gzip_files:
-		for file in files_to_gzip: 
+		for file in files_to_write: 
+			print("Gzipping:", file)
 			with open(file, 'rb') as f_in:
 				with gzip.open(file + '.gz', 'wb') as f_out:
 					shutil.copyfileobj(f_in, f_out)
