@@ -14,6 +14,8 @@ from functools import cmp_to_key
 import os
 import urllib.request as request
 
+from utils import *
+
 parser = argparse.ArgumentParser(
     description=__doc__, # Use docstring at top of file for --help summary
     formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -26,9 +28,7 @@ output_dir = args.output_dir
 if os.path.exists(output_dir) is False:
     os.mkdir(output_dir)
 
-# Priority species to support in Single Cell Portal
-with open('organisms.tsv') as f:
-    species_list = [line.split('\t') for line in f.readlines()[1:]]
+species_list = get_species_list('organisms.tsv')
 
 # Sorted list of species names
 species_names = [species[0] for species in species_list]
