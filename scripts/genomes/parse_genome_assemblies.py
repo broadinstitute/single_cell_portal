@@ -27,18 +27,8 @@ if os.path.exists(output_dir) is False:
     os.mkdir(output_dir)
 
 # Priority species to support in Single Cell Portal
-species_list = [
-    ['Homo sapiens', 'human', '9606'],
-    ['Mus musculus', 'mouse', '10090'],
-    ['Danio rerio', 'zebrafish', '7955'],
-    ['Gallus gallus', 'chicken', '9031'],
-    ['Rattus norvegicus', 'rat', '10116'],
-    ['Macaca fascicularis', 'macaque', '9541'],
-    ['Bos taurus', 'cow', '9913'],
-    ['Sus scrofa', 'pig', '9823'],
-    ['Canis lupus familiaris', 'dog', '9615'],
-    ['Felis catus', 'cat', '9685']
-]
+with open('organisms.tsv') as f:
+    species_list = [line.split('\t') for line in f.readlines()[1:]]
 
 # Sorted list of species names
 species_names = [species[0] for species in species_list]
@@ -95,7 +85,7 @@ def parse_columns(columns):
 
 
 def is_relevant_assembly(rel_type, asm_level, refseq_category, refseq_acc):
-    """ Determine if assembly is suitable for SCPs
+    """ Determine if assembly is suitable for SCP
     """
 
     if (rel_type in 'Major' and asm_level == 'Chromosome') == False:
