@@ -47,20 +47,10 @@ def get_assembly_report(use_historical=False):
         report_filename = 'assembly_summary_genbank_historical.txt'
     else:
         report_filename = 'assembly_summary_genbank.txt'
-    ncbi_assembly_report_url = domain + path + report_filename
-    ncbi_assembly_report_path = output_dir + report_filename
+    assembly_report_url = domain + path + report_filename
+    assembly_report_path = output_dir + report_filename
 
-    if os.path.exists(ncbi_assembly_report_path):
-        # Use local report if available
-        with open(ncbi_assembly_report_path) as f:
-            assembly_report = f.readlines()
-    else:
-        # If local report absent, fetch assembly report and cache it
-        with request.urlopen(ncbi_assembly_report_url) as response:
-            assembly_data = response.read().decode('utf-8')
-            with open(ncbi_assembly_report_path, 'w') as f:
-                f.write(assembly_data)
-            assembly_report = assembly_data.split('\n')
+    assembly_report = get_content(assembly_report_path, assembly_report_url)
 
     return assembly_report
 
