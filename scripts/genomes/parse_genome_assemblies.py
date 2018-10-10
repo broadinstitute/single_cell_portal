@@ -2,6 +2,8 @@
 
 This script fetches current and historical Assembly Reports from NCBI, and
 extracts metadata on assemblies that are relevant for Single Cell Portal.
+See get_assembly_report docstring for more detail on historical Assembly
+Reports.
 
 Only assemblies that are chromosome-level or above are included.
 
@@ -20,7 +22,7 @@ parser = argparse.ArgumentParser(
     description=__doc__, # Use docstring at top of file for --help summary
     formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('--output_dir',
-                    help='Directory to sent output data to.  Default: output/',
+                    help='Directory to send output data to.  Default: output/',
                     default='output/')
 args = parser.parse_args()
 output_dir = args.output_dir
@@ -30,7 +32,7 @@ if os.path.exists(output_dir) is False:
 
 species_list = get_species_list('organisms.tsv')
 
-# Sorted list of species names
+# One-dimensional list of species names
 species_names = [species[0] for species in species_list]
 
 
