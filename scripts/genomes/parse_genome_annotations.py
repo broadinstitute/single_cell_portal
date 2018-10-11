@@ -6,6 +6,7 @@ import urllib.request as request
 
 from utils import *
 
+output_dir = 'output/'
 scp_species = get_species_list('organisms.tsv')
 
 def get_ensembl_metadata():
@@ -21,12 +22,12 @@ def get_ensembl_metadata():
 
     for species in ensembl_species:
         taxid = species['taxon_id']
-        releases_by_taxid[taxid] = {
+        ensembl_metadata[taxid] = {
             'organism': species['name'],
-            'taxid': species['taxid'],
+            'taxid': species['taxon_id'],
             'assembly_name': species['assembly'],
             'assembly_accession': species['accession'],
-            'release': species['release']
+            'release': str(species['release'])
         }
 
     return ensembl_metadata
@@ -41,17 +42,23 @@ def get_ensembl_gtf_url(organism_metadata):
     release = organism_metadata['release']
     organism = organism_metadata['organism']
     organism_upper = organism[0].upper() + organism[1:]
+    assembly = organism_metadata['assembly_name']
 
     origin = 'http://ftp.ensembl.org'
-    dir = '/pub/release' + release + '/gtf/' + organism + '/'
-    filename = organism_upper + '.' + assembly_name + 'gtf.gz'
+    dir = '/pub/release-' + release + '/gtf/' + organism + '/'
+    filename = organism_upper + '.' + assembly + '.' + release + '.gtf.gz'
 
     gtf_url = origin + dir + filename
+
     return gtf_url
 
 
 def get_ensembl_gtf(organism_metadata):
     gtf_url = get_ensembl_gtf_url(organism_metadata)
+    filename = gtf_url.split('/')[-1]
+    gtf_path = output_dir + filename
+    print(gtf_url)
+    gtf = fetch_content(gtf_url, gtf_path)
 
     return
 

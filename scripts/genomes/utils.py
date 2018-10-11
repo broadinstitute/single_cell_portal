@@ -12,33 +12,35 @@ def get_species_list(organisms_path):
         species_list = [line.strip().split('\t') for line in f.readlines()[1:]]
     return species_list
 
-def get_gzipped_content(output_path, content_url):
+def fetch_gzipped_content(url, output_path):
     """Fetch remote gzipped content, or read it from disk if cached
     """
     if os.path.exists(output_path):
+        print('Reading cached ' + output_path)
         # Use locally cached content if available
         with open(output_path, 'rb') as f:
             content = gzip.GzipFile(fileobj=f).readlines()
     else:
+        print('Fetching ' + output_path)
         # If local report absent, fetch remote content and cache it
         request_obj = request.Request(
-            content_url,
+            url,
             headers={"Accept-Encoding": "gzip"}
         )
         with request.urlopen(request_obj) as response:
-            remote_content = gzip.GzipFile(fileobj=response)
-            remote_content.read()
+            # remote_content = gzip.GzipFile(fileobj=response)
+            remote_content = response.read()
             print(remote_content)
             with open(output_path, 'wb') as f:
                 f.write(remote_content)
             content = remote_content
     return content
 
-def get_content(output_path, content_url):
+def fetch_content(url, output_path):
     """Fetch remote content, or read it from disk if cached
     """
-    if content_url[-3:] == '.gz':
-        return get_gzipped_content(output_path, content_url)
+    if url[-3:] == '.gz':
+        return fetch_gzipped_content(url, output_path)
 
     if os.path.exists(output_path):
         # Use locally cached content if available
@@ -46,7 +48,7 @@ def get_content(output_path, content_url):
             content = f.readlines()
     else:
         # If local report absent, fetch remote content and cache it
-        with request.urlopen(content_url) as response:
+        with request.urlopen(url) as response:
             remote_content = response.read().decode('utf-8')
             with open(output_path, 'w') as f:
                 f.write(remote_content)
