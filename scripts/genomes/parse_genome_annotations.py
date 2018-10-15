@@ -22,10 +22,16 @@ def get_ensembl_metadata():
 
     for species in ensembl_species:
         taxid = species['taxon_id']
+        name = species['name']
+        assembly = species['assembly']
+        strain = species['strain']
+        if (taxid == '10090' and strain != 'reference (CL57BL6)'):
+            # Mouse has multiple annotated assemblies; only use reference assembly
+            continue
         ensembl_metadata[taxid] = {
-            'organism': species['name'],
-            'taxid': species['taxon_id'],
-            'assembly_name': species['assembly'],
+            'organism': name,
+            'taxid': taxid,
+            'assembly_name': assembly,
             'assembly_accession': species['accession'],
             'release': str(species['release'])
         }
@@ -60,9 +66,9 @@ def get_ensembl_gtf_urls(ensembl_metadata):
 def get_ensembl_gtfs(ensembl_metadata):
     gtf_urls = get_ensembl_gtf_urls(ensembl_metadata)
     gtfs = batch_fetch(gtf_urls, output_dir)
-    print('Got GTFs!  Number: ' + str(len(gtf)))
+    print('Got GTFs!  Number: ' + str(len(gtfs)))
 
-    return
+    
 
 
 ensembl_metadata = get_ensembl_metadata()
