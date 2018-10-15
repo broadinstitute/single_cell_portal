@@ -2,7 +2,7 @@
 """
 
 import gzip
-from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
 import os
 import time
 import urllib.request as request
@@ -42,7 +42,8 @@ def fetch_content(url_and_output_paths):
     """Fetch remote content, or read it from disk if cached
     """
     content_dict = {}
-    for url, output_path in url_and_output_paths:
+    for url_and_output_path in url_and_output_paths:
+        url, output_path = url_and_output_path
         if url[-3:] == '.gz':
             content = fetch_gzipped_content(url, output_path)
         else:
@@ -67,8 +68,8 @@ def chunkify(lst, n):
     """
     return [lst[i::n] for i in range(n)]
 
-def get_pool_args(urls, output_dir, num_threads):
-    """Gets chunked URL and output path arguments for thread-pooled fetch
+def get_pool_args(urls, output_dir, num_cores):
+    """Gets chunked URL and output path arguments for multicore fetch
     """
 
     url_and_output_paths = []
@@ -76,8 +77,8 @@ def get_pool_args(urls, output_dir, num_threads):
     for i, url in enumerate(urls):
         url_and_output_paths.append([url, output_paths[i]])
 
-    if num_threads < len(url_and_output_paths):
-        num_chunks = num_threads
+    if num_cores < len(url_and_output_paths):
+        num_chunks = num_cores
     else:
         num_chunks = len(url_and_output_paths)
     chunked_url_and_output_paths = chunkify(url_and_output_paths, num_chunks)
@@ -89,11 +90,14 @@ def batch_fetch(urls, output_dir):
     """
     batch_contents = []
 
-    num_threads = 30
-    chunked_url_and_output_paths = get_pool_args(urls, output_dir, num_threads)
+    # num_cores = multiprocessing.cpu_count() - 1
+    num_cores = 3
+    chunked_url_and_output_paths = get_pool_args(urls, output_dir, num_cores)
 
-    with ThreadPoolExecutor(max_workers=num_threads) as pool:
+    with multiprocessing.Pool(processes=num_cores) as pool:
         for content_dict in pool.map(fetch_content, chunked_url_and_output_paths):
             for output_path in content_dict:
-                print('Batch fetched ' + output_path)
                 content = content_dict[output_path]
+                batch_contents.append(content)
+
+    return batch_contents
