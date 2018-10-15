@@ -4,6 +4,7 @@
 import gzip
 import multiprocessing
 import os
+import shutil
 import time
 import urllib.request as request
 
@@ -30,10 +31,17 @@ def fetch_gzipped_content(url, output_path):
             headers={"Accept-Encoding": "gzip"}
         )
         with request.urlopen(request_obj) as response:
-            # remote_content = gzip.GzipFile(fileobj=response)
+            remote_content = gzip.GzipFile(fileobj=response)
             remote_content = response.read()
             with open(output_path, 'wb') as f:
                 f.write(remote_content)
+
+            # Decompress foo.gtf.gz to foo.gtf
+            output_path_uncompressed = output_path.replace('.gz', '')
+            with open(output_path_uncompressed, 'wb') as f_out:
+                with gzip.open(output_path, 'rb') as f_in:
+                    shutil.copyfileobj(f_in, f_out)
+
             content = remote_content
     print('Returning content for gzipped ' + url)
     return content
