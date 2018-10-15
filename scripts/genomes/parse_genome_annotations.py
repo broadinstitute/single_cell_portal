@@ -32,40 +32,40 @@ def get_ensembl_metadata():
 
     return ensembl_metadata
 
-def get_ensembl_gtf_url(organism_metadata):
+def get_ensembl_gtf_urls(ensembl_metadata):
     """ Construct the URL of an Ensembl genome annotation GTF file.
 
     Example URL:
     http://ftp.ensembl.org/pub/release-94/gtf/homo_sapiens/Homo_sapiens.GRCh38.94.gtf.gz
     """
 
-    release = organism_metadata['release']
-    organism = organism_metadata['organism']
-    organism_upper = organism[0].upper() + organism[1:]
-    assembly = organism_metadata['assembly_name']
+    gtf_urls = []
+    for species in scp_species:
+        taxid = species[2]
+        organism_metadata = ensembl_metadata[taxid]
+        release = organism_metadata['release']
+        organism = organism_metadata['organism']
+        organism_upper = organism[0].upper() + organism[1:]
+        assembly = organism_metadata['assembly_name']
 
-    origin = 'http://ftp.ensembl.org'
-    dir = '/pub/release-' + release + '/gtf/' + organism + '/'
-    filename = organism_upper + '.' + assembly + '.' + release + '.gtf.gz'
+        origin = 'http://ftp.ensembl.org'
+        dir = '/pub/release-' + release + '/gtf/' + organism + '/'
+        filename = organism_upper + '.' + assembly + '.' + release + '.gtf.gz'
 
-    gtf_url = origin + dir + filename
+        gtf_url = origin + dir + filename
+        gtf_urls.append(gtf_url)
 
-    return gtf_url
+    return gtf_urls
 
-
-def get_ensembl_gtf(organism_metadata):
-    gtf_url = get_ensembl_gtf_url(organism_metadata)
-    filename = gtf_url.split('/')[-1]
-    gtf_path = output_dir + filename
-    print(gtf_url)
-    gtf = fetch_content(gtf_url, gtf_path)
+def get_ensembl_gtfs(ensembl_metadata):
+    gtf_urls = get_ensembl_gtf_urls(ensembl_metadata)
+    gtfs = batch_fetch(gtf_urls, output_dir)
+    print('Got GTFs!  Number: ' + str(len(gtf)))
 
     return
 
 
 ensembl_metadata = get_ensembl_metadata()
-
-for species in scp_species:
-    taxid = species[2]
-    organism_metadata = ensembl_metadata[taxid]
-    gtf = get_ensembl_gtf(organism_metadata)
+gtfs = get_ensembl_gtfs(ensembl_metadata)
+print('gtfs')
+print(len(gtfs))
