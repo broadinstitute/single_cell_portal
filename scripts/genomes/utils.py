@@ -90,8 +90,19 @@ def batch_fetch(urls, output_dir):
     """
     batch_contents = []
 
-    # num_cores = multiprocessing.cpu_count() - 1
-    num_cores = 3
+    # TODO:
+    # Each file takes up ~2 GiB.  So multicore use can crash due to limited
+    # memory. Use psutil to set determine free memory, then do something like:
+    #
+    #   free_memory = psutil.memory(...)... # Whatever the syntax is.
+    #   num_cores_mem = free_memory / 2 GiB
+    #   num_cores_raw = multiprocessing.cpu_count() - 1
+    #   if num_cores_mem < num_cores_raw
+    #       num_cores = num_cores_mem
+    #   else:
+    #       num_cores = num_cores_raw
+
+    num_cores = 3 # Low multiple is a decent way to keep some memory free
     chunked_url_and_output_paths = get_pool_args(urls, output_dir, num_cores)
 
     with multiprocessing.Pool(processes=num_cores) as pool:
