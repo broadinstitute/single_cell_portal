@@ -1,13 +1,26 @@
-"""Parse genome annotations, output position-sorted GTF in plaintext and compressed
+"""Download genome annotations, transform for igv.js, upload to GCS for SCP
 """
 
+import argparse
 import json
 import urllib.request as request
 import subprocess
 
 from utils import *
 
-output_dir = 'output/'
+parser = argparse.ArgumentParser(
+    description=__doc__, # Use docstring at top of file for --help summary
+    formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument('--output_dir',
+                    help='Directory to send output data to.  Default: output/',
+                    default='output/')
+args = parser.parse_args()
+credentials = args.credentials
+output_dir = args.output_dir
+
+if os.path.exists(output_dir) is False:
+    os.mkdir(output_dir)
+
 scp_species = get_species_list('organisms.tsv')
 
 def get_ensembl_metadata():
@@ -40,7 +53,7 @@ def get_ensembl_metadata():
     return ensembl_metadata
 
 def get_ensembl_gtf_urls(ensembl_metadata):
-    """ Construct the URL of an Ensembl genome annotation GTF file.
+    """Construct the URL of an Ensembl genome annotation GTF file.
 
     Example URL:
     http://ftp.ensembl.org/pub/release-94/gtf/homo_sapiens/Homo_sapiens.GRCh38.94.gtf.gz
@@ -64,28 +77,40 @@ def get_ensembl_gtf_urls(ensembl_metadata):
 
     return gtf_urls
 
+def transform_ensembl_gtf(gtf_path):
+    """Produces sorted GTF and GTF index from Ensembl GTF; needed for igv.js
+    """
+    # Example:
+    # $ sort -k1,1 -k4,4n gencode.vM17.annotation.gtf > gencode.vM17.annotation.possorted.gtf
+    # $ bgzip gencode.vM17.annotation.possorted.gtf
+    # $ tabix -p gff gencode.vM17.annotation.possorted.gtf.gz
+
+    # sort by chromosome name, then genomic start position; needed for index
+    sort_command = ('sort -k1,1 -k4,4n ' + gtf_path).split(' ')
+    sorted_filename = gtf_path.replace('.gtf', '.possorted.gtf')
+    sorted_file = open(sorted_filename, 'w')
+    print('Running ' + str(sort_command))
+    subprocess.call(sort_command, stdout=sorted_file)
+
+    # bgzip enables requesting small indexed chunks of a gzip'd file
+    bgzip_command = ('bgzip ' + sorted_filename).split(' ')
+    print('Running ' + str(bgzip_command))
+    subprocess.call(bgzip_command)
+
+    # tabix creates an index for the GTF file, used for getting small chunks
+    tabix_command = ('tabix -p gff ' + sorted_filename + '.gz').split(' ')
+    print('Running ' + str(tabix_command))
+    subprocess.call(tabix_command)
+
 def write_ensembl_gtf_products(ensembl_metadata):
-    """ Downloads Ensembl GTFs, produces position-sorted raw and indexed GTFs
+    """Download Ensembl GTFs, produce position-sorted raw and indexed GTFs
     """
     gtf_urls = get_ensembl_gtf_urls(ensembl_metadata)
     gtfs = batch_fetch(gtf_urls, output_dir)
     print('Got GTFs!  Number: ' + str(len(gtfs)))
     for gtf in gtfs:
-        # $ sort -k1,1 -k4,4n gencode.vM17.annotation.gtf > gencode.vM17.annotation.possorted.gtf
-        # $ bgzip gencode.vM17.annotation.possorted.gtf
-        # $ tabix -p gff gencode.vM17.annotation.possorted.gtf.gz
-        output_path = gtf[0].replace('.gz', '')
-        sort_command = ('sort -k1,1 -k4,4n ' + output_path).split(' ')
-        sorted_filename = output_path.replace('.gtf', '.possorted.gtf')
-        sorted_file = open(sorted_filename, 'w')
-        print('Running ' + str(sort_command))
-        subprocess.call(sort_command, stdout=sorted_file)
-        bgzip_command = ('bgzip ' + sorted_filename).split(' ')
-        print('Running ' + str(bgzip_command))
-        subprocess.call(bgzip_command)
-        tabix_command = ('tabix -p gff ' + sorted_filename + '.gz').split(' ')
-        print('Running ' + str(tabix_command))
-        subprocess.call(tabix_command)
+        gtf_path = gtf[0].replace('.gz', '')
+        transform_ensembl_gtf(gtf_path)
 
 ensembl_metadata = get_ensembl_metadata()
 gtfs = get_ensembl_gtfs(ensembl_metadata)
