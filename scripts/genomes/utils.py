@@ -12,7 +12,8 @@ def get_species_list(organisms_path):
     """Get priority species to support in Single Cell Portal
     """
     with open(organisms_path) as f:
-        species_list = [line.strip().split('\t') for line in f.readlines()[1:]]
+        raw_species_list = [line.strip().split('\t') for line in f.readlines()[1:]]
+        species_list = [line for line in raw_species_list if line[0][0] != '#']
     return species_list
 
 def fetch_gzipped_content(url, output_path):
@@ -22,7 +23,8 @@ def fetch_gzipped_content(url, output_path):
         print('Reading cached gzipped ' + output_path)
         # Use locally cached content if available
         with open(output_path, 'rb') as f:
-            content = gzip.GzipFile(fileobj=f).readlines()
+            content = ''
+            #content = gzip.GzipFile(fileobj=f).readlines()
     else:
         print('Fetching gzipped ' + output_path)
         # If local report absent, fetch remote content and cache it
@@ -117,6 +119,6 @@ def batch_fetch(urls, output_dir):
         for content_dict in pool.map(fetch_content, chunked_url_and_output_paths):
             for output_path in content_dict:
                 content = content_dict[output_path]
-                batch_contents.append(content)
+                batch_contents.append([output_path, content])
 
     return batch_contents
