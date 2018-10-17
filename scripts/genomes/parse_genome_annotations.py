@@ -7,6 +7,9 @@ import urllib.request as request
 import shutil
 import subprocess
 
+from google.cloud import storage
+from google.oauth2 import service_account
+
 from utils import *
 
 parser = argparse.ArgumentParser(
@@ -14,16 +17,16 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('--use_cache',
                     help='Whether to use cache',
-                    default=True, type=bool, nargs='?')
+                    action='store_true')
+parser.add_argument('--vault_path',
+                    help='Path in Vault for GCS service account credentials')
 parser.add_argument('--output_dir',
                     help='Directory to send output data to.  Default: output/',
                     default='output/')
 args = parser.parse_args()
 use_cache = args.use_cache
+vault_path = args.vault_path
 output_dir = args.output_dir
-
-if use_cache is None:
-    use_cache = False
 
 scp_species = get_species_list('organisms.tsv')
 
@@ -88,11 +91,13 @@ def transform_ensembl_gtf(gtf_path):
     # $ sort -k1,1 -k4,4n gencode.vM17.annotation.gtf > gencode.vM17.annotation.possorted.gtf
     # $ bgzip gencode.vM17.annotation.possorted.gtf
     # $ tabix -p gff gencode.vM17.annotation.possorted.gtf.gz
-
     sorted_filename = gtf_path.replace('.gtf', '.possorted.gtf')
     outputs = [sorted_filename + '.gz', sorted_filename + '.gz.tbi']
     if os.path.exists(outputs[1]):
+        print('Using cached GTF transforms')
         return outputs
+    else:
+        print('Producing GTF transforms for ' + gtf_path)
 
     # sort by chromosome name, then genomic start position; needed for index
     sort_command = ('sort -k1,1 -k4,4n ' + gtf_path).split(' ')
@@ -123,6 +128,35 @@ def transform_ensembl_gtfs(ensembl_metadata):
         transformed_gtf = transform_ensembl_gtf(gtf_path)
         transformed_gtfs.append(transformed_gtf)
 
+def get_gcs_storage_client():
+    """Get Google Cloud Storage storage client for service account
+    """
+
+    # Get GCS SA credentials from Vault
+    vault_command = ('vault read -format=json ' + vault_path).split(' ')
+    p = subprocess.Popen(vault_command, stdout=subprocess.PIPE)
+    vault_response = p.communicate()[0]
+    gcs_info = json.loads(vault_response)['data']
+
+    project_id = 'single-cell-portal'
+    credentials = service_account.Credentials.from_service_account_info(gcs_info)
+    storage_client = storage.Client(project_id, credentials=credentials)
+
+    return storage_client
+
+def upload_ensembl_gtf_products():
+    print('Uploading Ensembl GTF products')
+
+    storage_client = get_gcs_storage_client()
+
+    # FireCloud workspace:
+    # https://portal.firecloud.org/#workspaces/single-cell-portal/scp-reference-data
+    scp_reference_data = 'fc-bcc55e6c-bec3-4b2e-9fb2-5e1526ddfcd2'
+    bucket = storage_client.get_bucket(scp_reference_data)
+    blobs = bucket.list_blobs(prefix='reference_data/')
+    for blob in blobs:
+        print(blob.name)
+
 if use_cache is False:
     if os.path.exists(output_dir) is False:
         print('Cache unavailable, starting fresh run')
@@ -136,3 +170,4 @@ if os.path.exists(output_dir) is False:
 ensembl_metadata = get_ensembl_metadata()
 gtfs = get_ensembl_gtf_urls(ensembl_metadata)
 gtf_products = transform_ensembl_gtfs(ensembl_metadata)
+upload_ensembl_gtf_products()
