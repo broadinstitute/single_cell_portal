@@ -25,6 +25,7 @@ We recommend using [`virtualenv`](https://virtualenv.pypa.io/en/stable/) for man
 ```
 $ cd single_cell_portal
 $ virtualenv -p python3 env
+$ source env/bin/activate
 $ pip install -r requirements.txt
 ```
 
