@@ -131,8 +131,8 @@ def make_local_reference_dirs(ensembl_metadata):
         asm_name = organism_metadata['assembly_name']
         asm_acc = organism_metadata['assembly_accession']
         release = 'ensembl_' + organism_metadata['release']
-        folder = output_dir + 'reference_data/'
-        folder += organism + '/' + asm_name + '_' + asm_acc + '/' + release
+        folder = output_dir + 'reference_data_dev/'
+        folder += organism + '/' + asm_name + '_' + asm_acc + '/' + release + '/'
 
         os.makedirs(folder, exist_ok=True)
 
@@ -148,7 +148,6 @@ def transform_ensembl_gtfs(ensembl_metadata):
     gtf_urls, ensembl_metadata = get_ensembl_gtf_urls(ensembl_metadata)
     gtfs = batch_fetch(gtf_urls, output_dir)
     ensembl_metadata = make_local_reference_dirs(ensembl_metadata)
-    # ensembl_metadata = move_gtfs(ensembl_metadata)
 
     print('Got GTFs!  Number: ' + str(len(gtfs)))
     for species in scp_species:
@@ -156,7 +155,11 @@ def transform_ensembl_gtfs(ensembl_metadata):
         organism_metadata = ensembl_metadata[taxid]
         gtf_path = organism_metadata['gtf_path'].replace('.gz', '')
         ref_dir = organism_metadata['reference_dir']
-        transform_ensembl_gtf(gtf_path, ref_dir)
+        transformed_gtfs = transform_ensembl_gtf(gtf_path, ref_dir)
+
+        ensembl_metadata[taxid]['transformed_gtfs'] = transformed_gtfs
+
+    return ensembl_metadata
 
 def get_gcs_storage_client():
     """Get Google Cloud Storage storage client for service account
@@ -174,7 +177,7 @@ def get_gcs_storage_client():
 
     return storage_client
 
-def upload_ensembl_gtf_products():
+def upload_ensembl_gtf_products(ensembl_metadata):
     print('Uploading Ensembl GTF products')
 
     storage_client = get_gcs_storage_client()
@@ -185,20 +188,17 @@ def upload_ensembl_gtf_products():
     top_bucket_folder = 'reference_data_dev/'
 
     bucket = storage_client.get_bucket(scp_reference_data)
-    blobs = bucket.list_blobs(prefix=top_bucket_folder)
-
-    # org_dirs = set() # Organism directories (1st level, top)
-    # asm_dirs = set() # Genome assembly directories (2nd level)
-    # annot_dirs = set() # Genome annotation directories (3rd level, leaf dirs)
-
-    for blob in blobs:
-        path = blob.name.replace(top_bucket_folder, '')
-        segments = path.split('/')
-        if len(segments) == 0:
-            # The top-level directory we're using in the GCS reference data
-            # bucket has no subdirectories, so all local content can be
-            # uploaded without needing to handle overwrites.
-            print('test')
+    
+    for species in scp_species:
+        taxid = species[2]
+        organism_metadata = ensembl_metadata[taxid]
+        transformed_gtfs = organism_metadata['transformed_gtfs']
+        for transformed_gtf in transformed_gtfs:
+            source_blob_name = transformed_gtf
+            destination_blob_name = source_blob_name.replace('output/', '')
+            blob = bucket.blob(destination_blob_name)
+            blob.upload_from_filename(source_blob_name)
+            print('Uploaded to GCS: ' + destination_blob_name)
 
 if use_cache is False:
     if os.path.exists(output_dir) is False:
@@ -211,5 +211,5 @@ if os.path.exists(output_dir) is False:
     os.mkdir(output_dir)
 
 ensembl_metadata = get_ensembl_metadata()
-gtf_products = transform_ensembl_gtfs(ensembl_metadata)
-upload_ensembl_gtf_products(gtf_products, ensembl_metadata)
+ensembl_metadata = transform_ensembl_gtfs(ensembl_metadata)
+upload_ensembl_gtf_products(ensembl_metadata)
