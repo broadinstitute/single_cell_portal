@@ -3,9 +3,10 @@
 
 import argparse
 import json
-import urllib.request as request
+import os
 import shutil
 import subprocess
+import urllib.request as request
 
 from google.cloud import storage
 from google.oauth2 import service_account
@@ -46,9 +47,11 @@ def get_ensembl_metadata():
         name = species['name']
         assembly = species['assembly']
         strain = species['strain']
+
         if (taxid == '10090' and strain != 'reference (CL57BL6)'):
             # Mouse has multiple annotated assemblies; only use reference assembly
             continue
+
         ensembl_metadata[taxid] = {
             'organism': name,
             'taxid': taxid,
@@ -114,6 +117,35 @@ def transform_ensembl_gtf(gtf_path):
 
     return outputs
 
+def make_local_reference_dirs(ensembl_metadata):
+    """Create a folder hierarchy on this machine to mirror that planned for GCS
+    """
+    print('Making local reference directories')
+    # org_dirs = set() # Organism directories (1st level, top)
+    # asm_dirs = set() # Genome assembly directories (2nd level)
+    # annot_dirs = set() # Genome annotation directories (3rd level, leaf dirs)
+
+    folders = []
+
+    for species in scp_species:
+        taxid = species[2]
+        organism_metadata = ensembl_metadata[taxid]
+        organism = organism_metadata['organism']
+        asm_name = organism_metadata['assembly_name']
+        asm_acc = organism_metadata['assembly_accession']
+        release = 'ensembl_' + organism_metadata['release']
+
+        folder = output_dir + 'reference_data/'
+        folder += organism + '/' + asm_name + '_' + asm_acc + '/' + release
+
+        os.makedirs(folder)
+        folders.append(folder)
+
+    return folders
+
+def move_outputs_to_local_ref_dirs(transformed_gtfs, ref_dirs):
+    return
+
 def transform_ensembl_gtfs(ensembl_metadata):
     """Download raw Ensembl GTFs, write position-sorted GTF and index
     """
@@ -127,6 +159,9 @@ def transform_ensembl_gtfs(ensembl_metadata):
         gtf_path = gtf[0].replace('.gz', '')
         transformed_gtf = transform_ensembl_gtf(gtf_path)
         transformed_gtfs.append(transformed_gtf)
+
+    make_local_reference_dirs(ensembl_metadata)
+
 
 def get_gcs_storage_client():
     """Get Google Cloud Storage storage client for service account
@@ -152,10 +187,23 @@ def upload_ensembl_gtf_products():
     # FireCloud workspace:
     # https://portal.firecloud.org/#workspaces/single-cell-portal/scp-reference-data
     scp_reference_data = 'fc-bcc55e6c-bec3-4b2e-9fb2-5e1526ddfcd2'
+    top_bucket_folder = 'reference_data_dev/'
+
     bucket = storage_client.get_bucket(scp_reference_data)
-    blobs = bucket.list_blobs(prefix='reference_data/')
+    blobs = bucket.list_blobs(prefix=top_bucket_folder)
+
+    org_dirs = set() # Organism directories (1st level, top)
+    asm_dirs = set() # Genome assembly directories (2nd level)
+    annot_dirs = set() # Genome annotation directories (3rd level, leaf dirs)
+
     for blob in blobs:
-        print(blob.name)
+        path = blob.name.replace(top_bucket_folder, '')
+        segments = path.split('/')
+        if len(segments) == 0:
+            # The top-level directory we're using in the GCS reference data
+            # bucket has no subdirectories, so all local content can be
+            # uploaded without needing to handle overwrites.
+            print('test')
 
 if use_cache is False:
     if os.path.exists(output_dir) is False:

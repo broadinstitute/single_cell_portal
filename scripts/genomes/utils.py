@@ -26,7 +26,7 @@ def fetch_gzipped_content(url, output_path):
             content = ''
             #content = gzip.GzipFile(fileobj=f).readlines()
     else:
-        print('Fetching gzipped ' + output_path)
+        print('Fetching gzipped ' + url)
         # If local report absent, fetch remote content and cache it
         request_obj = request.Request(
             url,
