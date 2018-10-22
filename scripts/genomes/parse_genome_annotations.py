@@ -84,10 +84,11 @@ def get_ensembl_gtf_urls(ensembl_metadata):
 
         gtf_url = origin + dir + filename
         gtf_urls.append(gtf_url)
+        ensembl_metadata[taxid]['gtf_path'] = output_dir + filename
 
-    return gtf_urls
+    return [gtf_urls, ensembl_metadata]
 
-def transform_ensembl_gtf(gtf_path):
+def transform_ensembl_gtf(gtf_path, ref_dir):
     """Produce sorted GTF and GTF index from Ensembl GTF; needed for igv.js
     """
     # Example:
@@ -95,6 +96,7 @@ def transform_ensembl_gtf(gtf_path):
     # $ bgzip gencode.vM17.annotation.possorted.gtf
     # $ tabix -p gff gencode.vM17.annotation.possorted.gtf.gz
     sorted_filename = gtf_path.replace('.gtf', '.possorted.gtf')
+    sorted_filename = ref_dir + sorted_filename.replace(output_dir, '')
     outputs = [sorted_filename + '.gz', sorted_filename + '.gz.tbi']
     if os.path.exists(outputs[1]):
         print('Using cached GTF transforms')
@@ -121,11 +123,6 @@ def make_local_reference_dirs(ensembl_metadata):
     """Create a folder hierarchy on this machine to mirror that planned for GCS
     """
     print('Making local reference directories')
-    # org_dirs = set() # Organism directories (1st level, top)
-    # asm_dirs = set() # Genome assembly directories (2nd level)
-    # annot_dirs = set() # Genome annotation directories (3rd level, leaf dirs)
-
-    folders = []
 
     for species in scp_species:
         taxid = species[2]
@@ -134,34 +131,32 @@ def make_local_reference_dirs(ensembl_metadata):
         asm_name = organism_metadata['assembly_name']
         asm_acc = organism_metadata['assembly_accession']
         release = 'ensembl_' + organism_metadata['release']
-
         folder = output_dir + 'reference_data/'
         folder += organism + '/' + asm_name + '_' + asm_acc + '/' + release
 
-        os.makedirs(folder)
-        folders.append(folder)
+        os.makedirs(folder, exist_ok=True)
 
-    return folders
+        ensembl_metadata[taxid]['reference_dir'] = folder
 
-def move_outputs_to_local_ref_dirs(transformed_gtfs, ref_dirs):
-    return
+    return ensembl_metadata
 
 def transform_ensembl_gtfs(ensembl_metadata):
     """Download raw Ensembl GTFs, write position-sorted GTF and index
     """
     transformed_gtfs = []
 
-    gtf_urls = get_ensembl_gtf_urls(ensembl_metadata)
+    gtf_urls, ensembl_metadata = get_ensembl_gtf_urls(ensembl_metadata)
     gtfs = batch_fetch(gtf_urls, output_dir)
+    ensembl_metadata = make_local_reference_dirs(ensembl_metadata)
+    # ensembl_metadata = move_gtfs(ensembl_metadata)
 
     print('Got GTFs!  Number: ' + str(len(gtfs)))
-    for gtf in gtfs:
-        gtf_path = gtf[0].replace('.gz', '')
-        transformed_gtf = transform_ensembl_gtf(gtf_path)
-        transformed_gtfs.append(transformed_gtf)
-
-    make_local_reference_dirs(ensembl_metadata)
-
+    for species in scp_species:
+        taxid = species[2]
+        organism_metadata = ensembl_metadata[taxid]
+        gtf_path = organism_metadata['gtf_path'].replace('.gz', '')
+        ref_dir = organism_metadata['reference_dir']
+        transform_ensembl_gtf(gtf_path, ref_dir)
 
 def get_gcs_storage_client():
     """Get Google Cloud Storage storage client for service account
@@ -192,9 +187,9 @@ def upload_ensembl_gtf_products():
     bucket = storage_client.get_bucket(scp_reference_data)
     blobs = bucket.list_blobs(prefix=top_bucket_folder)
 
-    org_dirs = set() # Organism directories (1st level, top)
-    asm_dirs = set() # Genome assembly directories (2nd level)
-    annot_dirs = set() # Genome annotation directories (3rd level, leaf dirs)
+    # org_dirs = set() # Organism directories (1st level, top)
+    # asm_dirs = set() # Genome assembly directories (2nd level)
+    # annot_dirs = set() # Genome annotation directories (3rd level, leaf dirs)
 
     for blob in blobs:
         path = blob.name.replace(top_bucket_folder, '')
@@ -216,6 +211,5 @@ if os.path.exists(output_dir) is False:
     os.mkdir(output_dir)
 
 ensembl_metadata = get_ensembl_metadata()
-gtfs = get_ensembl_gtf_urls(ensembl_metadata)
 gtf_products = transform_ensembl_gtfs(ensembl_metadata)
-upload_ensembl_gtf_products()
+upload_ensembl_gtf_products(gtf_products, ensembl_metadata)
