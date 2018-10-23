@@ -189,16 +189,21 @@ def upload_ensembl_gtf_products(ensembl_metadata):
 
     bucket = storage_client.get_bucket(scp_reference_data)
     
+    existing_blob_names = [blob.name for blob in bucket.list_blobs()]
+
     for species in scp_species:
         taxid = species[2]
         organism_metadata = ensembl_metadata[taxid]
         transformed_gtfs = organism_metadata['transformed_gtfs']
         for transformed_gtf in transformed_gtfs:
             source_blob_name = transformed_gtf
-            destination_blob_name = source_blob_name.replace('output/', '')
-            blob = bucket.blob(destination_blob_name)
+            target_blob_name = source_blob_name.replace('output/', '')
+            if target_blob_name in existing_blob_names:
+                print('Already in bucket, not uploading: ' + target_blob_name)
+                continue
+            blob = bucket.blob(target_blob_name)
             blob.upload_from_filename(source_blob_name)
-            print('Uploaded to GCS: ' + destination_blob_name)
+            print('Uploaded to GCS: ' + target_blob_name)
 
 if use_cache is False:
     if os.path.exists(output_dir) is False:
