@@ -143,17 +143,6 @@ def get_gcs_storage_client(vault_path):
 
     return storage_client
 
-def upload_gcs_blob(bucket_name, source_file_name, destination_blob_name, storage_client):
-    """Uploads a file to the bucket."""
-    bucket = storage_client.get_bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-
-    blob.upload_from_filename(source_file_name)
-
-    print('File {} uploaded to {}.'.format(
-        source_file_name,
-        destination_blob_name))
-
 def copy_gcs_data_from_prod_to_dev(bucket, prod_dir, dev_dir):
     """Copy all GCS prod contents to GCS dev, to ensure they're equivalent
     """
