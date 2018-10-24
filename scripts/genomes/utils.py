@@ -131,7 +131,6 @@ def batch_fetch(urls, output_dir):
 def get_gcs_storage_client(vault_path):
     """Get Google Cloud Storage storage client for service account
     """
-
     # Get GCS SA credentials from Vault
     vault_command = ('vault read -format=json ' + vault_path).split(' ')
     p = subprocess.Popen(vault_command, stdout=subprocess.PIPE)
@@ -158,9 +157,22 @@ def upload_gcs_blob(bucket_name, source_file_name, destination_blob_name, storag
 def copy_gcs_data_from_prod_to_dev(bucket, prod_dir, dev_dir):
     """Copy all GCS prod contents to GCS dev, to ensure they're equivalent
     """
+    print('Copying prod blobs to dev in GCS')
     prod_blobs = bucket.list_blobs(prefix=prod_dir)
-    print('prod blobs')
+
+    dev_blobs = bucket.list_blobs(prefix=dev_dir)
+    dev_blob_names_trimmed = []
+    for dev_blob in dev_blobs:
+        dev_blob_name_trimmed = dev_blob.name.replace(dev_dir, '')
+        dev_blob_names_trimmed.append(dev_blob_name_trimmed)
+
+    # Compare names of prod and dev blobs without their respective directory
+    # names, and copy only prod blobs that aren't already in dev.
     for prod_blob in prod_blobs:
-        prod_blob_name = prod_blob.name
-        print(prod_blob_name)
-        #bucket.copy_blob(source_blob, destination_bucket, new_blob_name)
+        prod_blob_name_trimmed = prod_blob.name.replace(prod_dir, '')
+        if prod_blob_name_trimmed not in dev_blob_names_trimmed:
+            dev_blob_name = prod_blob.name.replace(prod_dir, dev_dir)
+            bucket.copy_blob(prod_blob, bucket, dev_blob_name)
+            print('Copied ' + prod_blob.name + ' to ' + dev_blob_name)
+        else:
+            print('Already in dev, not copying ' + prod_blob.name)
