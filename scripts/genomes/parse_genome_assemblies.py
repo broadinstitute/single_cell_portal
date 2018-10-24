@@ -52,7 +52,9 @@ def get_assembly_report(use_historical=False):
     assembly_report_url = domain + path + report_filename
     assembly_report_path = output_dir + report_filename
 
+    # TODO: Refactor fetch_content so this is less gross.
     assembly_report = fetch_content([[assembly_report_url, assembly_report_path]])
+    assembly_report = list(assembly_report.values())[0]
 
     return assembly_report
 
