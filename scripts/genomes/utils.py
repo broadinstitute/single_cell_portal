@@ -2,11 +2,16 @@
 """
 
 import gzip
+import json
 import multiprocessing
 import os
 import shutil
+import subprocess
 import time
 import urllib.request as request
+
+from google.cloud import storage
+from google.oauth2 import service_account
 
 def get_species_list(organisms_path):
     """Get priority species to support in Single Cell Portal
@@ -122,3 +127,40 @@ def batch_fetch(urls, output_dir):
                 batch_contents.append([output_path, content])
 
     return batch_contents
+
+def get_gcs_storage_client(vault_path):
+    """Get Google Cloud Storage storage client for service account
+    """
+
+    # Get GCS SA credentials from Vault
+    vault_command = ('vault read -format=json ' + vault_path).split(' ')
+    p = subprocess.Popen(vault_command, stdout=subprocess.PIPE)
+    vault_response = p.communicate()[0]
+    gcs_info = json.loads(vault_response)['data']
+
+    project_id = 'single-cell-portal'
+    credentials = service_account.Credentials.from_service_account_info(gcs_info)
+    storage_client = storage.Client(project_id, credentials=credentials)
+
+    return storage_client
+
+def upload_gcs_blob(bucket_name, source_file_name, destination_blob_name, storage_client):
+    """Uploads a file to the bucket."""
+    bucket = storage_client.get_bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+
+    blob.upload_from_filename(source_file_name)
+
+    print('File {} uploaded to {}.'.format(
+        source_file_name,
+        destination_blob_name))
+
+def copy_gcs_data_from_prod_to_dev(bucket, prod_dir, dev_dir):
+    """Copy all GCS prod contents to GCS dev, to ensure they're equivalent
+    """
+    prod_blobs = bucket.list_blobs(prefix=prod_dir)
+    print('prod blobs')
+    for prod_blob in prod_blobs:
+        prod_blob_name = prod_blob.name
+        print(prod_blob_name)
+        #bucket.copy_blob(source_blob, destination_bucket, new_blob_name)

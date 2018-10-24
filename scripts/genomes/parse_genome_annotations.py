@@ -8,9 +8,6 @@ import shutil
 import subprocess
 import urllib.request as request
 
-from google.cloud import storage
-from google.oauth2 import service_account
-
 from utils import *
 
 parser = argparse.ArgumentParser(
@@ -21,13 +18,30 @@ parser.add_argument('--use_cache',
                     action='store_true')
 parser.add_argument('--vault_path',
                     help='Path in Vault for GCS service account credentials')
-parser.add_argument('--output_dir',
-                    help='Directory to send output data to.  Default: output/',
+parser.add_argument('--local_output_dir',
+                    help='Local directory for output.  Default: output/',
                     default='output/')
+parser.add_argument('--gcs_bucket',
+                    help='Name of GCS bucket for upload.  ' +
+                    'Default: reference_data_dev/',
+                    default='fc-bcc55e6c-bec3-4b2e-9fb2-5e1526ddfcd2')
+parser.add_argument('--remote_output_dir',
+                    help='Remote directory for output in GCS bucket.  ' +
+                    'Default: reference_data_dev/',
+                    default='reference_data_dev/')
+parser.add_argument('--copy_data_from_prod_dir',
+                    help='Remote directory from which to copy data into ' +
+                    'remote_output_dir.  Use to ensure test data ' +
+                    'environment is equivalent to production data ' +
+                    'environment.  Default: reference_data/',
+                    default='reference_data/')
 args = parser.parse_args()
 use_cache = args.use_cache
 vault_path = args.vault_path
-output_dir = args.output_dir
+gcs_bucket = args.gcs_bucket
+output_dir = args.local_output_dir
+remote_prod_dir = args.copy_data_from_prod_dir
+remote_output_dir = args.remote_output_dir
 
 scp_species = get_species_list('organisms.tsv')
 
@@ -131,7 +145,7 @@ def make_local_reference_dirs(ensembl_metadata):
         asm_name = organism_metadata['assembly_name']
         asm_acc = organism_metadata['assembly_accession']
         release = 'ensembl_' + organism_metadata['release']
-        folder = output_dir + 'reference_data_dev/'
+        folder = output_dir + remote_output_dir
         folder += organism + '/' + asm_name + '_' + asm_acc + '/' + release + '/'
 
         os.makedirs(folder, exist_ok=True)
@@ -161,33 +175,20 @@ def transform_ensembl_gtfs(ensembl_metadata):
 
     return ensembl_metadata
 
-def get_gcs_storage_client():
-    """Get Google Cloud Storage storage client for service account
-    """
-
-    # Get GCS SA credentials from Vault
-    vault_command = ('vault read -format=json ' + vault_path).split(' ')
-    p = subprocess.Popen(vault_command, stdout=subprocess.PIPE)
-    vault_response = p.communicate()[0]
-    gcs_info = json.loads(vault_response)['data']
-
-    project_id = 'single-cell-portal'
-    credentials = service_account.Credentials.from_service_account_info(gcs_info)
-    storage_client = storage.Client(project_id, credentials=credentials)
-
-    return storage_client
-
 def upload_ensembl_gtf_products(ensembl_metadata):
     print('Uploading Ensembl GTF products')
 
-    storage_client = get_gcs_storage_client()
+    storage_client = get_gcs_storage_client(vault_path)
 
-    # FireCloud workspace:
+    # FireCloud workspace for canonical SCP reference data:
     # https://portal.firecloud.org/#workspaces/single-cell-portal/scp-reference-data
-    scp_reference_data = 'fc-bcc55e6c-bec3-4b2e-9fb2-5e1526ddfcd2'
-    top_bucket_folder = 'reference_data_dev/'
+    reference_data_bucket = gcs_bucket
+    target_folder = remote_output_dir
 
-    bucket = storage_client.get_bucket(scp_reference_data)
+    bucket = storage_client.get_bucket(reference_data_bucket)
+
+    remote_dev_dir = remote_output_dir
+    copy_gcs_data_from_prod_to_dev(bucket, remote_prod_dir, remote_dev_dir)
     
     existing_blob_names = [blob.name for blob in bucket.list_blobs()]
 
