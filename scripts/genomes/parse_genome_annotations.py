@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import urllib.request as request
 
+from persist_annotation_metadata import *
 from utils import *
 
 parser = argparse.ArgumentParser(
@@ -44,6 +45,14 @@ remote_prod_dir = args.copy_data_from_prod_dir
 remote_output_dir = args.remote_output_dir
 
 scp_species = get_species_list('organisms.tsv')
+
+context = {
+    'vault_path': vault_path,
+    'gcs_bucket': gcs_bucket,
+    'output_dir': output_dir,
+    'remote_prod_dir': remote_prod_dir,
+    'remote_output_dir': remote_output_dir
+}
 
 def get_ensembl_metadata():
     """Get organism, assembly, and annotation release metadata from Ensembl
@@ -191,5 +200,5 @@ if os.path.exists(output_dir) is False:
 
 ensembl_metadata = get_ensembl_metadata()
 ensembl_metadata = transform_ensembl_gtfs(ensembl_metadata)
-ensembl_metadata = upload_ensembl_gtf_products(ensembl_metadata)
-record_annotation_metadata(ensembl_metadata)
+ensembl_metadata = upload_ensembl_gtf_products(ensembl_metadata, context)
+record_annotation_metadata(ensembl_metadata, context)

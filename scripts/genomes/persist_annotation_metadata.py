@@ -78,13 +78,15 @@ def get_ensembl_gtf_release_date(gtf_path):
     try:
         release_date = head[4].split('genebuild-last-updated ')[1]
     except IndexError:
-        # Happens with e.g. Drosophila melanogaster
+        # Happens with e.g. Drosophila melanogaster genome annotation BDGP6
         print('No annotation release date found for ' + gtf_path)
         return None
     return release_date
 
 
 def get_ref_file_annot_metadata(organism_metadata):
+    """Get name, date, URL and index URL for a genome annotation
+    """
 
     url = organism_metadata['annotation_url']
     index_url = organism_metadata['annotation_url']
@@ -118,11 +120,12 @@ def update_meta_row(row, org_metadata, annot_metadata):
     return new_row
 
 
-def record_annotation_metadata(ensembl_metadata):
+def record_annotation_metadata(ensembl_metadata, context):
     """Write annotation URLs, etc. to species metadata reference TSV file
     """
     new_metadata_ref = []
 
+    output_dir = context['output_dir']
     ref_file = output_dir + 'species_metadata_reference.tsv'
 
     with open(ref_file) as f:
