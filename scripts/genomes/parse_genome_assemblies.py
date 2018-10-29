@@ -62,7 +62,7 @@ def get_assembly_report(use_historical=False):
 def parse_columns(columns):
     """ Extract relevant values from columns of the NCBI Assembly Report
     """
-    # accession = columns[0]
+    accession = columns[0]
     refseq_category = columns[4]
     # taxid = columns[5]
     # species_taxid = columns[6] # Helps with dog, for example
@@ -75,7 +75,7 @@ def parse_columns(columns):
     refseq_accession = columns[17]
 
     return [release_type, assembly_level, refseq_category, assembly_name, release_date,
-            organism_name, refseq_accession]
+            organism_name, accession, refseq_accession]
 
 
 def is_relevant_assembly(rel_type, asm_level, refseq_category, refseq_acc):
@@ -101,13 +101,13 @@ def update_assemblies(columns, assemblies):
     """ Parse and return all relevant assemblies, by organism
     """
     (rel_type, asm_level, refseq_category, asm_name, rel_date, org_name,
-     refseq_acc) = parse_columns(columns)
+        accession, refseq_acc) = parse_columns(columns)
 
     if is_relevant_assembly(rel_type, asm_level, refseq_category, refseq_acc):
         if org_name == 'Homo sapiens' and asm_name[:3] != 'GRC':
             # Omit CHM1_1.1, HuRef, etc.
             return assemblies
-        assembly = [asm_name, rel_date]
+        assembly = [asm_name, accession, rel_date]
         if org_name not in assemblies:
             assemblies[org_name] = [assembly]
         else:
@@ -126,9 +126,9 @@ def refine_assemblies(assemblies):
             continue
         asms = assemblies[scientific_name]
         for asm in asms:
-            (assembly_name, release_date) = asm
-            row = [scientific_name, common_name,
-                   taxid, assembly_name, release_date]
+            (assembly_name, accession, release_date) = asm
+            row = [scientific_name, common_name, taxid,
+                assembly_name, accession, release_date]
             refined_assemblies.append(row)
 
     return refined_assemblies
@@ -156,13 +156,13 @@ def write_assemblies_to_file(assemblies):
     """
     assemblies_str = []
     header = ['# scientific_name', 'common_name',
-              'taxid', 'assembly_name', 'release_date']
+              'taxid', 'assembly_name', 'assembly_accession', 'release_date']
     assemblies.insert(0, header)
     for assembly in assemblies:
         assemblies_str.append('\t'.join(assembly))
     assemblies_str = '\n'.join(assemblies_str)
 
-    output_path = output_dir + 'assemblies.txt'
+    output_path = output_dir + 'species_metadata_reference.tsv'
     with open(output_path, 'w') as f:
         f.write(assemblies_str)
     print('Wrote assemblies to ' + output_path)
