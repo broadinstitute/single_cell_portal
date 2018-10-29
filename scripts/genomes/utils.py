@@ -25,13 +25,13 @@ def fetch_gzipped_content(url, output_path):
     """Fetch remote gzipped content, or read it from disk if cached
     """
     if os.path.exists(output_path):
-        print('Reading cached gzipped ' + output_path)
+        print('  Reading cached gzipped ' + output_path)
         # Use locally cached content if available
         with open(output_path, 'rb') as f:
             content = ''
             #content = gzip.GzipFile(fileobj=f).readlines()
     else:
-        print('Fetching gzipped ' + url)
+        print('  Fetching gzipped ' + url)
         # If local report absent, fetch remote content and cache it
         request_obj = request.Request(
             url,
@@ -50,7 +50,7 @@ def fetch_gzipped_content(url, output_path):
                     shutil.copyfileobj(f_in, f_out)
 
             content = remote_content
-    print('Returning content for gzipped ' + url)
+    print('  Returning content for gzipped ' + url)
     return content
 
 def fetch_content(url_and_output_paths):
@@ -64,12 +64,12 @@ def fetch_content(url_and_output_paths):
         else:
             if os.path.exists(output_path):
                 # Use locally cached content if available
-                print('Reading cached ' + output_path)
+                print('  Reading cached ' + output_path)
                 with open(output_path) as f:
                     content = f.readlines()
             else:
                 # If local report absent, fetch remote content and cache it
-                print('Fetching ' + output_path)
+                print('  Fetching ' + output_path)
                 with request.urlopen(url) as response:
                     remote_content = response.read().decode('utf-8')
                     with open(output_path, 'w') as f:
@@ -162,6 +162,6 @@ def copy_gcs_data_from_prod_to_dev(bucket, prod_dir, dev_dir):
         if prod_blob_name_trimmed not in dev_blob_names_trimmed:
             dev_blob_name = prod_blob.name.replace(prod_dir, dev_dir)
             bucket.copy_blob(prod_blob, bucket, dev_blob_name)
-            print('Copied ' + prod_blob.name + ' to ' + dev_blob_name)
+            print('  Copied ' + prod_blob.name + ' to ' + dev_blob_name)
         else:
-            print('Already in dev, not copying ' + prod_blob.name)
+            print('  Already in dev, not copying ' + prod_blob.name)
