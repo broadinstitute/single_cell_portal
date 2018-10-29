@@ -1,4 +1,4 @@
-"""Download genome annotations, transform for igv.js, upload to GCS for SCP
+"""Download genome annotations, transform for visualizations, upload to GCS
 """
 
 import argparse
@@ -113,10 +113,10 @@ def transform_ensembl_gtf(gtf_path, ref_dir):
     sorted_filename = ref_dir + sorted_filename.replace(output_dir, '')
     outputs = [sorted_filename + '.gz', sorted_filename + '.gz.tbi']
     if os.path.exists(outputs[1]):
-        print('Using cached GTF transforms')
+        print('  Using cached GTF transforms')
         return outputs
     else:
-        print('Producing GTF transforms for ' + gtf_path)
+        print('  Producing GTF transforms for ' + gtf_path)
 
     # sort by chromosome name, then genomic start position; needed for index
     sort_command = ('sort -k1,1 -k4,4n ' + gtf_path).split(' ')
@@ -160,10 +160,14 @@ def transform_ensembl_gtfs(ensembl_metadata):
     transformed_gtfs = []
 
     gtf_urls, ensembl_metadata = get_ensembl_gtf_urls(ensembl_metadata)
+
+    print('Fetching GTFs')
     gtfs = batch_fetch(gtf_urls, output_dir)
+    print('Got GTFs!  Number: ' + str(len(gtfs)))
+
     ensembl_metadata = make_local_reference_dirs(ensembl_metadata)
 
-    print('Got GTFs!  Number: ' + str(len(gtfs)))
+    print('Transforming GTFs')
     for species in scp_species:
         taxid = species[2]
         organism_metadata = ensembl_metadata[taxid]
@@ -174,6 +178,22 @@ def transform_ensembl_gtfs(ensembl_metadata):
         ensembl_metadata[taxid]['transformed_gtfs'] = transformed_gtfs
 
     return ensembl_metadata
+
+def upload_gtf_product(transformed_gtf, bucket, existing_names):
+    source_blob_name = transformed_gtf
+    target_blob_name = source_blob_name.replace('output/', '')
+
+    # Check if this file was already uploaded
+    if target_blob_name in existing_names:
+        print('  Already in bucket, not uploading: ' + target_blob_name)
+        return target_blob_name
+
+    # Upload the file
+    blob = bucket.blob(target_blob_name)
+    blob.upload_from_filename(source_blob_name)
+    print('  Uploaded to GCS: ' + target_blob_name)
+
+    return target_blob_name
 
 def upload_ensembl_gtf_products(ensembl_metadata):
     print('Uploading Ensembl GTF products')
@@ -190,21 +210,109 @@ def upload_ensembl_gtf_products(ensembl_metadata):
     remote_dev_dir = remote_output_dir
     copy_gcs_data_from_prod_to_dev(bucket, remote_prod_dir, remote_dev_dir)
     
-    existing_blob_names = [blob.name for blob in bucket.list_blobs()]
+    existing_names = [blob.name for blob in bucket.list_blobs()]
 
     for species in scp_species:
         taxid = species[2]
         organism_metadata = ensembl_metadata[taxid]
         transformed_gtfs = organism_metadata['transformed_gtfs']
+
         for transformed_gtf in transformed_gtfs:
-            source_blob_name = transformed_gtf
-            target_blob_name = source_blob_name.replace('output/', '')
-            if target_blob_name in existing_blob_names:
-                print('Already in bucket, not uploading: ' + target_blob_name)
-                continue
-            blob = bucket.blob(target_blob_name)
-            blob.upload_from_filename(source_blob_name)
-            print('Uploaded to GCS: ' + target_blob_name)
+            target_name = upload_gtf_product(transformed_gtf, bucket,
+                existing_names)
+
+            # Update metadata with GTF product URLs
+            origin = 'https://storage.cloud.google.com'
+            gcs_url = origin + reference_data_bucket + target_name
+            if gcs_url[-7:] == '.gtf.gz':
+                product = 'annotation_url'
+            elif gcs_url[-11:] == '.gtf.gz.tbi':
+                product = 'annotation_index_url'
+            ensembl_metadata[taxid][product] = gcs_url
+
+    return ensembl_metadata
+
+def get_ensembl_gtf_release_date(gtf_path):
+    with open(gtf_path) as f:
+        # Get first 5 lines, without reading file entirely into memory
+        head = [next(f).strip() for x in range(5)]
+    try:
+        release_date = head[4].split('genebuild-last-updated ')[1]
+    except IndexError:
+        print('No annotation release date found for ' + gtf_path)
+        return None
+    return release_date
+
+
+def get_ref_file_annot_metadata(organism_metadata):
+
+    url = organism_metadata['annotation_url']
+    index_url = organism_metadata['annotation_url']
+    name = 'Ensembl ' + organism_metadata['release']
+
+    gtf_path = organism_metadata['gtf_path'].replace('.gz', '')
+    date = get_ensembl_gtf_release_date(gtf_path)
+
+    return [name, date, url, index_url]
+
+
+def update_meta_row(row, org_metadata, annot_metadata):
+    """Update row from species_metadata_reference.tsv with annotation metadata
+    """
+    date = annot_metadata[1]
+
+    ref_assembly_name = row[3]
+    assembly_name = org_metadata['assembly_name']
+    ref_assembly_acc = row[4]
+    assembly_acc = org_metadata['assembly_accession']
+
+    if ref_assembly_acc == assembly_acc or ref_assembly_name == assembly_name:
+        if date is None:
+            # If annotation is undated (as with Drosophila), use assembly date
+            assembly_date = row[4]
+            annot_metadata[1] = assembly_date
+        new_row = '\t'.join(row + annot_metadata)
+    else:
+        new_row = '\t'.join(row)
+
+    return new_row
+
+
+def record_annotation_metadata(ensembl_metadata):
+    """Adds annotation URLs, etc. to species metadata reference TSV file
+    """
+    new_metadata_ref = []
+
+    ref_file = output_dir + 'species_metadata_reference.tsv'
+
+    with open(ref_file) as f:
+        metadata_ref = [line.strip().split('\t') for line in f.readlines()]
+
+    for species in scp_species:
+        taxid = species[2]
+        org_metadata = ensembl_metadata[taxid]
+
+        annot_metadata = get_ref_file_annot_metadata(org_metadata)
+
+        for row in metadata_ref[1:]:
+            ref_taxid = row[2]
+            if taxid == ref_taxid:
+                new_row = update_meta_row(row, org_metadata, annot_metadata)
+                new_metadata_ref.append(new_row)
+
+    assembly_headers = metadata_ref[0]
+    annot_headers = [
+        'annotation_name',
+        'annotation_release_date',
+        'annotation_url',
+        'annotation_index_url'
+    ]
+    header = '\t'.join(assembly_headers + annot_headers) + '\n'
+    new_metadata_ref = header + '\n'.join(new_metadata_ref)
+
+    with open(ref_file, 'w') as f:
+        f.write(new_metadata_ref)
+    print('Wrote annotation metadata to ' + ref_file)
 
 if use_cache is False:
     if os.path.exists(output_dir) is False:
@@ -218,4 +326,5 @@ if os.path.exists(output_dir) is False:
 
 ensembl_metadata = get_ensembl_metadata()
 ensembl_metadata = transform_ensembl_gtfs(ensembl_metadata)
-upload_ensembl_gtf_products(ensembl_metadata)
+ensembl_metadata = upload_ensembl_gtf_products(ensembl_metadata)
+record_annotation_metadata(ensembl_metadata)
