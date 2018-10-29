@@ -155,8 +155,8 @@ def write_assemblies_to_file(assemblies):
     """ Save assembly metadata to disk
     """
     assemblies_str = []
-    header = ['# scientific_name', 'common_name',
-              'taxid', 'assembly_name', 'assembly_accession', 'release_date']
+    header = ['# scientific_name', 'common_name', 'taxid',
+        'assembly_name', 'assembly_accession', 'assembly_release_date']
     assemblies.insert(0, header)
     for assembly in assemblies:
         assemblies_str.append('\t'.join(assembly))
