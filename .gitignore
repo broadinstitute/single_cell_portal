@@ -3,4 +3,5 @@ PortalFiles.pyc
 __pycache__/
 .DS_Store
 scripts/genomes/output/
+.vscode
 scripts/__pycache__
