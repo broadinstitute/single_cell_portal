@@ -20,13 +20,13 @@ from cluster_meta import *
 class MatrixToIdeogramAnnots:
 
     def __init__(self, infercnv_output, infercnv_delimiter, gen_pos_file,
-                 clusters_meta, output_file):
+                 clusters_meta, output_dir):
         """Class and parameter docs in module summary and argument parser"""
 
         self.infercnv_output = infercnv_output
         self.infercnv_delimiter = infercnv_delimiter
         self.clusters = self.get_clusters(clusters_meta)
-        self.output_file = output_file
+        self.output_dir = output_dir
         self.genomic_position_file_path = gen_pos_file
 
         self.genes = self.get_genes()
@@ -36,14 +36,16 @@ class MatrixToIdeogramAnnots:
     def write_ideogram_annots(self):
         """Write Ideogram.js annotations JSON data to specified output file"""
 
-        ideogram_annots = self.get_ideogram_annots()
+        ideogram_annots_list = self.get_ideogram_annots()
 
-        ideogram_annots_json = json.dumps(ideogram_annots)
+        for cluster_name, ideogram_annots in ideogram_annots_list:
+            ideogram_annots_json = json.dumps(ideogram_annots)
+            file_name = 'infercnv_exp_means--' + cluster_name + '.json'
+            output_path = self.output_dir + file_name
+            with open(output_path, 'w') as f:
+                f.write(ideogram_annots_json)
 
-        with open(self.output_file, 'w') as f:
-            f.write(ideogram_annots_json)
-
-        print('Wrote Ideogram.js annotations to ' + self.output_file)
+            print('Wrote Ideogram.js annotations to ' + output_path)
 
     def get_ideogram_annots(self):
         """Get Ideogram.js annotations from inferCNV and cluster data
@@ -51,6 +53,8 @@ class MatrixToIdeogramAnnots:
         Format and other details of Ideogram.js annotations:
         https://github.com/eweitz/ideogram/wiki/Annotations
         """
+
+        ideogram_annots_list = []
 
         genes = self.genes
 
@@ -61,7 +65,7 @@ class MatrixToIdeogramAnnots:
             expression_means = self.compute_gene_expression_means(matrix, cluster)
 
             keys = ['name', 'start', 'length']
-            keys += ['all'] + list(cluster.keys())  # cluster names
+            keys += list(cluster.keys())  # cluster names
 
             annots_by_chr = {}
 
@@ -93,8 +97,9 @@ class MatrixToIdeogramAnnots:
                 annots_list.append({'chr': chr, 'annots': annots})
 
             ideogram_annots = {'keys': keys, 'annots': annots_list}
+            ideogram_annots_list.append([cluster_name, ideogram_annots])
 
-        return ideogram_annots
+        return ideogram_annots_list
 
     def get_genes(self):
         """Convert inferCNV genomic position file into useful 'genes' dict"""
@@ -152,9 +157,6 @@ class MatrixToIdeogramAnnots:
 
         cluster_groups = {}
 
-        print('clusters_meta')
-        print(clusters_meta)
-
         for i, cluster_group in enumerate(clusters_meta['cluster_names']):
             cluster_meta = clusters_meta[cluster_group]
             print('cluster_meta')
@@ -191,7 +193,7 @@ class MatrixToIdeogramAnnots:
 
         cluster_names = list(cluster.keys())
 
-        keys = ['name', 'all'] + cluster_names
+        keys = ['name'] + cluster_names
         scores_lists.append(keys)
 
         gene_expression_lists = matrix['genes']
@@ -249,8 +251,8 @@ if __name__ == '__main__':
                     nargs='+')
     ap.add_argument('--metadata_path',
                     help='Path or URL to metadata file')
-    ap.add_argument('--output_file',
-                    help='Path for write output')
+    ap.add_argument('--output_dir',
+                    help='Path to write output')
 
     args = ap.parse_args()
 
@@ -260,8 +262,8 @@ if __name__ == '__main__':
     cluster_names = args.cluster_names
     cluster_paths = args.cluster_paths
     metadata_path = args.metadata_path
-    output_file = args.output_file
+    output_dir = args.output_dir
 
     clusters_meta = get_clusters_meta(cluster_names, cluster_paths, metadata_path)
 
-    MatrixToIdeogramAnnots(infercnv_output, infercnv_delimiter, gen_pos_file, clusters_meta, output_file)
+    MatrixToIdeogramAnnots(infercnv_output, infercnv_delimiter, gen_pos_file, clusters_meta, output_dir)
