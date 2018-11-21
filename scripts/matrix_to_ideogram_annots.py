@@ -159,33 +159,39 @@ class MatrixToIdeogramAnnots:
 
         for i, cluster_group in enumerate(clusters_meta['cluster_names']):
             cluster_meta = clusters_meta[cluster_group]
-            print('cluster_meta')
-            print(cluster_meta)
 
-            cluster_path = clusters_meta['cluster_paths'][i]
+            if cluster_group[:10] == 'METADATA__':
+                cluster_path = clusters_meta['metadata_path']
+                content_rows_start_index = 3
+            else:
+                cluster_path = clusters_meta['cluster_paths'][i]
+                content_rows_start_index = 2
             cell_annot_index = cluster_meta['cell_annot_index']
             cell_annot_labels = cluster_meta['cell_annot_labels']
 
             clusters = {}
 
             for name in cell_annot_labels:
+                if name[:10] == 'METADATA__':
+                    name = name[11:]
                 clusters[name] = {}
                 clusters[name]['cells'] = []
 
             with open(cluster_path) as f:
                 lines = f.readlines()
 
-            for line in lines[2:]:
+            for line in lines[content_rows_start_index:]:
                 columns = line.strip().split()
                 cell = columns[0]
                 cluster_label = columns[cell_annot_index]
                 clusters[cluster_label]['cells'].append(cell)
+
             cluster_groups[cluster_group] = clusters
 
         return cluster_groups
 
     def compute_gene_expression_means(self, matrix, cluster):
-        """Compute mean expression for each gene across all and each cluster"""
+        """Compute mean expression for each gene across each cluster"""
 
         scores_lists = []
 
