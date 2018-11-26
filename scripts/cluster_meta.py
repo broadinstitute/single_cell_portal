@@ -3,28 +3,13 @@
 This module is a helper for matrix_to_ideogram_annots.py.
 """
 
-def get_labels_from_cluster_file(cell_annotation_path, cell_annotation_name):
-    cluster_labels = set()
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
-    with open(cell_annotation_path) as f:
-        lines = f.readlines()
+def get_clusters_from_file(path):
+    clusters = {}
 
-    # This seems fragile.
-    cell_annotation_index = 3
-
-    header = lines[0].strip().split('\t')[cell_annotation_index]
-
-    for line in lines[2:]:
-        columns = line.strip().split('\t')
-        cluster_label = columns[cell_annotation_index]
-        cluster_labels.add(cluster_label)
-
-    return cluster_labels, cell_annotation_index
-
-def get_clusters_from_metadata_file(metadata_path):
-    metadata_clusters = {}
-
-    with open(metadata_path) as f:
+    with open(path) as f:
         lines = f.readlines()
 
     headers = [line.strip().split('\t') for line in lines[:2]]
@@ -37,45 +22,40 @@ def get_clusters_from_metadata_file(metadata_path):
 
         cluster_labels = set()
 
-        name = 'METADATA__' + names[cluster_index]
+        name = names[cluster_index]
 
         for line in lines[3:]:
             columns = line.strip().split('\t')
             cluster_label = columns[cluster_index].strip()
             cluster_labels.add(cluster_label)
 
-        metadata_clusters[name] = [cluster_labels, cluster_index]
+        clusters[name] = [cluster_labels, cluster_index]
 
-    return metadata_clusters
+    return clusters
 
-def get_clusters_meta(names, paths, metadata_path):
+def get_cluster_groups(group_names, paths, metadata_path):
     """Organize cluster args provided via CLI into a more convenient dict"""
-    clusters_meta = {
-        'cluster_names': names,
-        'cluster_paths': paths,
-        'metadata_path': metadata_path
-    }
+    cluster_groups = {}
 
-    for i, name in enumerate(names):
-        path = paths[i]
-        labels, index = get_labels_from_cluster_file(path, name)
-        cluster = {
-            'cell_annot_labels': labels,
-            'cell_annot_index': index
+    group_names.append('METADATA')
+    paths.append(metadata_path)
+
+    for i, path in enumerate(paths):
+        cluster_group_name = group_names[i]
+        clusters = get_clusters_from_file(path)
+        cluster_groups[cluster_group_name] = {
+            'path': path,
+            'clusters': {}
         }
-        clusters_meta[name] = cluster
+        for name in clusters:
+            labels, index = clusters[name]
+            cluster = {
+                'cell_annot_labels': labels,
+                'cell_annot_index': index
+            }
+            cluster_groups[cluster_group_name]['clusters'][name] = cluster
 
-    metadata_clusters = get_clusters_from_metadata_file(metadata_path)
-    for name in metadata_clusters:
-        labels, index = metadata_clusters[name]
-        cluster = {
-            'cell_annot_labels': labels,
-            'cell_annot_index': index
-        }
-        clusters_meta[name] = cluster
-    clusters_meta['cluster_names'] += list(metadata_clusters.keys())
+    print('cluster_groups')
+    pp.pprint(cluster_groups)
 
-    print('clusters_meta')
-    print(clusters_meta)
-
-    return clusters_meta
+    return cluster_groups

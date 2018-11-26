@@ -270,6 +270,6 @@ if __name__ == '__main__':
     metadata_path = args.metadata_path
     output_dir = args.output_dir
 
-    clusters_meta = get_clusters_meta(cluster_names, cluster_paths, metadata_path)
+    clusters_meta = get_cluster_groups(cluster_names, cluster_paths, metadata_path)
 
     MatrixToIdeogramAnnots(infercnv_output, infercnv_delimiter, gen_pos_file, clusters_meta, output_dir)
