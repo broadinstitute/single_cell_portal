@@ -13,9 +13,16 @@ __status__ = 'Development'
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import json
+import os
+import shutil
 from statistics import mean
+import tarfile
 
 from cluster_groups import *
+
+def make_tarfile(output_filename, source_dir):
+    with tarfile.open(output_filename, 'w:gz') as tar:
+        tar.add(source_dir, arcname=os.path.basename(source_dir))
 
 class MatrixToIdeogramAnnots:
 
@@ -26,7 +33,7 @@ class MatrixToIdeogramAnnots:
         self.infercnv_output = infercnv_output
         self.infercnv_delimiter = infercnv_delimiter
         self.cluster_groups = cluster_groups
-        self.output_dir = output_dir
+        self.output_dir = output_dir + 'ideogram_exp_means/'
         self.genomic_position_file_path = gen_pos_file
 
         self.genes = self.get_genes()
@@ -37,16 +44,23 @@ class MatrixToIdeogramAnnots:
         """Write Ideogram.js annotations JSON data to specified output file"""
 
         ideogram_annots_list = self.get_ideogram_annots()
+        if os.path.exists(self.output_dir):
+            shutil.rmtree(self.output_dir)
+        os.mkdir(self.output_dir)
 
         for group_name, scope, cluster_name, ideogram_annots in ideogram_annots_list:
             ideogram_annots_json = json.dumps(ideogram_annots)
+            scope_map = {'cluster_file': 'cluster', 'metadata_file': 'study'}
+            scope = scope_map[scope]
             identifier = group_name + '--' + cluster_name + '--group--' + scope
-            file_name = 'infercnv_exp_means__' + identifier + '.json'
+            file_name = 'ideogram_exp_means__' + identifier + '.json'
             output_path = self.output_dir + file_name
             with open(output_path, 'w') as f:
                 f.write(ideogram_annots_json)
 
             print('Wrote Ideogram.js annotations to ' + output_path)
+
+        make_tarfile('ideogram_exp_means.tar.gz', 'ideogram_exp_means')
 
     def get_ideogram_annots(self):
         """Get Ideogram.js annotations from inferCNV and cluster data

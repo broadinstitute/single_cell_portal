@@ -61,16 +61,18 @@ def get_cluster_groups(group_names, paths, metadata_path):
         cluster_groups[group_name]['metadata_file'] = metadata_clusters
 
     for group_name in cluster_groups:
-        print('group_name')
-        print(group_name)
-        print('clusters from cluster file')
-        print(cluster_groups[group_name]['cluster_file'].keys())
-        print('clusters from metadata file')
-        print(cluster_groups[group_name]['metadata_file'].keys())
+        print('Cluster group: ' + group_name)
         metadata_clusters = cluster_groups[group_name]['metadata_file']
+        print('From metadata file:')
         for cluster_name in metadata_clusters:
             for label in metadata_clusters[cluster_name]:
-                print('cells in ' + cluster_name + '/' + label + ':')
-                print(len(metadata_clusters[cluster_name][label]))
+                num_cells = str(len(metadata_clusters[cluster_name][label]))
+                print('  Cells in ' + cluster_name + '/' + label + ': ' + num_cells)
+        clusters = cluster_groups[group_name]['cluster_file']
+        print('From cluster file:')
+        for cluster_name in clusters:
+            for label in clusters[cluster_name]:
+                num_cells = str(len(clusters[cluster_name][label]))
+                print('  Cells in ' + cluster_name + '/' + label + ': ' + num_cells)
 
     return cluster_groups
