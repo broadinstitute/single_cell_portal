@@ -15,17 +15,17 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import json
 from statistics import mean
 
-from cluster_meta import *
+from cluster_groups import *
 
 class MatrixToIdeogramAnnots:
 
     def __init__(self, infercnv_output, infercnv_delimiter, gen_pos_file,
-                 clusters_meta, output_dir):
+                 cluster_groups, output_dir):
         """Class and parameter docs in module summary and argument parser"""
 
         self.infercnv_output = infercnv_output
         self.infercnv_delimiter = infercnv_delimiter
-        self.clusters = self.get_clusters(clusters_meta)
+        self.cluster_groups = cluster_groups
         self.output_dir = output_dir
         self.genomic_position_file_path = gen_pos_file
 
@@ -38,9 +38,10 @@ class MatrixToIdeogramAnnots:
 
         ideogram_annots_list = self.get_ideogram_annots()
 
-        for cluster_name, ideogram_annots in ideogram_annots_list:
+        for group_name, scope, cluster_name, ideogram_annots in ideogram_annots_list:
             ideogram_annots_json = json.dumps(ideogram_annots)
-            file_name = 'infercnv_exp_means--' + cluster_name + '.json'
+            identifier = group_name + '--' + cluster_name + '--group--' + scope
+            file_name = 'infercnv_exp_means__' + identifier + '.json'
             output_path = self.output_dir + file_name
             with open(output_path, 'w') as f:
                 f.write(ideogram_annots_json)
@@ -60,44 +61,47 @@ class MatrixToIdeogramAnnots:
 
         matrix = self.get_expression_matrix_dict()
 
-        for cluster_name in self.clusters:
-            cluster = self.clusters[cluster_name]
-            expression_means = self.compute_gene_expression_means(matrix, cluster)
+        for group_name in self.cluster_groups:
+            cluster_group = self.cluster_groups[group_name]
+            for scope in ['cluster_file', 'metadata_file']:
+                for cluster_name in cluster_group[scope]:
 
-            keys = ['name', 'start', 'length']
-            keys += list(cluster.keys())  # cluster names
+                    expression_means = self.compute_gene_expression_means(matrix, cluster_group, scope, cluster_name)
 
-            annots_by_chr = {}
+                    keys = ['name', 'start', 'length']
+                    keys += list(cluster_group[scope][cluster_name].keys())  # cluster labels
 
-            for i, expression_mean in enumerate(expression_means[1:]):
-                gene_id = expression_mean[0]
-                gene = genes[gene_id]
+                    annots_by_chr = {}
 
-                chr = gene['chr']
-                start = int(gene['start'])
-                stop = int(gene['stop'])
-                length = stop - start
+                    for i, expression_mean in enumerate(expression_means[1:]):
+                        gene_id = expression_mean[0]
+                        gene = genes[gene_id]
 
-                if chr not in annots_by_chr:
-                    annots_by_chr[chr] = []
+                        chr = gene['chr']
+                        start = int(gene['start'])
+                        stop = int(gene['stop'])
+                        length = stop - start
 
-                annot = [gene_id, start, length]
+                        if chr not in annots_by_chr:
+                            annots_by_chr[chr] = []
 
-                if i % 1000 == 0 and i != 0:
-                    print('Constructed ' + str(i) + ' of ' + str(len(expression_means) - 1) + ' annots')
+                        annot = [gene_id, start, length]
 
-                annot += expression_mean[1:]
+                        if i % 1000 == 0 and i != 0:
+                            print('Constructed ' + str(i) + ' of ' + str(len(expression_means) - 1) + ' annots')
 
-                annots_by_chr[chr].append(annot)
+                        annot += expression_mean[1:]
 
-            annots_list = []
+                        annots_by_chr[chr].append(annot)
 
-            for chr in annots_by_chr:
-                annots = annots_by_chr[chr]
-                annots_list.append({'chr': chr, 'annots': annots})
+                    annots_list = []
 
-            ideogram_annots = {'keys': keys, 'annots': annots_list}
-            ideogram_annots_list.append([cluster_name, ideogram_annots])
+                    for chr in annots_by_chr:
+                        annots = annots_by_chr[chr]
+                        annots_list.append({'chr': chr, 'annots': annots})
+
+                    ideogram_annots = {'keys': keys, 'annots': annots_list}
+                    ideogram_annots_list.append([group_name, scope, cluster_name, ideogram_annots])
 
         return ideogram_annots_list
 
@@ -152,74 +156,34 @@ class MatrixToIdeogramAnnots:
 
         return em_dict
 
-    def get_clusters(self, clusters_meta):
-        """Assign cells from expression matrix to the appropriate cluster"""
-
-        cluster_groups = {}
-
-        for i, cluster_group in enumerate(clusters_meta['cluster_names']):
-            cluster_meta = clusters_meta[cluster_group]
-
-            if cluster_group[:10] == 'METADATA__':
-                cluster_path = clusters_meta['metadata_path']
-                content_rows_start_index = 3
-            else:
-                cluster_path = clusters_meta['cluster_paths'][i]
-                content_rows_start_index = 2
-            cell_annot_index = cluster_meta['cell_annot_index']
-            cell_annot_labels = cluster_meta['cell_annot_labels']
-
-            clusters = {}
-
-            for name in cell_annot_labels:
-                if name[:10] == 'METADATA__':
-                    name = name[11:]
-                clusters[name] = {}
-                clusters[name]['cells'] = []
-
-            with open(cluster_path) as f:
-                lines = f.readlines()
-
-            for line in lines[content_rows_start_index:]:
-                columns = line.strip().split()
-                cell = columns[0]
-                cluster_label = columns[cell_annot_index]
-                clusters[cluster_label]['cells'].append(cell)
-
-            cluster_groups[cluster_group] = clusters
-
-        return cluster_groups
-
-    def compute_gene_expression_means(self, matrix, cluster):
+    def compute_gene_expression_means(self, matrix, cluster_group, scope, cluster_name):
         """Compute mean expression for each gene across each cluster"""
 
         scores_lists = []
 
         cells = matrix['cells']
 
-        cluster_names = list(cluster.keys())
+        cluster_labels = list(cluster_group[scope][cluster_name].keys())
 
-        keys = ['name'] + cluster_names
+        keys = ['name'] + cluster_labels
         scores_lists.append(keys)
 
         gene_expression_lists = matrix['genes']
 
-        # For each gene, get its mean expression across all cells,
-        # then iterate through each cluster (a.k.a. ordination),
-        # and get the mean expression across all cells in that cluster
+        # For each gene, get its mean expression in each cluster (a.k.a. ordination)
         for i, gene in enumerate(gene_expression_lists):
 
             gene_exp_list = gene_expression_lists[gene]
-            mean_expression_all = round(mean(gene_exp_list), 3)
 
-            scores_list = [gene, mean_expression_all]
+            scores_list = [gene]
 
-            for name in cluster:
-                cell_annot = cluster[name]
+            cluster = cluster_group[scope][cluster_name]
+            for cluster_label in cluster:
+                # cell_annot = cluster[name]
                 cell_annot_expressions = []
-                for cluster_cell in cell_annot['cells']:
+                for cell in cluster[cluster_label]:
                     # if cluster_cell in cells:
-                    index_of_cell_in_matrix = cells[cluster_cell] - 1
+                    index_of_cell_in_matrix = cells[cell] - 1
                     # else:
                     #     if i == 0:
                     #         print(cluster_cell + ' from ' + name + ' not found in expression matrix')
@@ -231,7 +195,10 @@ class MatrixToIdeogramAnnots:
                 scores_list.append(mean_cluster_expression)
 
             if i % 1000 == 0 and i != 0:
-                print('Processed ' + str(i) + ' of ' + str(len(gene_expression_lists)))
+                print(
+                    'Processed ' + str(i) + ' of ' + str(len(gene_expression_lists)) + ' ' + 
+                    'for ' + scope + ', cluster ' + cluster_name
+                )
 
             scores_lists.append(scores_list)
 
@@ -270,6 +237,6 @@ if __name__ == '__main__':
     metadata_path = args.metadata_path
     output_dir = args.output_dir
 
-    clusters_meta = get_cluster_groups(cluster_names, cluster_paths, metadata_path)
+    clusters_groups = get_cluster_groups(cluster_names, cluster_paths, metadata_path)
 
-    MatrixToIdeogramAnnots(infercnv_output, infercnv_delimiter, gen_pos_file, clusters_meta, output_dir)
+    MatrixToIdeogramAnnots(infercnv_output, infercnv_delimiter, gen_pos_file, clusters_groups, output_dir)
