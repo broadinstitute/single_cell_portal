@@ -1,15 +1,5 @@
-#!/usr/bin/env python
-
 """Converts clustered gene expression matrices to Ideogram.js annotations
 """
-
-__author__ = 'Eric Weitz, Jonathan Bistline, Timothy Tickle'
-__copyright__ = 'Copyright 2018'
-__credits__ = ['Eric Weitz']
-__license__ = 'BSD-3'
-__maintainer__ = 'Eric Weitz'
-__email__ = 'eweitz@bbroadinstitute.org'
-__status__ = 'Development'
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import json
