@@ -7,7 +7,8 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
 def get_clusters_from_file(path):
-
+    """Get cluster names, labels, and cells from cluster file or metadata file
+    """
     clusters = {}
 
     with open(path) as f:
@@ -44,7 +45,7 @@ def get_clusters_from_file(path):
     return [clusters, all_cells]
 
 def get_cluster_groups(group_names, paths, metadata_path):
-    """Organize cluster args provided via CLI into a more convenient dict"""
+    """Get cluster groups data structure from raw passed CLI arguments"""
     cluster_groups = {}
 
     for i, path in enumerate(paths):
@@ -60,6 +61,8 @@ def get_cluster_groups(group_names, paths, metadata_path):
     for group_name in cluster_groups:
         cluster_groups[group_name]['metadata_file'] = metadata_clusters
 
+    # Print number of cells in each cluster label, for each cluster
+    # (annotation), scope, and group
     for group_name in cluster_groups:
         print('Cluster group: ' + group_name)
         metadata_clusters = cluster_groups[group_name]['metadata_file']

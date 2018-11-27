@@ -60,7 +60,9 @@ class MatrixToIdeogramAnnots:
 
             print('Wrote Ideogram.js annotations to ' + output_path)
 
-        make_tarfile('ideogram_exp_means.tar.gz', 'ideogram_exp_means')
+        output_gzip_file = 'ideogram_exp_means.tar.gz'
+        make_tarfile(output_gzip_file, 'ideogram_exp_means')
+        print('Packaged output into ' + output_gzip_file)
 
     def get_ideogram_annots(self):
         """Get Ideogram.js annotations from inferCNV and cluster data
@@ -196,12 +198,7 @@ class MatrixToIdeogramAnnots:
                 # cell_annot = cluster[name]
                 cell_annot_expressions = []
                 for cell in cluster[cluster_label]:
-                    # if cluster_cell in cells:
                     index_of_cell_in_matrix = cells[cell] - 1
-                    # else:
-                    #     if i == 0:
-                    #         print(cluster_cell + ' from ' + name + ' not found in expression matrix')
-                    #     continue
                     gene_exp_in_cell = gene_exp_list[index_of_cell_in_matrix]
                     cell_annot_expressions.append(gene_exp_in_cell)
 
