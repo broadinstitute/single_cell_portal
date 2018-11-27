@@ -1,4 +1,13 @@
 """Converts clustered gene expression matrices to Ideogram.js annotations
+
+Example:
+    python3 scripts/ideogram/matrix_to_ideogram_annots.py \
+    --infercnv_output expression_pre_vis_transform.txt \
+    --gen_pos_file gencode_v19_gene_pos.txt \
+    --cluster_names "tSNE" "tSNE_non_malignant_cells" \
+    --cluster_paths tsne.txt tsne.non.mal.txt \
+    --metadata_path metadata.txt \
+    --output_dir ./
 """
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
