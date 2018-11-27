@@ -1,8 +1,19 @@
-"""Converts clustered gene expression matrices to Ideogram.js annotations
+"""Produce Ideogram.js annotations from cluster data and gene expression matrix
+
+This pipeline transforms data on cell clusters and gene expression matrices
+into Ideogram.js annotations that depict genome-wide gene expression in
+chromosome context.
+
+For example, it can take an expression matrix processed by inferCNV
+(https://github.com/broadinstitute/inferCNV) and cluster data in the form of
+an SCP metadata file and SCP cluster files, and output Ideogram annotation
+files for each cluster, with Ideogram tracks for each cluster label.  Such
+ideograms can intuitively depict structural variants, e.g. losses of entire
+chromosome arms as observed in some cancers.
 
 Example:
     python3 scripts/ideogram/matrix_to_ideogram_annots.py \
-    --infercnv_output expression_pre_vis_transform.txt \
+    --matrix_path expression_pre_vis_transform.txt \
     --gen_pos_file gencode_v19_gene_pos.txt \
     --cluster_names "tSNE" "tSNE_non_malignant_cells" \
     --cluster_paths tsne.txt tsne.non.mal.txt \
@@ -25,12 +36,12 @@ def make_tarfile(output_filename, source_dir):
 
 class MatrixToIdeogramAnnots:
 
-    def __init__(self, infercnv_output, infercnv_delimiter, gen_pos_file,
+    def __init__(self, matrix_path, matrix_delimiter, gen_pos_file,
                  cluster_groups, output_dir):
         """Class and parameter docs in module summary and argument parser"""
 
-        self.infercnv_output = infercnv_output
-        self.infercnv_delimiter = infercnv_delimiter
+        self.matrix_path = matrix_path
+        self.matrix_delimiter = matrix_delimiter
         self.cluster_groups = cluster_groups
         self.output_dir = output_dir + 'ideogram_exp_means/'
         self.genomic_position_file_path = gen_pos_file
@@ -64,7 +75,7 @@ class MatrixToIdeogramAnnots:
         print('Packaged output into ' + output_gzip_file)
 
     def get_ideogram_annots(self):
-        """Get Ideogram.js annotations from inferCNV and cluster data
+        """Get Ideogram.js annotations from expression matrix and cluster data
 
         Format and other details of Ideogram.js annotations:
         https://github.com/eweitz/ideogram/wiki/Annotations
@@ -121,7 +132,10 @@ class MatrixToIdeogramAnnots:
         return ideogram_annots_list
 
     def get_genes(self):
-        """Convert inferCNV genomic position file into useful 'genes' dict"""
+        """Convert inferCNV genomic position file into useful 'genes' dict
+
+        TODO: Use a standard GTF file instead of inferCNV-specific file
+        """
 
         genes = {}
 
@@ -141,27 +155,30 @@ class MatrixToIdeogramAnnots:
         return genes
 
     def get_expression_matrix_dict(self):
-        """Parse inferCNV output, return dict of cell expressions by gene"""
+        """Parse expression matrix, return dict of cell expressions by gene"""
         print(self.get_expression_matrix_dict.__doc__)
 
         em_dict = {}
 
-        with open(self.infercnv_output) as f:
+        with open(self.matrix_path) as f:
             lines = f.readlines()
 
         cells_dict = {}
 
-        cells_list = lines[0].strip().split(self.infercnv_delimiter)
+        cells_list = lines[0].strip().split(self.matrix_delimiter)
 
         for i, cell in enumerate(cells_list):
-            cell = cell.strip('"').split('PREVIZ.')[1].replace('.', '-')  # "PREVIZ.AAACATACAAGGGC.1" -> AAACATACAAGGGC-1
+            cell = cell.strip('"')
+            if "PREVIZ" in cell:
+                cell = cell.split('PREVIZ.')[1]  # "PREVIZ.AAACATACAAGGGC.1" -> AAACATACAAGGGC-1
+            cell = cell.replace('.', '-')
             cells_dict[cell] = i
 
         em_dict['cells'] = cells_dict
         genes = {}
 
         for line in lines[1:]:
-            columns = line.strip().split(self.infercnv_delimiter)
+            columns = line.strip().split(self.matrix_delimiter)
             gene = columns[0].strip('"')
             expression_by_cell = list(map(float, columns[1:]))
 
@@ -219,10 +236,10 @@ if __name__ == '__main__':
     # Parse command-line arguments
     ap = ArgumentParser(description=__doc__,  # Use text from file summary up top
                         formatter_class=RawDescriptionHelpFormatter)
-    ap.add_argument('--infercnv_output',
-                    help='Path to pre_vis_transform.txt output from inferCNV')
-    ap.add_argument('--infercnv_delimiter',
-                    help='Delimiter in pre_vis_transform.txt output from inferCNV.  Default: \\t',
+    ap.add_argument('--matrix_path',
+                    help='Path to expression matrix file')
+    ap.add_argument('--matrix_delimiter',
+                    help='Delimiter in expression matrix.  Default: \\t',
                     default='\t')
     ap.add_argument('--gen_pos_file',
                     help='Path to gen_pos.txt genomic positions file from inferCNV ')
@@ -239,8 +256,8 @@ if __name__ == '__main__':
 
     args = ap.parse_args()
 
-    infercnv_output = args.infercnv_output
-    infercnv_delimiter = args.infercnv_delimiter
+    matrix_path = args.matrix_path
+    matrix_delimiter = args.matrix_delimiter
     gen_pos_file = args.gen_pos_file
     cluster_names = args.cluster_names
     cluster_paths = args.cluster_paths
@@ -249,4 +266,4 @@ if __name__ == '__main__':
 
     clusters_groups = get_cluster_groups(cluster_names, cluster_paths, metadata_path)
 
-    MatrixToIdeogramAnnots(infercnv_output, infercnv_delimiter, gen_pos_file, clusters_groups, output_dir)
+    MatrixToIdeogramAnnots(matrix_path, matrix_delimiter, gen_pos_file, clusters_groups, output_dir)
