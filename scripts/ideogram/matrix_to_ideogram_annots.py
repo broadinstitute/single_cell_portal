@@ -12,13 +12,15 @@ ideograms can intuitively depict structural variants, e.g. losses of entire
 chromosome arms as observed in some cancers.
 
 Example:
-    python3 scripts/ideogram/matrix_to_ideogram_annots.py \
-    --matrix_path expression_pre_vis_transform.txt \
-    --gen_pos_file gencode_v19_gene_pos.txt \
-    --cluster_names "tSNE" "tSNE_non_malignant_cells" \
-    --cluster_paths tsne.txt tsne.non.mal.txt \
-    --metadata_path metadata.txt \
-    --output_dir ./
+
+python3 scripts/ideogram/matrix_to_ideogram_annots.py \
+--matrix_path expression_pre_vis_transform.txt \
+--gen_pos_file gencode_v19_gene_pos.txt \
+--cluster_names "tSNE" "tSNE_non_malignant_cells" \
+--cluster_paths tsne.txt tsne.non.mal.txt \
+--metadata_path metadata.txt \
+--output_dir ./
+
 """
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
