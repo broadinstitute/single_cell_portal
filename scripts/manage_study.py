@@ -1,14 +1,14 @@
 import argparse
 import os
-import StudyManager
+import SCPAPI
 
 
 def manageCallReturn(callReturn):
     # Print error code and describe code then exit if not sucess
-    print("Error Code = " + str(callReturn[StudyManager.c_CODE_RET_KEY]))
-    print(StudyManager.StudyManager.describe_error_code(callReturn[StudyManager.c_CODE_RET_KEY]))
-    if(not callReturn[StudyManager.c_SUCCESS_RET_KEY]):
-        exit(callReturn[StudyManager.c_CODE_RET_KEY])
+    print("Error Code = " + str(callReturn[SCPAPI.c_CODE_RET_KEY]))
+    print(SCPAPI.APIManager.describe_error_code(callReturn[SCPAPI.c_CODE_RET_KEY]))
+    if(not callReturn[SCPAPI.c_SUCCESS_RET_KEY]):
+        exit(callReturn[SCPAPI.c_CODE_RET_KEY])
 
 args = argparse.ArgumentParser(
     prog='manage_study.py',
@@ -38,7 +38,7 @@ args.add_argument(
 )
 parsed_args = args.parse_args()
 
-manage = StudyManager.StudyManager()
+manage = SCPAPI.APIManager()
 manage.login(parsed_args.token)
 
 ## Handle list studies
@@ -46,8 +46,8 @@ if(parsed_args.listStudies):
     print("LIST STUDIES")
     ret = manage.get_studies()
     manageCallReturn(ret)
-    print("There are "+str(len(ret[StudyManager.c_STUDIES_RET_KEY]))+" studies to which you have access.")
-    print(os.linesep.join(ret[StudyManager.c_STUDIES_RET_KEY]))
+    print("There are "+str(len(ret[SCPAPI.c_STUDIES_RET_KEY]))+" studies to which you have access.")
+    print(os.linesep.join(ret[SCPAPI.c_STUDIES_RET_KEY]))
 
 ## Create new study
 if(parsed_args.createStudy):

@@ -15,7 +15,7 @@ c_NO_ERROR = 0
 c_NO_ERROR_TEXT = "No error occurred."
 
 # The expected header
-class StudyManager:
+class APIManager:
 
     def __init__(self):
         print("INIT")
