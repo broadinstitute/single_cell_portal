@@ -10,31 +10,40 @@ def manageCallReturn(callReturn):
     if(not callReturn[SCPAPI.c_SUCCESS_RET_KEY]):
         exit(callReturn[SCPAPI.c_CODE_RET_KEY])
 
+#def get_token_browser():
+#    "gcloud auth application-default login"
+#   "gcloud auth application-default print-access-token"
+
 args = argparse.ArgumentParser(
     prog='manage_study.py',
     description=__doc__,
     formatter_class=argparse.RawDescriptionHelpFormatter
 )
 args.add_argument(
-    '--create_study', dest='createStudy', action='store_true',
-    help='Create a new study.'
-)
-args.add_argument(
     '--list_studies', dest='listStudies', action='store_true',
     help='List the studies editable by this user.'
 )
 args.add_argument(
+    '--token', dest='token', required=True,
+    help='Personal token after logging into Google (Oauth2). This token is not persisted after the finish of the script'
+)
+
+# Create tools (sub parser)
+subargs = args.add_subparsers()
+parser_create_studies = subargs.add_parser("Create_Study",
+    help="Used to create studies. \""+args.prog+" Create_Study -h\" for more details")
+parser_create_studies.add_argument(
+    '--create_study', dest='createStudy', action='store_true',
+    help='Create a new study.'
+)
+parser_create_studies.add_argument(
     '--study_description', dest='studyDescription',
     default="Single Cell Genomics Study",
     help='Short description of the study.'
 )
-args.add_argument(
+parser_create_studies.add_argument(
     '--study_name', dest='studyName',
     help='The short name of the study.'
-)
-args.add_argument(
-    '--token', dest='token', required=True,
-    help='Personal token after logging into Google (Oauth2). This token is not persisted after the finish of the script'
 )
 parsed_args = args.parse_args()
 
@@ -58,11 +67,17 @@ if(parsed_args.createStudy):
 
 ## Check files
 
+## Validate and Upload coordinate file
 
-## Upload coordinate file
+## Validate and Upload metadata file
 
+## Validate and Upload expression file
 
-## Upload metadata file
+## Validate and Upload 10X files
 
+## Validate and Upload 10X directory
 
-## Upload expression file
+## Validate and Upload fastqs
+
+## Validate and Upload bams
+

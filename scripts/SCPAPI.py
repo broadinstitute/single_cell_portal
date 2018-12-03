@@ -5,6 +5,7 @@ import requests
 # Constants
 c_AUTH = 'Authorization'
 c_CODE_RET_KEY = "code"
+c_RESPONSE = "response"
 c_STUDIES_RET_KEY = "studies"
 c_SUCCESS_RET_KEY = "success"
 
@@ -14,6 +15,21 @@ c_STUDY_EXISTS_TEXT = "Can not create a study with a name that is in use."
 c_NO_ERROR = 0
 c_NO_ERROR_TEXT = "No error occurred."
 
+## API Error codes
+c_API_OK = 200
+c_API_AUTH = 401
+c_API_AUTH_TEXT = "User is not authenticated"
+c_API_AUTH_STUDY = 403
+c_API_AUTH_STUDY_TEXT = "User is not authorized to edit study"
+c_API_UNKNOWN_STUDY = 404
+c_API_UNKNOWN_STUDY_TEXT = "Study is not found"
+c_API_CONTENT_HEADERS = 406
+c_API_CONTENT_HEADERS_TEXT = "Accept or Content-Type headers missing or misconfigured"
+c_API_INVALID_STUDY = 422
+c_API_INVALID_STUDY_TEXT = "Study validation failed"
+c_API_BACKEND_ERROR = 500
+c_API_BACKEND_ERROR_TEXT = "Server error when attempting to synchronize FireCloud workspace or access GCS objects"
+
 # The expected header
 class APIManager:
 
@@ -22,7 +38,7 @@ class APIManager:
         self.api = "https://portals.broadinstitute.org/single_cell/api/v1/"
         self.studies = None
 
-    def login(self, token):
+    def login(self, token=None):
         """
         :param token: User token to use with API
         :return: Boolean Indicator of success or failure (False)
@@ -36,10 +52,7 @@ class APIManager:
         print(command)
         head = {c_AUTH:'token {}'.format(self.token),
                 'Accept':'application/json'}
-        r = requests.get(command, headers=head)
-        if(r.status_code != 200):
-            raise BaseException(str(r))
-        return(r)
+        return(APIManager.check_api_return(requests.get(command, headers=head)))
 
     def do_post(self, command, values):
         print("DO PUT")
@@ -47,34 +60,46 @@ class APIManager:
         print(values)
         head = {c_AUTH:'token {}'.format(self.token),
                 'Accept':'application/json'}
-        r = requests.post(command, headers=head, json=values)
-        if(r.status_code != 200):
-            raise BaseException(str(r))
-        return(r)
+        return(APIManager.check_api_return(requests.post(command, headers=head, json=values)))
 
     def describe_error_code(error_code):
         ret_error_codes = {
             c_STUDY_EXISTS:c_STUDY_EXISTS_TEXT,
-            c_NO_ERROR:c_NO_ERROR_TEXT
-            }
+            c_NO_ERROR:c_NO_ERROR_TEXT,
+            c_API_OK:c_NO_ERROR_TEXT,
+            c_API_AUTH:c_API_AUTH_TEXT,
+            c_API_AUTH_STUDY:c_API_AUTH_STUDY_TEXT,
+            c_API_UNKNOWN_STUDY:c_API_UNKNOWN_STUDY_TEXT,
+            c_API_CONTENT_HEADERS:c_API_CONTENT_HEADERS_TEXT,
+            c_API_INVALID_STUDY:c_API_INVALID_STUDY_TEXT,
+            c_API_BACKEND_ERROR:c_API_BACKEND_ERROR_TEXT
+        }
         return(ret_error_codes.get(error_code, "That error code is not in use."))
+
+    def check_api_return(ret):
+        api_return = {}
+        api_return[c_SUCCESS_RET_KEY] = ret.status_code == c_API_OK
+        api_return[c_CODE_RET_KEY] = ret.status_code
+        api_return[c_RESPONSE] = ret
+        return(api_return)
 
     def get_studies(self):
         print("GET STUDIES")
         resp = self.do_get(self.api + "studies")
-        self.studies = [str(element.get('name')) for element in resp.json()]
-        return({
-            c_SUCCESS_RET_KEY:True,
-            c_CODE_RET_KEY:c_NO_ERROR,
-            c_STUDIES_RET_KEY:self.studies
-        })
+        if(resp[c_SUCCESS_RET_KEY]):
+            self.studies = [str(element.get('name')) for element in resp[c_RESPONSE].json()]
+            resp[c_STUDIES_RET_KEY] = self.studies
+        return(resp)
 
     def create_study(self, studyName,
                      studyDescription="Single Cell Genomics study",
                      isPublic=False):
         print("CREATE STUDY:: " + studyName)
+        # If we don't know what studies they have get them so we do not create a study already existing.
         if(self.studies is None):
-            self.get_studies()
+            ret = self.get_studies()
+            if(not ret[c_SUCCESS_RET_KEY]):
+                return(ret)
         if(studyName in self.studies):
             return ({
                 c_SUCCESS_RET_KEY: False,
@@ -85,8 +110,5 @@ class APIManager:
                      "public":isPublic}
         resp = self.do_post(command=self.api + "studies", values=studyData)
         self.studies.append(studyName)
-        return({
-            c_SUCCESS_RET_KEY:True,
-            c_CODE_RET_KEY:c_NO_ERROR
-        })
+        return(resp)
 
