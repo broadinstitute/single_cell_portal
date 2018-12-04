@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import requests
+import Commandline
+import os
 
 # Constants
 c_AUTH = 'Authorization'
@@ -38,26 +40,41 @@ class APIManager:
         self.api = "https://portals.broadinstitute.org/single_cell/api/v1/"
         self.studies = None
 
-    def login(self, token=None):
+    def login(self, token=None, test=False):
         """
         :param token: User token to use with API
         :return: Boolean Indicator of success or failure (False)
         """
         print("LOGIN")
+        if token is None:
+            token = APIManager.do_browser_login(test=test)
         self.token = token
         self.studies = None
 
-    def do_get(self, command):
+    def do_browser_login(test=False):
+        print("BROWSER LOGIN")
+        if test:
+            return("TESTING_TOKEN")
+        cmdline = Commandline.Commandline()
+        cmdline.func_CMD(command="gcloud auth application-default login")
+        cmd_ret = cmdline.func_CMD(command="gcloud auth application-default print-access-token",stdout=True)
+        return(cmd_ret.decode("ASCII").strip(os.linesep))
+
+    def do_get(self, command, test=False):
         print("DO GET")
         print(command)
+        if test:
+            return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {c_AUTH:'token {}'.format(self.token),
                 'Accept':'application/json'}
         return(APIManager.check_api_return(requests.get(command, headers=head)))
 
-    def do_post(self, command, values):
+    def do_post(self, command, values, test=False):
         print("DO PUT")
         print(command)
         print(values)
+        if test:
+            return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {c_AUTH:'token {}'.format(self.token),
                 'Accept':'application/json'}
         return(APIManager.check_api_return(requests.post(command, headers=head, json=values)))
@@ -83,24 +100,28 @@ class APIManager:
         api_return[c_RESPONSE] = ret
         return(api_return)
 
-    def get_studies(self):
+    def get_studies(self, test=False):
         print("GET STUDIES")
-        resp = self.do_get(self.api + "studies")
-        if(resp[c_SUCCESS_RET_KEY]):
-            self.studies = [str(element.get('name')) for element in resp[c_RESPONSE].json()]
-            resp[c_STUDIES_RET_KEY] = self.studies
+        resp = self.do_get(self.api + "studies",test=test)
+        if test:
+            resp[c_STUDIES_RET_KEY] = ["TESTING 1","TESTING 2"]
+        else:
+            if(resp[c_SUCCESS_RET_KEY]):
+                self.studies = [str(element.get('name')) for element in resp[c_RESPONSE].json()]
+                resp[c_STUDIES_RET_KEY] = self.studies
         return(resp)
 
     def create_study(self, studyName,
                      studyDescription="Single Cell Genomics study",
-                     isPublic=False):
+                     isPublic=False,
+                     test=False):
         print("CREATE STUDY:: " + studyName)
         # If we don't know what studies they have get them so we do not create a study already existing.
-        if(self.studies is None):
+        if self.studies is None:
             ret = self.get_studies()
-            if(not ret[c_SUCCESS_RET_KEY]):
+            if not ret[c_SUCCESS_RET_KEY]:
                 return(ret)
-        if(studyName in self.studies):
+        if studyName in self.studies:
             return ({
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_STUDY_EXISTS
@@ -108,7 +129,8 @@ class APIManager:
         studyData = {"name": studyName,
                      "description":studyDescription,
                      "public":isPublic}
-        resp = self.do_post(command=self.api + "studies", values=studyData)
-        self.studies.append(studyName)
+        resp = self.do_post(command=self.api + "studies", values=studyData, test=test)
+        if resp[c_SUCCESS_RET_KEY]:
+            self.studies.append(studyName)
         return(resp)
 
