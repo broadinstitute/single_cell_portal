@@ -45,7 +45,7 @@ class MatrixToIdeogramAnnots:
         self.matrix_path = matrix_path
         self.matrix_delimiter = matrix_delimiter
         self.cluster_groups = cluster_groups
-        self.output_dir = output_dir + 'ideogram_exp_means/'
+        self.output_dir = output_dir
         self.genomic_position_file_path = gen_pos_file
 
         self.genes = self.get_genes()
@@ -55,10 +55,17 @@ class MatrixToIdeogramAnnots:
     def write_ideogram_annots(self):
         """Write Ideogram.js annotations JSON data to specified output file"""
 
+        output_dir = self.output_dir
+
         ideogram_annots_list = self.get_ideogram_annots()
-        if os.path.exists(self.output_dir):
-            shutil.rmtree(self.output_dir)
-        os.mkdir(self.output_dir)
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        os.mkdir(output_dir)
+
+        exp_means_zip_dir = output_dir + 'ideogram_exp_means/'
+        if os.path.exists(exp_means_zip_dir):
+            shutil.rmtree(exp_means_zip_dir)
+        os.mkdir(exp_means_zip_dir)
 
         for group_name, scope, cluster_name, ideogram_annots in ideogram_annots_list:
             ideogram_annots_json = json.dumps(ideogram_annots)
@@ -66,14 +73,14 @@ class MatrixToIdeogramAnnots:
             scope = scope_map[scope]
             identifier = group_name + '--' + cluster_name + '--group--' + scope
             file_name = 'ideogram_exp_means__' + identifier + '.json'
-            output_path = self.output_dir + file_name
+            output_path = exp_means_zip_dir + file_name
             with open(output_path, 'w') as f:
                 f.write(ideogram_annots_json)
 
             print('Wrote Ideogram.js annotations to ' + output_path)
 
-        output_gzip_file = 'ideogram_exp_means.tar.gz'
-        make_tarfile(output_gzip_file, 'ideogram_exp_means')
+        output_gzip_file = output_dir + 'ideogram_exp_means.tar.gz'
+        make_tarfile(output_gzip_file, exp_means_zip_dir)
         print('Packaged output into ' + output_gzip_file)
 
     def get_ideogram_annots(self):
@@ -265,6 +272,9 @@ if __name__ == '__main__':
     cluster_paths = args.cluster_paths
     metadata_path = args.metadata_path
     output_dir = args.output_dir
+
+    if output_dir[-1] != '/':
+        output_dir += '/'
 
     clusters_groups = get_cluster_groups(cluster_names, cluster_paths, metadata_path)
 
