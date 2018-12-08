@@ -1,4 +1,5 @@
 import argparse
+import Commandline
 import os
 import SCPAPI
 
@@ -49,6 +50,14 @@ parser_create_studies.add_argument(
     '--study_name', dest='studyName', required=True,
     help='The short name of the study.'
 )
+parser_create_studies.add_argument(
+    '--branding', dest='branding', default=None,
+    help='The portal branding to associate with the study.'
+)
+parser_create_studies.add_argument(
+    '--billing', dest='billing', default=None,
+    help='Portal billing project to associate with the study.'
+)
 
 ## Permissions subparser
 parser_permissions = subargs.add_parser(c_TOOL_PERMISSION,
@@ -72,23 +81,28 @@ parser_upload_cluster = subargs.add_parser(c_TOOL_CLUSTER,
     help="Used to upload cluster files. \""+args.prog+" "+c_TOOL_CLUSTER+" -h\" for more details")
 parser_upload_cluster.add_argument(
     '--file', dest='clusterFile', required=True,
-    default=None,
     help='Cluster file to load.'
 )
 parser_upload_cluster.add_argument(
     '--study_name', dest='studyName', required=True,
-    default=None,
     help='The name of the study to add the file.'
 )
 parser_upload_cluster.add_argument(
+    '--cluster_name', dest='clusterName', required=True,
+    help='The name of the clustering that will be used to refer to the plot.'
+)
+parser_upload_cluster.add_argument(
     '--species', dest='species', required=True,
-    default=None,
     help='The species from which the data is generated.'
 )
 parser_upload_cluster.add_argument(
     '--genome', dest='genome', required=True,
-    default=None,
     help='Genome assembly used to generate the data.'
+)
+parser_upload_cluster.add_argument(
+    '--description', dest='clusterDescription',
+    default="Coordinates and optional metadata to visualize clusters.",
+    help='Text describing the cluster file.'
 )
 parser_upload_cluster.add_argument(
     '--x', dest='xLab',
@@ -104,6 +118,11 @@ parser_upload_cluster.add_argument(
     '--z', dest='zLab',
     default=None,
     help='z axis label test.'
+)
+parser_upload_cluster.add_argument(
+    '--validate', dest='validate',
+    default=True,
+    help='Check file locally before uploading.'
 )
 
 
@@ -126,25 +145,48 @@ if hasattr(parsed_args,"studyDescription") and not parsed_args.studyName is None
     print("CREATE STUDY")
     ret = manage.create_study(studyName=parsed_args.studyName,
                               studyDescription=parsed_args.studyDescription,
+                              branding=parsed_args.branding,
+                              billing=parsed_args.billing,
                               test=parsed_args.testing)
     manageCallReturn(ret)
 
 ## Share with user
 if hasattr(parsed_args,"permission"):
-    print("Set PERMISSION")
+    print("SET PERMISSION")
     ret = manage.set_permission(study_name=parsed_args.studyName,
                                 email=parsed_args.email,
                                 access=parsed_args.permission,
                                 test=parsed_args.testing)
     manageCallReturn(ret)
 
-## Validate and Upload coordinate file
-#if hasattr(parsed_args,"createStudy"):
-#    if(parsed_args.)
+## Validate files
+if hasattr(parsed_args,"clusterFile") and parsed_args.validate:
+    print("VALIDATE CLUSTER FILE")
+    valid_code = Commandline.Commandline().funcCMD(["verify_portal_file.py",
+                                                    "--coordinates_file",
+                                                    parsed_args.clusterFile])
+    if not valid_code==0:
+        print("There was an error validating the files, did not upload.")
+        exit(valid_code)
 
-## Validate and Upload metadata file
+## Validate and upload cluster file
+if hasattr(parsed_args,"clusterFile"):
+    print("UPLOAD CLUSTER FILE")
+    ret = manage.upload_cluster(file=parsed_args.clusterFile,
+                                name=parsed_args.studyName,
+                                clusterName=parsed_args.clusterName,
+                                description=parsed_args.description,
+                                species=parsed_args.species,
+                                genome=parsed_args.genome,
+                                x=parsed_args.xLab,
+                                y=parsed_args.yLab,
+                                z=parsed_args.zLab,
+                                test=parsed_args.testing)
+    manageCallReturn(ret)
 
-## Validate and Upload expression file
+## Upload metadata file
+
+## Upload expression file
 ##--
 
 ## Validate and Upload and Sort 10X files

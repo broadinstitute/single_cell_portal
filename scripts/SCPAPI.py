@@ -46,6 +46,8 @@ c_ACCESS_VIEW = "View"
 c_ACCESS_REMOVE = "Remove"
 c_PERMISSIONS = [c_ACCESS_EDIT, c_ACCESS_REVIEWER, c_ACCESS_VIEW, c_ACCESS_REMOVE]
 
+# SCP Portal
+c_CLUSTER_FILE_TYPE = "Cluster"
 
 # The expected header
 class APIManager:
@@ -55,6 +57,7 @@ class APIManager:
         self.api = "https://portals.broadinstitute.org/single_cell/api/v1/"
         self.studies = None
         self.name_to_id = None
+        self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
 
     def login(self, token=None, test=False):
         """
@@ -136,6 +139,13 @@ class APIManager:
         api_return[c_RESPONSE] = ret
         return(api_return)
 
+    def check_species_genome(self, species, genome=None):
+        print("CHECK SPECIES (GENOME)")
+        if not species.lower() in self.species_genomes:
+            print(species+" : this species is not registered with the portal please email the team to have it added.")
+            return(False)
+        return(genome in self.species_genomes[species])
+
     def get_studies(self, test=False):
         print("GET STUDIES")
         resp = self.do_get(self.api + "studies",test=test)
@@ -151,6 +161,8 @@ class APIManager:
 
     def create_study(self, studyName,
                      studyDescription="Single Cell Genomics study",
+                     branding=None,
+                     billing=None,
                      isPublic=False,
                      test=False):
         print("CREATE STUDY:: " + studyName)
@@ -163,6 +175,10 @@ class APIManager:
         studyData = {"name": studyName,
                      "description":studyDescription,
                      "public":isPublic}
+        if not branding is None:
+            studyData["firecloud_project"]=billing
+        if not branding is None:
+            studyData["branding_group_id"] = branding
         resp = self.do_post(command=self.api + "studies", values=studyData, test=test)
         if resp[c_SUCCESS_RET_KEY] and not test:
             self.get_studies()
@@ -238,3 +254,23 @@ class APIManager:
             return("ID 1")
         else:
             return(self.name_to_id.get(name, None))
+
+    def upload_cluster(self, file,
+                             name,
+                             clusterName,
+                             description="Cluster file.",
+                             species=None,
+                             genome=None,
+                             x="X",
+                             y="Y",
+                             z="Z",
+                             test=False):
+        print("UPLOAD CLUSTER FILE")
+
+        fileInfo = {"name": clusterName,
+                    "file_type":c_CLUSTER_FILE_TYPE}
+
+# Set shares for study given it does not exist
+#ret = self.do_post(command=self.api + "studies/" + str(study_id) + "/study_shares",
+#                   values=permissions_info,
+#                   test=test)
