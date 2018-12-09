@@ -1,3 +1,6 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import argparse
 import Commandline
 import os
@@ -120,8 +123,8 @@ parser_upload_cluster.add_argument(
     help='z axis label test.'
 )
 parser_upload_cluster.add_argument(
-    '--validate', dest='validate',
-    default=True,
+    '--no_validate', dest='validate',
+    action='store_false',
     help='Check file locally before uploading.'
 )
 
@@ -153,7 +156,7 @@ if hasattr(parsed_args,"studyDescription") and not parsed_args.studyName is None
 ## Share with user
 if hasattr(parsed_args,"permission"):
     print("SET PERMISSION")
-    ret = manage.set_permission(study_name=parsed_args.studyName,
+    ret = manage.set_permission(studyName=parsed_args.studyName,
                                 email=parsed_args.email,
                                 access=parsed_args.permission,
                                 test=parsed_args.testing)
@@ -162,20 +165,22 @@ if hasattr(parsed_args,"permission"):
 ## Validate files
 if hasattr(parsed_args,"clusterFile") and parsed_args.validate:
     print("VALIDATE CLUSTER FILE")
-    valid_code = Commandline.Commandline().funcCMD(["verify_portal_file.py",
-                                                    "--coordinates_file",
-                                                    parsed_args.clusterFile])
-    if not valid_code==0:
-        print("There was an error validating the files, did not upload.")
-        exit(valid_code)
+    if not parsed_args.testing:
+        valid_code = Commandline.Commandline().func_CMD(" ".join(["verify_portal_file.py",
+                                                                  "--coordinates_file",
+                                                                  parsed_args.clusterFile]))
+        print(valid_code)
+        if not valid_code:
+            print("There was an error validating the files, did not upload.")
+            exit(valid_code)
 
 ## Validate and upload cluster file
 if hasattr(parsed_args,"clusterFile"):
     print("UPLOAD CLUSTER FILE")
     ret = manage.upload_cluster(file=parsed_args.clusterFile,
-                                name=parsed_args.studyName,
+                                studyName=parsed_args.studyName,
                                 clusterName=parsed_args.clusterName,
-                                description=parsed_args.description,
+                                description=parsed_args.clusterDescription,
                                 species=parsed_args.species,
                                 genome=parsed_args.genome,
                                 x=parsed_args.xLab,
