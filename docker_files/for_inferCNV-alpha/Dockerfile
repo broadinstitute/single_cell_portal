@@ -1,36 +1,35 @@
 # Docker file for inferCNV
-FROM ubuntu:xenial
+FROM rocker/r-ver:3.4.4
 MAINTAINER ttickle@broadinstitute.org
-RUN echo "deb http://cran.rstudio.com/bin/linux/ubuntu xenial/" | tee -a /etc/apt/sources.list && \
-gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9 && \
-gpg -a --export E084DAB9 | apt-key add -
+
 RUN apt-get update && \
-apt-get -y install curl libssl-dev libcurl4-openssl-dev libxml2-dev r-base r-base-dev git
+apt-get -y install curl libssl-dev libcurl4-openssl-dev libxml2-dev git python3 zlib1g-dev
 RUN echo "options(repos = c(CRAN = \"https://cran.rstudio.com\"))" >.Rprofile && \
-echo "install.packages(c(\"devtools\",\"ape\",\"GMD\",\"RColorBrewer\",\"optparse\",\"logging\", \"gplots\"), dependencies =TRUE)" > install_devtools.r && \
+echo "install.packages(c(\"devtools\",\"ape\",\"RColorBrewer\",\"optparse\",\"logging\", \"gplots\", \"futile.logger\", \"binhf\", \"fastcluster\", \"dplyr\", \"coin\"), dependencies = TRUE)" > install_devtools.r && \
 echo "library(\"devtools\")" >> install_devtools.r && R --no-save < install_devtools.r
 
 WORKDIR /
-COPY ./infercnv_0.1.tar.gz /
-RUN R CMD INSTALL infercnv_0.1.tar.gz
+RUN curl -OL "https://github.com/broadinstitute/inferCNV/archive/InferCNV-v0.8.2.tar.gz"
+RUN tar -xvzf InferCNV-v0.8.2.tar.gz
+RUN R CMD INSTALL inferCNV-InferCNV-v0.8.2
+RUN mv inferCNV-InferCNV-v0.8.2/ inferCNV
 
-RUN apt-get update && apt-get install -y python3
+# Delete extraneous inferCNV examples (64 MB)
+WORKDIR /inferCNV
+RUN rm -rf examples/
 
 # clean up installs
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN git clone https://github.com/broadinstitute/inferCNV.git
-WORKDIR /inferCNV
-RUN git checkout 9e1bfb9af3612eb34dac65cd6a1c3a388a4e805e
-RUN chmod a+x /inferCNV/scripts/*.py
-# remove extra copy of matrix_to_ideogram_annots.py from inferCNV/scripts
-RUN rm /inferCNV/scripts/matrix_to_ideogram_annots.py
-
+# Get script to convert inferCNV outputs to Ideogram.js annotations, then clean
 WORKDIR /
-RUN git clone https://github.com/broadinstitute/single_cell_portal.git
-WORKDIR /single_cell_portal
-RUN git checkout a6ceea84fbc701289010976a0c678142ba5c8481
-RUN chmod a+x /single_cell_portal/scripts/ideogram/*.py
+RUN git clone https://github.com/broadinstitute/single_cell_portal scp
+WORKDIR scp
+RUN git checkout 547bed26cfa72614bd6ae7d916825e779a7a4d59
+WORKDIR /
+RUN mkdir -p single_cell_portal/scripts/ideogram
+RUN mv scp/scripts/ideogram single_cell_portal/scripts/
+RUN rm -rf scp
 
 # set path
 ENV PATH=${PATH}:/inferCNV/scripts:/single_cell_portal/scripts/ideogram
@@ -42,5 +41,5 @@ RUN R CMD INSTALL GMD_0.3.3.tar.gz
 
 # clean up
 RUN rm /GMD_0.3.3.tar.gz
-RUN rm /infercnv_0.1.tar.gz
+RUN rm /InferCNV-v0.8.2.tar.gz
 CMD inferCNV.R --help
