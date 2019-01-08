@@ -32,6 +32,8 @@ def get_clusters_from_file(path):
         for line in lines[3:]:
             columns = line.strip().split('\t')
             cluster_label = columns[cluster_index].strip()
+            if cluster_label in ['Oligodendrocytes (non-malignant)', 'Microglia/Macrophage']:
+                continue
             cell = columns[0]
             if got_all_cells is False:
                 all_cells.append(cell)
@@ -48,6 +50,15 @@ def get_cluster_groups(group_names, paths, metadata_path):
     """Get cluster groups data structure from raw passed CLI arguments"""
     cluster_groups = {}
 
+    print('group_names')
+    print(group_names)
+
+    print('paths')
+    print(paths)
+
+    print('metadata_path')
+    print(metadata_path)
+
     for i, path in enumerate(paths):
         group_name = group_names[i]
         clusters, cells = get_clusters_from_file(path)
@@ -61,6 +72,16 @@ def get_cluster_groups(group_names, paths, metadata_path):
     for group_name in cluster_groups:
         cluster_groups[group_name]['metadata_file'] = metadata_clusters
 
+    print('cluster_groups')
+    print(cluster_groups)
+
+    ordered_labels = [
+        'malignant_97',
+        'malignant_93',
+        'malignant_MGH53',
+        'malignant_MGH36'
+    ]
+
     # Print number of cells in each cluster label, for each cluster
     # (annotation), scope, and group
     for group_name in cluster_groups:
@@ -68,12 +89,26 @@ def get_cluster_groups(group_names, paths, metadata_path):
         metadata_clusters = cluster_groups[group_name]['metadata_file']
         print('From metadata file:')
         for cluster_name in metadata_clusters:
-            for label in metadata_clusters[cluster_name]:
-                num_cells = str(len(metadata_clusters[cluster_name][label]))
+            cluster = metadata_clusters[cluster_name]
+            ordered_cluster = {}
+            labels = cluster.keys()
+            if labels != ordered_labels:
+                for label in ordered_labels:
+                    ordered_cluster[label] = cluster[label]
+            cluster_groups[group_name]['metadata_file'][cluster_name] = ordered_cluster
+            for label in cluster:
+                num_cells = str(len(cluster[label]))
                 print('  Cells in ' + cluster_name + '/' + label + ': ' + num_cells)
         clusters = cluster_groups[group_name]['cluster_file']
         print('From cluster file:')
         for cluster_name in clusters:
+            cluster = clusters[cluster_name]
+            ordered_cluster = {}
+            labels = cluster.keys()
+            if labels != ordered_labels:
+                for label in ordered_labels:
+                    ordered_cluster[label] = cluster[label]
+            cluster_groups[group_name]['cluster_file'][cluster_name] = ordered_cluster
             for label in clusters[cluster_name]:
                 num_cells = str(len(clusters[cluster_name][label]))
                 print('  Cells in ' + cluster_name + '/' + label + ': ' + num_cells)

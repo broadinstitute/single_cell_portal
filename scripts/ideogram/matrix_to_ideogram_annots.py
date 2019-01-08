@@ -96,10 +96,15 @@ class MatrixToIdeogramAnnots:
 
         matrix = self.get_expression_matrix_dict()
 
+        missing_genes = {}
+
         for group_name in self.cluster_groups:
             cluster_group = self.cluster_groups[group_name]
             for scope in ['cluster_file', 'metadata_file']:
                 for cluster_name in cluster_group[scope]:
+
+                    print('cluster_group[scope][cluster_name].keys()')
+                    print(cluster_group[scope][cluster_name].keys())
 
                     expression_means = self.compute_gene_expression_means(matrix, cluster_group, scope, cluster_name)
 
@@ -110,7 +115,11 @@ class MatrixToIdeogramAnnots:
 
                     for i, expression_mean in enumerate(expression_means[1:]):
                         gene_id = expression_mean[0]
-                        gene = genes[gene_id]
+                        if gene_id in genes:
+                            gene = genes[gene_id]
+                        else:
+                            missing_genes[gene_id] = 1
+                            continue
 
                         chr = gene['chr']
                         start = int(gene['start'])
@@ -137,6 +146,11 @@ class MatrixToIdeogramAnnots:
 
                     ideogram_annots = {'keys': keys, 'annots': annots_list}
                     ideogram_annots_list.append([group_name, scope, cluster_name, ideogram_annots])
+
+        if len(missing_genes) > 0:
+            print('Genes in matrix but not in gene position file:')
+            print(len(missing_genes))
+            print(missing_genes.keys())
 
         return ideogram_annots_list
 
@@ -204,6 +218,9 @@ class MatrixToIdeogramAnnots:
 
         cells = matrix['cells']
 
+        print('cells')
+        print(cells)
+
         cluster_labels = list(cluster_group[scope][cluster_name].keys())
 
         keys = ['name'] + cluster_labels
@@ -223,10 +240,11 @@ class MatrixToIdeogramAnnots:
                 # cell_annot = cluster[name]
                 cell_annot_expressions = []
                 for cell in cluster[cluster_label]:
+                    if cell not in cells: continue
                     index_of_cell_in_matrix = cells[cell] - 1
                     gene_exp_in_cell = gene_exp_list[index_of_cell_in_matrix]
                     cell_annot_expressions.append(gene_exp_in_cell)
-
+                if len(cell_annot_expressions) == 0: continue
                 mean_cluster_expression = round(mean(cell_annot_expressions), 3)
                 scores_list.append(mean_cluster_expression)
 
@@ -238,6 +256,9 @@ class MatrixToIdeogramAnnots:
 
             scores_lists.append(scores_list)
 
+        scores_lists.reverse()
+        print('scores_lists')
+        print(scores_lists)
         return scores_lists
 
 if __name__ == '__main__':
