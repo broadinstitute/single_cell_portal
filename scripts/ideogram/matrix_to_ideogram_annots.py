@@ -276,6 +276,15 @@ if __name__ == '__main__':
     ap.add_argument('--cluster_names',
                     help='Names of cluster groups',
                     nargs='+')
+    ap.add_argument('--ref_cluster_names',
+                    help='Names of reference (normal) cluster groups',
+                    nargs='+')
+    ap.add_argument('--heatmap_thresholds',
+                    help='Numeric thresholds for heatmap',
+                    nargs='+')
+    ap.add_argument('--ref_heatmap_thresholds',
+                    help='Numeric thresholds for heatmap of reference (normal) cluster groups',
+                    nargs='+')
     ap.add_argument('--cluster_paths',
                     help='Path or URL to cluster group files',
                     nargs='+')
@@ -290,6 +299,9 @@ if __name__ == '__main__':
     matrix_delimiter = args.matrix_delimiter
     gen_pos_file = args.gen_pos_file
     cluster_names = args.cluster_names
+    ref_cluster_names = args.ref_cluster_names
+    heatmap_thresholds = args.heatmap_thresholds
+    ref_heatmap_thresholds = args.ref_heatmap_thresholds
     cluster_paths = args.cluster_paths
     metadata_path = args.metadata_path
     output_dir = args.output_dir
