@@ -1,12 +1,14 @@
 # Docker file for inferCNV
-FROM rocker/r-ver:3.4.4
+FROM ubuntu:xenial
 MAINTAINER ttickle@broadinstitute.org
-
+RUN echo "deb http://cran.rstudio.com/bin/linux/ubuntu xenial/" | tee -a /etc/apt/sources.list && \
+gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9 && \
+gpg -a --export E084DAB9 | apt-key add -
 RUN apt-get update && \
-apt-get -y install curl libssl-dev libcurl4-openssl-dev libxml2-dev git python3 zlib1g-dev
-RUN echo "options(repos = c(CRAN = \"https://cran.rstudio.com\"))" >.Rprofile && \
-echo "install.packages(c(\"devtools\",\"ape\",\"RColorBrewer\",\"optparse\",\"logging\", \"gplots\", \"futile.logger\", \"binhf\", \"fastcluster\", \"dplyr\", \"coin\"), dependencies = TRUE)" > install_devtools.r && \
-echo "library(\"devtools\")" >> install_devtools.r && R --no-save < install_devtools.r
+apt-get -y install curl libssl-dev libcurl4-openssl-dev libxml2-dev r-base r-base-dev git python3
+RUN echo "options(repos = c(CRAN = 'https://cran.rstudio.com'))" >.Rprofile && \
+echo "install.packages(c('devtools','ape','RColorBrewer','optparse','logging', 'gplots', 'futile.logger', 'binhf', 'fastcluster', 'dplyr', 'coin'), dependencies = TRUE)" > install_devtools.r && \
+echo "library('devtools')" >> install_devtools.r && R --no-save < install_devtools.r
 
 WORKDIR /
 RUN curl -OL "https://github.com/broadinstitute/inferCNV/archive/InferCNV-v0.8.2.tar.gz"
@@ -14,9 +16,9 @@ RUN tar -xvzf InferCNV-v0.8.2.tar.gz
 RUN R CMD INSTALL inferCNV-InferCNV-v0.8.2
 RUN mv inferCNV-InferCNV-v0.8.2/ inferCNV
 
-# Delete extraneous inferCNV examples (64 MB)
+# Delete extraneous inferCNV directories
 WORKDIR /inferCNV
-RUN rm -rf examples/
+RUN rm -rf example/full_precision __simulations
 
 # clean up installs
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
