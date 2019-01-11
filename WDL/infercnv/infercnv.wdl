@@ -73,7 +73,7 @@ task run_infercnv {
 }
 
 task run_matrix_to_ideogram_annots {
-	File matrix_path
+    File matrix_path
     String matrix_delimiter
     File gene_positions
     Array[String] input_cluster_names
