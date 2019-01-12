@@ -39,7 +39,7 @@ def make_tarfile(output_filename, source_dir):
 class MatrixToIdeogramAnnots:
 
     def __init__(self, matrix_path, matrix_delimiter, gen_pos_file,
-                 cluster_groups, output_dir):
+                 cluster_groups, output_dir, heatmap_thresholds):
         """Class and parameter docs in module summary and argument parser"""
 
         self.matrix_path = matrix_path
@@ -47,6 +47,7 @@ class MatrixToIdeogramAnnots:
         self.cluster_groups = cluster_groups
         self.output_dir = output_dir
         self.genomic_position_file_path = gen_pos_file
+        self.heatmap_thresholds = heatmap_thresholds
 
         self.genes = self.get_genes()
 
@@ -144,7 +145,11 @@ class MatrixToIdeogramAnnots:
                         annots = annots_by_chr[chr]
                         annots_list.append({'chr': chr, 'annots': annots})
 
-                    ideogram_annots = {'keys': keys, 'annots': annots_list}
+                    ideogram_annots = {
+                        'keys': keys,
+                        'metadata': {'heatmapThresholds': self.heatmap_thresholds},
+                        'annots': annots_list
+                    }
                     ideogram_annots_list.append([group_name, scope, cluster_name, ideogram_annots])
 
         if len(missing_genes) > 0:
@@ -261,6 +266,13 @@ class MatrixToIdeogramAnnots:
         print(scores_lists)
         return scores_lists
 
+def parse_heatmap_thresholds(path):
+    """Parses JSON file containing an array of numbers, i.e. heatmap thresholds
+    """
+    with open(path) as f:
+        return json.loads(f.read())
+
+
 if __name__ == '__main__':
 
     # Parse command-line arguments
@@ -279,9 +291,8 @@ if __name__ == '__main__':
     ap.add_argument('--ref_cluster_names',
                     help='Names of reference (normal) cluster groups',
                     nargs='+')
-    ap.add_argument('--heatmap_thresholds',
-                    help='Numeric thresholds for heatmap',
-                    nargs='+')
+    ap.add_argument('--heatmap_thresholds_path',
+                    help='Path to heatmap thresholds file')
     ap.add_argument('--ref_heatmap_thresholds',
                     help='Numeric thresholds for heatmap of reference (normal) cluster groups',
                     nargs='+')
@@ -300,8 +311,15 @@ if __name__ == '__main__':
     gen_pos_file = args.gen_pos_file
     cluster_names = args.cluster_names
     ref_cluster_names = args.ref_cluster_names
-    heatmap_thresholds = args.heatmap_thresholds
-    ref_heatmap_thresholds = args.ref_heatmap_thresholds
+    if args.heatmap_thresholds_path:
+        path = args.heatmap_thresholds_path
+        heatmap_thresholds = parse_heatmap_thresholds(path)
+    else:
+        heatmap_thresholds = None
+    if args.ref_heatmap_thresholds:
+        ref_heatmap_thresholds = args.ref_heatmap_thresholds
+    else:
+        ref_heatmap_thresholds = None
     cluster_paths = args.cluster_paths
     metadata_path = args.metadata_path
     output_dir = args.output_dir
@@ -311,4 +329,5 @@ if __name__ == '__main__':
 
     clusters_groups = get_cluster_groups(cluster_names, cluster_paths, metadata_path)
 
-    MatrixToIdeogramAnnots(matrix_path, matrix_delimiter, gen_pos_file, clusters_groups, output_dir)
+    MatrixToIdeogramAnnots(matrix_path, matrix_delimiter, gen_pos_file,
+        clusters_groups, output_dir, heatmap_thresholds)
