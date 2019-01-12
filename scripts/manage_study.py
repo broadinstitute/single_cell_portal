@@ -6,6 +6,7 @@ import Commandline
 import os
 import SCPAPI
 
+# Subparser tool names
 c_TOOL_LIST_STUDY = "list-studies"
 c_TOOL_CLUSTER = "upload-cluster"
 c_TOOL_EXPRESSION = "upload-expression"
@@ -14,6 +15,12 @@ c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
 
 def manageCallReturn(callReturn):
+    '''
+    Accesses the error codes in the underlying library and check the return code.
+
+    :param callReturn: Dict returned from SCPAPI call with REST call return info
+    :return: No return will exit on error
+    '''
     # Print error code and describe code then exit if not sucess
     print("Error Code = " + str(callReturn[SCPAPI.c_CODE_RET_KEY]))
     print(SCPAPI.SCPAPIManager.describe_error_code(callReturn[SCPAPI.c_CODE_RET_KEY]))
@@ -21,15 +28,19 @@ def manageCallReturn(callReturn):
         exit(callReturn[SCPAPI.c_CODE_RET_KEY])
 
 def login(manager=None,test=False):
+    '''
+    Login to authorize credentials.
+
+    :param manager: API Manager
+    :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+    :return:
+    '''
     if manager is None:
         manager=SCPAPI.SCPAPIManager()
         manager.login(token=parsed_args.token,
                       test=test)
     return(manager)
 
-#def get_token_browser():
-#    "gcloud auth application-default login"
-#   "gcloud auth application-default print-access-token"
 
 args = argparse.ArgumentParser(
     prog='manage_study.py',
@@ -50,10 +61,10 @@ args.add_argument(
     help='Do not check file locally before uploading.'
 )
 
-# Create tools (sub parser)
+# Create tools (subparser)
 subargs = args.add_subparsers()
 
-## List studies
+## List studies  subparser
 parser_list_studies = subargs.add_parser(c_TOOL_LIST_STUDY,
     help="Used to list studies. \""+args.prog+" "+c_TOOL_LIST_STUDY+" -h\" for more details")
 parser_list_studies.add_argument(
@@ -164,6 +175,7 @@ print("Args----")
 print(vars(parsed_args))
 print("-----Args")
 
+# Login connection
 connection = None
 
 ## Handle list studies
@@ -218,7 +230,7 @@ if parsed_args.validate:
             print("There was an error validating the files, did not upload. Code="+str(valid_code))
             exit(valid_code)
 
-## Validate and upload cluster file
+## Upload cluster file
 if hasattr(parsed_args,"clusterFile"):
     print("UPLOAD CLUSTER FILE")
     connection = login(manager=connection, test=parsed_args.testing)
@@ -235,15 +247,20 @@ if hasattr(parsed_args,"clusterFile"):
     manageCallReturn(ret)
 
 ## Upload metadata file
+### TODO
 
 ## Upload expression file
-##--
+### TODO
 
 ## Validate and Upload and Sort 10X files
+### TODO
 
 ## Validate and Upload 10X directory
+### TODO
 
 ## Validate and Upload fastqs
+### TODO
 
 ## Validate and Upload bams
+### TODO
 
