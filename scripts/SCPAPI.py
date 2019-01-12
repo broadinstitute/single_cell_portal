@@ -2,10 +2,13 @@
 
 import requests
 import Commandline
+import random
+import string
 import os
 
 # Constants
 c_AUTH = 'Authorization'
+c_BOUNDARY_LENGTH = 20
 c_CODE_RET_KEY = "code"
 c_RESPONSE = "response"
 c_STUDIES_RET_KEY = "studies"
@@ -41,7 +44,7 @@ c_API_CONTENT_HEADERS_TEXT = "Accept or Content-Type headers missing or misconfi
 c_API_INVALID_STUDY = 422
 c_API_INVALID_STUDY_TEXT = "Study validation failed"
 c_API_BACKEND_ERROR = 500
-c_API_BACKEND_ERROR_TEXT = "Server error when attempting to synchronize FireCloud workspace or access GCS objects"
+c_API_BACKEND_ERROR_TEXT = "Internal server error"
 
 # Share access modes
 c_ACCESS_EDIT = "Edit"
@@ -54,17 +57,15 @@ c_PERMISSIONS = [c_ACCESS_EDIT, c_ACCESS_REVIEWER, c_ACCESS_VIEW, c_ACCESS_REMOV
 c_CLUSTER_FILE_TYPE = "Cluster"
 c_TEXT_TYPE = "text/plain"
 c_INVALID_STUDYDESC_CHAR = ["<",".","+","?",">"]
-c_VALID_STUDYNAME_CHAR = string.ascii_letters + string.digits + [" ","-",".","/","(",")","+",",",":"]
+c_VALID_STUDYNAME_CHAR = string.ascii_letters + string.digits + "".join([" ","-",".","/","(",")","+",",",":"])
 
-# The expected header
+# Matrix
+c_MATRIX_API_OK = 200
+c_MATRIX_REQUEST_API_OK = 202
+c_MATRIX_BAD_FORMAT = 102
+c_MATRIX_BAD_FORMAT_TEXT = "The requested format is not supported in the service."
+
 class APIManager:
-
-    def __init__(self):
-        print("INIT")
-        self.api = "https://portals.broadinstitute.org/single_cell/api/v1/"
-        self.studies = None
-        self.name_to_id = None
-        self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
 
     def login(self, token=None, test=False):
         """
@@ -81,6 +82,7 @@ class APIManager:
     def do_browser_login(test=False):
         print("BROWSER LOGIN")
         if test:
+            print("TESTING:: Did not login")
             return("TESTING_TOKEN")
         cmdline = Commandline.Commandline()
         cmdline.func_CMD(command="gcloud auth application-default login")
@@ -93,7 +95,9 @@ class APIManager:
         print(command)
         if test:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
-        head = {c_AUTH:'token {}'.format(self.token), 'Accept':'application/json'}
+        head = {'Accept': 'application/json'}
+        if hasattr(self,"token"):
+            head[c_AUTH] = 'token {}'.format(self.token)
         return(APIManager.check_api_return(requests.get(command, headers=head)))
 
     def do_post(self, command, values, files=None, test=False):
@@ -103,6 +107,7 @@ class APIManager:
         print(values)
         print(files)
         if test:
+            print("TESTING:: Returning success.")
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {c_AUTH: 'token {}'.format(self.token),
                 'Accept': 'application/json'}
@@ -136,6 +141,30 @@ class APIManager:
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
         return(APIManager.check_api_return(requests.delete(command, headers=head)))
 
+    def check_api_return(ret):
+        print(ret)
+        api_return = {}
+        api_return[c_SUCCESS_RET_KEY] = ret.status_code in [c_API_OK, c_DELETE_OK]
+        api_return[c_CODE_RET_KEY] = ret.status_code
+        api_return[c_RESPONSE] = ret
+        return(api_return)
+
+    def get_boundary():
+        base = string.ascii_lowercase + string.digits
+        return("".join([random.choice(base) for i in range(c_BOUNDARY_LENGTH)]))
+
+
+# The expected header
+class SCPAPIManager(APIManager):
+
+    def __init__(self):
+        APIManager.__init__(self)
+        print("INIT")
+        self.api = "https://portals.broadinstitute.org/single_cell/api/v1/"
+        self.studies = None
+        self.name_to_id = None
+        self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
+
     def describe_error_code(error_code):
         ret_error_codes = {
             c_STUDY_EXISTS:c_STUDY_EXISTS_TEXT,
@@ -156,14 +185,6 @@ class APIManager:
         }
         return(ret_error_codes.get(error_code, "That error code is not in use."))
 
-    def check_api_return(ret):
-        print(ret.url)
-        api_return = {}
-        api_return[c_SUCCESS_RET_KEY] = ret.status_code in [c_API_OK, c_DELETE_OK]
-        api_return[c_CODE_RET_KEY] = ret.status_code
-        api_return[c_RESPONSE] = ret
-        return(api_return)
-
     def check_species_genome(self, species, genome=None):
         print("CHECK SPECIES (GENOME)")
         if not species.lower() in self.species_genomes:
@@ -175,6 +196,7 @@ class APIManager:
         print("GET STUDIES")
         resp = self.do_get(self.api + "studies",test=test)
         if test:
+            print("TESTING:: Returned dummy names.")
             resp[c_STUDIES_RET_KEY] = ["TESTING 1","TESTING 2"]
         else:
             if(resp[c_SUCCESS_RET_KEY]):
@@ -256,7 +278,7 @@ class APIManager:
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        studyId = self.study_name_to_id(studyName)
+        studyId = self.study_name_to_id(studyName, test=test)
 
         # Get the share id for the email
         ret_shares = self.do_get(command=self.api + "studies/"+str(studyId)+"/study_shares",
@@ -297,7 +319,7 @@ class APIManager:
     def study_exists(self, studyName, test=False):
         print("STUDY EXISTS?")
         if self.studies is None:
-            ret = self.get_studies()
+            ret = self.get_studies(test=test)
             if not ret[c_SUCCESS_RET_KEY]:
                 return False
                 #### TODO throw exception
@@ -308,7 +330,8 @@ class APIManager:
     def study_name_to_id(self, name, test=False):
         print("STUDY NAME TO ID")
         if test:
-            return("ID 1")
+            print("TESTING:: returning a dummy id")
+            return("1")
         else:
             return(self.name_to_id.get(name, None))
 
@@ -323,6 +346,14 @@ class APIManager:
                              z="Z",
                              test=False):
         print("UPLOAD CLUSTER FILE")
+
+        import logging
+        logging.basicConfig()
+        logging.getLogger().setLevel(logging.DEBUG)
+        requests_log = logging.getLogger("requests.packages.urllib3")
+        requests_log.setLevel(logging.DEBUG)
+        requests_log.propagate = True
+
         # Error if the study does not exist
         if not self.study_exists(studyName=studyName, test=test) and not test:
             return {
@@ -330,21 +361,122 @@ class APIManager:
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        studyId = self.study_name_to_id(studyName)
-        fileInfo = {"study_id":studyId,
-         #           "description":description,
-         #           "name": clusterName,
-          #          'Content-Type': 'multipart/form-data',
-                    }
-        files ={"file":open(file,'rb')}
-              #                "species":species,
-               #               "assembly":genome,
-
-           #     "upload_file_name":os.path.basename(file),
-          #      "upload_content_type":c_TEXT_TYPE}
+        # python manage_study.py upload-cluster --file ../demo_data/coordinates_example.txt --study apitest --cluster_name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
+        # sutdy id 5c0aaa5e328cee0a3b19c4a9
+        studyId = self.study_name_to_id(studyName, test=test)
+        fileInfo = {"study_file":{"file_type":"Cluster",
+                    "species":"Felis catus",
+                    "name":"cluster"}}
+        files = {"study_file":{"file_type":"Cluster",
+                               "species":"Felis catus",
+                               "name":"cluster",
+                               "upload":open(file,'rb')}}
         ret = self.do_post(command=self.api + "studies/" + str(studyId) + "/study_files",
-                           values=fileInfo,
+                           values={},
                            files=files,
                            test=test)
-        print(ret)
+        print("HHH")
+        print(ret["response"].text)
+        dir(ret["response"])
+        print("HHH@")
         return(ret)
+        '''
+        import urllib
+        boundary = APIManager.get_boundary()
+        content_type = 'multipart/form-data; boundary=%s' %  boundary
+        boundary = boundary.encode('utf-8')
+
+        body = b'--'+boundary+b'\r\n'
+        body += b'Content-Disposition: form-data; name="study_file[file_type]"\r\n'
+        body += b'\r\n'
+        body += b'Cluster'
+        body += b'--'+boundary+b'\r\n'
+        body += b'Content-Disposition: form-data; name="study_file[upload]"; filename="'+os.path.basename(file).encode('utf-8')+b'"\r\n'
+        body += b'Content-Type: text/plain\r\n'
+        #body += b'\r\n'
+        #body += open(file,'rb').read() + b'\r\n'
+        body += b'--'+boundary+b'--\r\n'
+
+        curReq = urllib.request.Request(self.api + "studies/" + str(studyId) + "/study_files")
+        curReq.add_header('User-agent','Single Cell Portal User Scripts (https://portals.broadinstitute.org/single_cell)')
+        curReq.add_header('Content-Type', content_type)
+        curReq.add_header('Authorization',self.token)
+        curReq.add_header('Accept', 'application/json')
+        curReq.add_header('Content-Length',len(body))
+
+        curReq.data = body
+        [print(i) for i in curReq.header_items()]
+        print("BODY")
+        print(curReq.data)
+        ret = None
+        try:
+            ret = urllib.request.urlopen(curReq)
+            print("-----")
+            print(dir(ret))
+            print(ret.getcode())
+            print("-----")
+            return(ret)
+        except urllib.error.HTTPError as e:
+            print(e.code)
+            print(e.reason)
+            print(e.headers)
+            return(ret)
+
+        #print("-----")
+        #print(dir(ret[c_RESPONSE]))
+        #print("-----")
+        #print(ret[c_RESPONSE].json())
+        #print(ret[c_RESPONSE].headers)
+        #print("------url")
+        #print(ret[c_RESPONSE].url)
+        #print("-----url")
+        #print(ret[c_RESPONSE].history)
+        #print(ret[c_RESPONSE].content)
+        #print(ret[c_RESPONSE].raw)
+        '''
+
+class DSSAPIManager(APIManager):
+    def __init__(self):
+        APIManager.__init__(self)
+        print("INIT")
+        self.api = "https://dss.data.humancellatlas.org/v1/"
+
+class MatrixAPIManager(APIManager):
+    def __init__(self):
+        APIManager.__init__(self)
+        print("INIT MATRIX API")
+        self.api = "https://matrix.data.humancellatlas.org/v0/matrix/"
+        self.supportedTypes = None
+
+    def describe_error_code(error_code):
+        ret_error_codes = {
+            c_MATRIX_API_OK:c_NO_ERROR_TEXT,
+            c_MATRIX_REQUEST_API_OK:c_NO_ERROR_TEXT,
+            c_MATRIX_BAD_FORMAT:c_MATRIX_BAD_FORMAT_TEXT,
+            c_API_SYNTAX_ERROR:c_API_SYNTAX_ERROR_TEXT
+        }
+        return(ret_error_codes.get(error_code, "That error code is not in use."))
+
+
+    def get_supported_types(self, test=False):
+        print("GET SUPPORTED TYPES")
+        if test:
+            self.supportedTypes = ["test_type","test_type"]
+            return {c_SUCCESS_RET_KEY: True}
+        if self.supportedTypes is None:
+            resp =self.do_get(self.api + "formats")
+            if resp[c_SUCCESS_RET_KEY]:
+                self.supportedTypes = resp[c_RESPONSE].json()
+        return(resp)
+
+    def request_matrix(self, ids, format="zarr", test=False):
+        print("REQUEST MATRIX BY IDs")
+        if not format in self.get_supported_types():
+            return {c_SUCCESS_RET_KEY: False,
+                    c_CODE_RET_KEY: c_MATRIX_BAD_FORMAT}
+        bundleInfo = {"bundle_fqids":ids,"format":format}
+        resp = self.do_post(self.api,
+                            values=bundleInfo,
+                            test=test)
+        return(resp)
+
