@@ -267,11 +267,11 @@ class MatrixToIdeogramAnnots:
         return scores_lists
 
 def parse_heatmap_thresholds(path):
-    """Parses JSON file containing an array of numbers, i.e. heatmap thresholds
+    """Parses file containing rows of numbers, i.e. heatmap thresholds
     """
     with open(path) as f:
-        return json.loads(f.read())
-
+        thresholds = [float(x.strip()) for x in f.readlines()]
+        return thresholds
 
 if __name__ == '__main__':
 
