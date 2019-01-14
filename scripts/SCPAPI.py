@@ -53,25 +53,33 @@ c_ACCESS_VIEW = "View"
 c_ACCESS_REMOVE = "Remove"
 c_PERMISSIONS = [c_ACCESS_EDIT, c_ACCESS_REVIEWER, c_ACCESS_VIEW, c_ACCESS_REMOVE]
 
-# SCP Portal
+# SCP Portal Specific
 c_CLUSTER_FILE_TYPE = "Cluster"
 c_TEXT_TYPE = "text/plain"
 c_INVALID_STUDYDESC_CHAR = ["<",".","+","?",">"]
 c_VALID_STUDYNAME_CHAR = string.ascii_letters + string.digits + "".join([" ","-",".","/","(",")","+",",",":"])
 
-# Matrix
+# Matrix API specific
 c_MATRIX_API_OK = 200
 c_MATRIX_REQUEST_API_OK = 202
 c_MATRIX_BAD_FORMAT = 102
 c_MATRIX_BAD_FORMAT_TEXT = "The requested format is not supported in the service."
 
+
 class APIManager:
+    '''
+    Base class for REST API interaction. Handles common operations.
+    '''
 
     def login(self, token=None, test=False):
         """
+        Authenticates as user and get's token to perform actions on the user's behalf.
+
         :param token: User token to use with API
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
         :return: Boolean Indicator of success or failure (False)
         """
+
         ## TODO add in auth from a file.
         print("LOGIN")
         if token is None:
@@ -80,6 +88,13 @@ class APIManager:
         self.studies = None
 
     def do_browser_login(test=False):
+        '''
+        Authenticate through the browser
+
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :return: Authentication token
+        '''
+
         print("BROWSER LOGIN")
         if test:
             print("TESTING:: Did not login")
@@ -90,7 +105,15 @@ class APIManager:
         return(cmd_ret.decode("ASCII").strip(os.linesep))
 
     def do_get(self, command, test=False):
-        ## TODO addtimeout and exception handling (Timeout exeception)
+        '''
+        Perform a GET.
+
+        :param command: String GET command to send to the REST endpoint
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :return: Return dict with response and error codes/status
+        '''
+
+        ## TODO add timeout and exception handling (Timeout exeception)
         print("DO GET")
         print(command)
         if test:
@@ -101,6 +124,16 @@ class APIManager:
         return(APIManager.check_api_return(requests.get(command, headers=head)))
 
     def do_post(self, command, values, files=None, test=False):
+        '''
+        Perform POST.
+
+        :param command: String POST command to send to the REST endpoint.
+        :param values: Parameter values to send {name: value}
+        :param files:
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :return: Return dict with response and error codes/status
+        '''
+
         ## TODO addtimeout and exception handling (Timeout exeception)
         print("DO PUT")
         print(command)
@@ -123,7 +156,16 @@ class APIManager:
                                                              json=values)))
 
     def do_patch(self, command, values, test=False):
-        ## TODO addtimeout and exception handling (Timeout exeception)
+        '''
+        Perform PATCH
+
+        :param command: String PATCH command to send to the REST endpoint
+        :param values: Parameter values to send {name: value}
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :return: Return dict with response and error code/status
+        '''
+
+        ## TODO add timeout and exception handling (Timeout exeception)
         print("DO PATCH")
         print(command)
         print(values)
@@ -133,7 +175,15 @@ class APIManager:
         return(APIManager.check_api_return(requests.patch(command, headers=head, json=values)))
 
     def do_delete(self, command, test=False):
-        ## TODO addtimeout and exception handling (Timeout exeception)
+        '''
+        Perform Delete
+
+        :param command: String DELETE command to send to the REST endpoint
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :return: Return dict with response and error code/status
+        '''
+
+        ## TODO add timeout and exception handling (Timeout exeception)
         print("DO DELETE")
         print(command)
         if test:
@@ -142,6 +192,13 @@ class APIManager:
         return(APIManager.check_api_return(requests.delete(command, headers=head)))
 
     def check_api_return(ret):
+        '''
+        Create dict that has if status code was successful, status code,and response
+
+        :param ret: Response
+        :return: Dict of response, error code, and status.
+        '''
+
         print(ret)
         api_return = {}
         api_return[c_SUCCESS_RET_KEY] = ret.status_code in [c_API_OK, c_DELETE_OK]
@@ -150,14 +207,27 @@ class APIManager:
         return(api_return)
 
     def get_boundary():
+        '''
+        Creates a random string that is likely to not be in a MIME message. Used as a boundary between MIME parts.
+
+        :return: String
+        '''
+
         base = string.ascii_lowercase + string.digits
         return("".join([random.choice(base) for i in range(c_BOUNDARY_LENGTH)]))
 
 
 # The expected header
 class SCPAPIManager(APIManager):
+    '''
+    API manager for the Single Cell Portal Endpoint.
+    '''
 
     def __init__(self):
+        '''
+        Initialize for the SCP endpoint.
+        '''
+
         APIManager.__init__(self)
         print("INIT")
         self.api = "https://portals.broadinstitute.org/single_cell/api/v1/"
@@ -166,6 +236,13 @@ class SCPAPIManager(APIManager):
         self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
 
     def describe_error_code(error_code):
+        '''
+        Translate the error code to the text errors as per their endpoint documentation.
+
+        :param error_code: Numeric error code to translate
+        :return: String error code text
+        '''
+
         ret_error_codes = {
             c_STUDY_EXISTS:c_STUDY_EXISTS_TEXT,
             c_STUDY_DOES_NOT_EXIST:c_STUDY_DOES_NOT_EXIST_TEXT,
@@ -186,6 +263,14 @@ class SCPAPIManager(APIManager):
         return(ret_error_codes.get(error_code, "That error code is not in use."))
 
     def check_species_genome(self, species, genome=None):
+        '''
+        The SCP only support certain species, this checks the submitted species to make sure it is supported.
+
+        :param species: String species to confirm is supported.
+        :param genome: String, if provided optionally checks genome version.
+        :return: Boolean, false indicates not supported.
+        '''
+
         print("CHECK SPECIES (GENOME)")
         if not species.lower() in self.species_genomes:
             print(species+" : this species is not registered with the portal please email the team to have it added.")
@@ -193,6 +278,13 @@ class SCPAPIManager(APIManager):
         return(genome in self.species_genomes[species])
 
     def get_studies(self, test=False):
+        '''
+        Get studies available to user.
+
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :return: Response
+        '''
+
         print("GET STUDIES")
         resp = self.do_get(self.api + "studies",test=test)
         if test:
@@ -207,6 +299,13 @@ class SCPAPIManager(APIManager):
         return(resp)
 
     def isValidStudyDescription(self,studyDescription):
+        '''
+        Confirms a study description does not contain characters that are not allowed.
+
+        :param studyDescription: String description
+        :return: Boolean indicator of validity, True is valid
+        '''
+
         noError = True
         for letter in studyDescription:
             if letter in c_INVALID_STUDYDESC_CHAR:
@@ -215,6 +314,13 @@ class SCPAPIManager(APIManager):
         return noError
 
     def isValidStudyName(self, studyName):
+        '''
+        Confirms a study name does not contain characters that are not allowed.
+
+        :param studyName: String study name
+        :return: Boolean indicator oc validity, True is valid
+        '''
+
         noError = True
         for letter in studyName:
             if not letter in c_VALID_STUDYNAME_CHAR:
@@ -228,6 +334,19 @@ class SCPAPIManager(APIManager):
                      billing=None,
                      isPublic=False,
                      test=False):
+        '''
+        Create a study name using the REST API.
+        Confirms the study does not exist before creating.
+        Confirms name and description are valid.
+
+        :param studyName: String study name
+        :param studyDescription: String study description
+        :param branding: String branding
+        :param billing: String FireCloud Billing object
+        :param isPublic: Boolean indicator if the sudy should be public (True)
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :return: Response
+        '''
         print("CREATE STUDY:: " + studyName)
         # Study variable validation
         ## Study must not exist
@@ -264,6 +383,16 @@ class SCPAPIManager(APIManager):
         return(resp)
 
     def set_permission(self, studyName, email, access, deliver_email=False, test=False):
+        '''
+        Sets permission on a study.
+
+        :param studyName: String study name to update permissions
+        :param email: String email (user) to update permission
+        :param access: String access level for permission
+        :param deliver_email: Boolean, is the user interested in email notifications for study changes (True, receive emails)
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality
+        :return: Dict with response and additional information including status and errors
+        '''
         print("SET PERMISSION: "+" ".join(str(i) for i in [studyName, email, access]))
         # Make sure the access value is valid
         if not access in c_PERMISSIONS:
@@ -317,6 +446,13 @@ class SCPAPIManager(APIManager):
             return(update_ret)
 
     def study_exists(self, studyName, test=False):
+        '''
+        Indicates if the user has access to a study of the given name
+
+        :param studyName: String study name
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality
+        :return: Boolean, True indicates the study is known to the user and exists
+        '''
         print("STUDY EXISTS?")
         if self.studies is None:
             ret = self.get_studies(test=test)
@@ -328,6 +464,13 @@ class SCPAPIManager(APIManager):
         return(studyName in self.studies)
 
     def study_name_to_id(self, name, test=False):
+        '''
+        Changes the a study name into the correct a portal id
+
+        :param name: String study name
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :return: String portal id
+        '''
         print("STUDY NAME TO ID")
         if test:
             print("TESTING:: returning a dummy id")
@@ -345,6 +488,20 @@ class SCPAPIManager(APIManager):
                              y="Y",
                              z="Z",
                              test=False):
+        '''
+        *** In development, not complete.***
+        :param file:
+        :param studyName:
+        :param clusterName:
+        :param description:
+        :param species:
+        :param genome:
+        :param x:
+        :param y:
+        :param z:
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :return:
+        '''
         print("UPLOAD CLUSTER FILE")
 
         import logging
@@ -435,20 +592,45 @@ class SCPAPIManager(APIManager):
         #print(ret[c_RESPONSE].raw)
         '''
 
+
 class DSSAPIManager(APIManager):
+    '''
+    API manager for the HCA DSS
+    '''
+
     def __init__(self):
+        '''
+        Initialize for the DSS endpoint
+        '''
+
         APIManager.__init__(self)
         print("INIT")
         self.api = "https://dss.data.humancellatlas.org/v1/"
 
+
 class MatrixAPIManager(APIManager):
+    '''
+    API manager for Matrix service
+    '''
+
     def __init__(self):
+        '''
+        Initialize for the expression matrix service
+        '''
+
         APIManager.__init__(self)
         print("INIT MATRIX API")
         self.api = "https://matrix.data.humancellatlas.org/v0/matrix/"
         self.supportedTypes = None
 
     def describe_error_code(error_code):
+        '''
+        Translate the error code to the text errors as per their endpoint documentation.
+
+        :param error_code: Numeric error code to translate
+        :return: String error code text
+        '''
+
         ret_error_codes = {
             c_MATRIX_API_OK:c_NO_ERROR_TEXT,
             c_MATRIX_REQUEST_API_OK:c_NO_ERROR_TEXT,
@@ -457,8 +639,13 @@ class MatrixAPIManager(APIManager):
         }
         return(ret_error_codes.get(error_code, "That error code is not in use."))
 
-
     def get_supported_types(self, test=False):
+        '''
+        Query and update supported file types for delivery by the matrix service
+
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality
+        :return: Returns the response, also updates the supported types (in the Matrix Manager)
+        '''
         print("GET SUPPORTED TYPES")
         if test:
             self.supportedTypes = ["test_type","test_type"]
@@ -470,6 +657,15 @@ class MatrixAPIManager(APIManager):
         return(resp)
 
     def request_matrix(self, ids, format="zarr", test=False):
+        '''
+        *** In development ****
+        Request a matrix by supplying bundle IDs
+
+        :param ids: HCA bundle ids
+        :param format: String supported file format to format the matrix to be received
+        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :return: Response
+        '''
         print("REQUEST MATRIX BY IDs")
         if not format in self.get_supported_types():
             return {c_SUCCESS_RET_KEY: False,
