@@ -252,6 +252,9 @@ if hasattr(parsed_args,"clusterFile"):
 ## Upload expression file
 ### TODO
 
+## Upload miscellaneous file
+### TODO
+
 ## Validate and Upload and Sort 10X files
 ### TODO
 

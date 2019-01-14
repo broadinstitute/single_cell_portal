@@ -125,6 +125,7 @@ class APIManager:
 
     def do_post(self, command, values, files=None, test=False):
         '''
+        *** In development ***
         Perform POST.
 
         :param command: String POST command to send to the REST endpoint.
