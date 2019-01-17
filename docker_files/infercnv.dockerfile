@@ -11,14 +11,22 @@ echo "install.packages(c('devtools','ape','RColorBrewer','optparse','logging', '
 echo "library('devtools')" >> install_devtools.r && R --no-save < install_devtools.r
 
 WORKDIR /
-RUN curl -OL "https://github.com/broadinstitute/inferCNV/archive/InferCNV-v0.8.2.tar.gz"
-RUN tar -xvzf InferCNV-v0.8.2.tar.gz
-RUN R CMD INSTALL inferCNV-InferCNV-v0.8.2
-RUN mv inferCNV-InferCNV-v0.8.2/ inferCNV
+# RUN curl -OL "https://github.com/broadinstitute/inferCNV/archive/InferCNV-v0.8.2.tar.gz"
+# RUN tar -xvzf InferCNV-v0.8.2.tar.gz
+# RUN R CMD INSTALL inferCNV-InferCNV-v0.8.2
+# RUN mv inferCNV-InferCNV-v0.8.2/ inferCNV
+# Get script to convert inferCNV outputs to Ideogram.js annotations, then clean
+WORKDIR /
+RUN rm -rf infercnv
+RUN git clone https://github.com/broadinstitute/infercnv
+WORKDIR infercnv
+RUN git checkout reusable-heatmap-thresholds
+RUN git checkout c156e73bbbb5f95ecb82f6018ae7e4f9c1538882
+RUN R CMD INSTALL .
 
 # Delete extraneous inferCNV directories
 WORKDIR /inferCNV
-RUN rm -rf example/full_precision __simulations
+RUN rm -rf example/full_precision __simulations .git
 
 # clean up installs
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -27,7 +35,8 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 WORKDIR /
 RUN git clone https://github.com/broadinstitute/single_cell_portal scp
 WORKDIR scp
-RUN git checkout 547bed26cfa72614bd6ae7d916825e779a7a4d59
+RUN git checkout ew-reference-analysis
+RUN git checkout ac4b8c24426cb97e2f6149edff1816bdaad58685
 WORKDIR /
 RUN mkdir -p single_cell_portal/scripts/ideogram
 RUN mv scp/scripts/ideogram single_cell_portal/scripts/
@@ -43,5 +52,5 @@ RUN R CMD INSTALL GMD_0.3.3.tar.gz
 
 # clean up
 RUN rm /GMD_0.3.3.tar.gz
-RUN rm /InferCNV-v0.8.2.tar.gz
+#RUN rm /InferCNV-v0.8.2.tar.gz
 CMD inferCNV.R --help
