@@ -1,1 +1,2 @@
 pandas>=0.16.2
+requests>=2.21.0
