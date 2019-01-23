@@ -69,7 +69,7 @@ args.add_argument(
 )
 args.add_argument(
     '--test', dest='testing', action='store_true',
-    help='This will turn on testing mode which will walk through and log what will occur without performing the actions.'
+    help='Turn on testing mode which will walk through and log what will occur without performing the actions.'
 )
 args.add_argument(
     '--no_validate', dest='validate',
@@ -82,7 +82,7 @@ subargs = args.add_subparsers()
 
 ## List studies subparser
 parser_list_studies = subargs.add_parser(c_TOOL_LIST_STUDY,
-    help="Used to list studies. \""+args.prog+" "+c_TOOL_LIST_STUDY+" -h\" for more details")
+    help="List studies. \""+args.prog+" "+c_TOOL_LIST_STUDY+" -h\" for more details")
 parser_list_studies.add_argument(
     '--summary', dest='summarizeList', action='store_true',
     help='Do not list but summarize only.'
@@ -90,7 +90,7 @@ parser_list_studies.add_argument(
 
 ## Create study subparser
 parser_create_studies = subargs.add_parser(c_TOOL_STUDY,
-    help="Used to create studies. \""+args.prog+" "+c_TOOL_STUDY+" -h\" for more details")
+    help="Create a study. \""+args.prog+" "+c_TOOL_STUDY+" -h\" for more details")
 parser_create_studies.add_argument(
     '--description', dest='studyDescription',
     default="Single Cell Genomics Study",
@@ -111,7 +111,7 @@ parser_create_studies.add_argument(
 
 ## Permissions subparser
 parser_permissions = subargs.add_parser(c_TOOL_PERMISSION,
-    help="Used to change user permissions to studies. \""+args.prog+" "+c_TOOL_PERMISSION+" -h\" for more details")
+    help="Change user permissions in a study. \""+args.prog+" "+c_TOOL_PERMISSION+" -h\" for more details")
 parser_permissions.add_argument(
     '--email', dest='email', required=True,
     default='Single Cell Genomics Study',
@@ -128,7 +128,7 @@ parser_permissions.add_argument(
 
 ## Create cluster file upload subparser
 parser_upload_cluster = subargs.add_parser(c_TOOL_CLUSTER,
-    help="Used to upload cluster files. \""+args.prog+" "+c_TOOL_CLUSTER+" -h\" for more details")
+    help="Upload a cluster file. \""+args.prog+" "+c_TOOL_CLUSTER+" -h\" for more details")
 parser_upload_cluster.add_argument(
     '--file', dest='clusterFile', required=True,
     help='Cluster file to load.'
@@ -172,7 +172,7 @@ parser_upload_cluster.add_argument(
 
 ## Create expression file upload subparser
 parser_upload_expression = subargs.add_parser(c_TOOL_EXPRESSION,
-    help="Used to upload expression files. \""+args.prog+" "+c_TOOL_EXPRESSION+" -h\" for more details")
+    help="Upload a gene expression matrix file. \""+args.prog+" "+c_TOOL_EXPRESSION+" -h\" for more details")
 parser_upload_expression.add_argument(
     '--file', dest='expressionFile', required=True,
     help='Expression file to load.'
@@ -180,7 +180,7 @@ parser_upload_expression.add_argument(
 
 ## Create metadata file upload subparser
 parser_upload_metadata = subargs.add_parser(c_TOOL_METADATA,
-    help="Used to upload metadata files. \""+args.prog+" "+c_TOOL_METADATA+" -h\" for more details")
+    help="Upload a metadata file. \""+args.prog+" "+c_TOOL_METADATA+" -h\" for more details")
 parser_upload_metadata.add_argument(
     '--file', dest='metadataFile', required=True,
     help='Metadata file to load.'
