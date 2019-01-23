@@ -70,6 +70,8 @@ class APIManager:
     '''
     Base class for REST API interaction. Handles common operations.
     '''
+    def __init__(self):
+        return
 
     def login(self, token=None, test=False):
         """
@@ -83,11 +85,11 @@ class APIManager:
         ## TODO add in auth from a file.
         print("LOGIN")
         if token is None:
-            token = APIManager.do_browser_login(test=test)
+            token = self.do_browser_login(test=test)
         self.token = token
         self.studies = None
 
-    def do_browser_login(test=False):
+    def do_browser_login(self, test=False):
         '''
         Authenticate through the browser
 
@@ -121,7 +123,7 @@ class APIManager:
         head = {'Accept': 'application/json'}
         if hasattr(self,"token"):
             head[c_AUTH] = 'token {}'.format(self.token)
-        return(APIManager.check_api_return(requests.get(command, headers=head)))
+        return(self.check_api_return(requests.get(command, headers=head)))
 
     def do_post(self, command, values, files=None, test=False):
         '''
@@ -147,11 +149,11 @@ class APIManager:
                 'Accept': 'application/json'}
         print(head)
         if files is None:
-            return(APIManager.check_api_return(requests.post(command,
+            return(self.check_api_return(requests.post(command,
                                                              headers=head,
                                                              json=values)))
         else:
-            return(APIManager.check_api_return(requests.post(command,
+            return(self.check_api_return(requests.post(command,
                                                              headers=head,
                                                              files=files,
                                                              json=values)))
@@ -173,7 +175,7 @@ class APIManager:
         if test:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
-        return(APIManager.check_api_return(requests.patch(command, headers=head, json=values)))
+        return(self.check_api_return(requests.patch(command, headers=head, json=values)))
 
     def do_delete(self, command, test=False):
         '''
@@ -190,9 +192,9 @@ class APIManager:
         if test:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_DELETE_OK})
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
-        return(APIManager.check_api_return(requests.delete(command, headers=head)))
+        return(self.check_api_return(requests.delete(command, headers=head)))
 
-    def check_api_return(ret):
+    def check_api_return(self, ret):
         '''
         Create dict that has if status code was successful, status code,and response
 
@@ -207,7 +209,7 @@ class APIManager:
         api_return[c_RESPONSE] = ret
         return(api_return)
 
-    def get_boundary():
+    def get_boundary(self):
         '''
         Creates a random string that is likely to not be in a MIME message. Used as a boundary between MIME parts.
 
@@ -236,6 +238,7 @@ class SCPAPIManager(APIManager):
         self.name_to_id = None
         self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
 
+    @staticmethod
     def describe_error_code(error_code):
         '''
         Translate the error code to the text errors as per their endpoint documentation.
