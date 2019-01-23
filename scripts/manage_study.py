@@ -8,6 +8,13 @@ This CLI exposes SCP functionality via several subparsers, e.g. "list-study",
 "upload-study".  You can invoke this functionality by passing a subparser name
 into your command-line call, as shown in the EXAMPLES section below.
 
+PREREQUISITES
+To use this tool, you must have Google Cloud SDK installed and initialized.
+See https://cloud.google.com/sdk/docs/ for details.
+
+See https://github.com/broadinstitute/single_cell_portal#convenience-scripts
+for other requirements.
+
 EXAMPLES
 # List studies in SCP
 $ python manage_study.py list-studies
@@ -200,7 +207,7 @@ if hasattr(parsed_args, "summarize_list"):
     connection = login(manager=connection, test=parsed_args.testing)
     ret = connection.get_studies(test=parsed_args.testing)
     manage_call_return(ret)
-    print("There are "+str(len(ret[SCPAPI.c_STUDIES_RET_KEY]))+" studies to which you have access.")
+    print("You have access to "+str(len(ret[SCPAPI.c_STUDIES_RET_KEY]))+" studies.")
     if not parsed_args.summarize_list:
         print(os.linesep.join(ret[SCPAPI.c_STUDIES_RET_KEY]))
 
