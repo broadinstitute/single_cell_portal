@@ -53,7 +53,7 @@ prsr_arguments = argparse.ArgumentParser(
     conflict_handler="resolve",
     formatter_class=argparse.HelpFormatter)
 
-prsr_arguments.add_argument("--coordinates_file",
+prsr_arguments.add_argument("--coordinates-file",
                             default=None,
                             dest="coordinates_file_group",
                             type=str,
@@ -62,7 +62,7 @@ prsr_arguments.add_argument("--coordinates_file",
                                           "coordinates for the main ",
                                           "visualization."]))
 
-prsr_arguments.add_argument("--expression_files",
+prsr_arguments.add_argument("--expression-files",
                             default=None,
                             dest="expression_file",
                             type=str,
@@ -76,7 +76,7 @@ prsr_arguments.add_argument("--delimiter",
                             type=str,
                             help="".join(["File delimiter for files.."]))
 
-prsr_arguments.add_argument("--deid_cells",
+prsr_arguments.add_argument("--deid-cells",
                             default=False,
                             action="store_true",
                             dest="do_deidentify_cell",
@@ -84,7 +84,7 @@ prsr_arguments.add_argument("--deid_cells",
                                           "random name, keeping cell names ",
                                           "consistent between files"]))
 
-prsr_arguments.add_argument("--coordinates_file",
+prsr_arguments.add_argument("--coordinates-file",
                             default=None,
                             dest="coordinates_file_group",
                             type=str,
@@ -93,7 +93,7 @@ prsr_arguments.add_argument("--coordinates_file",
                                           "coordinates for the main ",
                                           "visualization."]))
 
-prsr_arguments.add_argument("--gene_list",
+prsr_arguments.add_argument("--gene-list",
                             default=None,
                             dest="gene_list_group",
                             type=str,
@@ -101,7 +101,7 @@ prsr_arguments.add_argument("--gene_list",
                             help="".join(["Lists of genes and measurement ",
                                           "for each gene within a cluster of cells."]))
 
-prsr_arguments.add_argument("--metadata_file",
+prsr_arguments.add_argument("--metadata-file",
                             default=None,
                             dest="metadata_file",
                             type=str,
@@ -114,25 +114,25 @@ prsr_arguments.add_argument("--subsample",
                             type=int,
                             help="The total number of cells to subsample.")
 
-prsr_arguments.add_argument("--sampling_metadata",
+prsr_arguments.add_argument("--sampling-metadata",
                             default=None,
                             dest="subsample_metadata",
                             type=str,
                             help="The metadata to use to sample within, currently only supporting factors not numeric metadata.")
 
-prsr_arguments.add_argument("--subsample_cells_list",
+prsr_arguments.add_argument("--subsample-cells-list",
                             default=None,
                             dest="subsample_list",
                             type=str,
                             help="A list of cell names to keep when subsampling. Allows one to specifically indicate which cells to subsample to. This take precident over random sampling; if this is specified no random sampling can occur.")
 
-prsr_arguments.add_argument("--no_checking",
+prsr_arguments.add_argument("--no-checking",
                             default=True,
                             dest="check_files",
                             action="store_false",
                             help="Turn off checking of files.")
 
-prsr_arguments.add_argument("--add_gene_keyword",
+prsr_arguments.add_argument("--add-gene-keyword",
                             default=False,
                             dest="add_expression_header_keyword",
                             action="store_true",

@@ -30,18 +30,18 @@ c_TOOL_METADATA = "upload-metadata"
 c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
 
-def manageCallReturn(callReturn):
+def manage_call_return(call_return):
     '''
     Accesses the error codes in the underlying library and check the return code.
 
-    :param callReturn: Dict returned from SCPAPI call with REST call return info
+    :param call_return: Dict returned from SCPAPI call with REST call return info
     :return: No return will exit on error
     '''
     # Print error code and describe code then exit if not sucess
-    print("Error Code = " + str(callReturn[SCPAPI.c_CODE_RET_KEY]))
-    print(SCPAPI.SCPAPIManager.describe_error_code(callReturn[SCPAPI.c_CODE_RET_KEY]))
-    if not callReturn[SCPAPI.c_SUCCESS_RET_KEY]:
-        exit(callReturn[SCPAPI.c_CODE_RET_KEY])
+    print("Error Code = " + str(call_return[SCPAPI.c_CODE_RET_KEY]))
+    print(SCPAPI.SCPAPIManager.describe_error_code(call_return[SCPAPI.c_CODE_RET_KEY]))
+    if not call_return[SCPAPI.c_SUCCESS_RET_KEY]:
+        exit(call_return[SCPAPI.c_CODE_RET_KEY])
 
 def login(manager=None,test=False):
     '''
@@ -84,7 +84,7 @@ subargs = args.add_subparsers()
 parser_list_studies = subargs.add_parser(c_TOOL_LIST_STUDY,
     help="List studies. \""+args.prog+" "+c_TOOL_LIST_STUDY+" -h\" for more details")
 parser_list_studies.add_argument(
-    '--summary', dest='summarizeList', action='store_true',
+    '--summary', dest='summarize_list', action='store_true',
     help='Do not list but summarize only.'
 )
 
@@ -92,12 +92,12 @@ parser_list_studies.add_argument(
 parser_create_studies = subargs.add_parser(c_TOOL_STUDY,
     help="Create a study. \""+args.prog+" "+c_TOOL_STUDY+" -h\" for more details")
 parser_create_studies.add_argument(
-    '--description', dest='studyDescription',
+    '--description', dest='study_description',
     default="Single Cell Genomics Study",
     help='Short description of the study.'
 )
 parser_create_studies.add_argument(
-    '--study-name', dest='studyName', required=True,
+    '--study-name', dest='study_name', required=True,
     help='The short name of the study.'
 )
 parser_create_studies.add_argument(
@@ -118,7 +118,7 @@ parser_permissions.add_argument(
     help='User email to update study permission.'
 )
 parser_permissions.add_argument(
-    '--study-name', dest='studyName', required=True,
+    '--study-name', dest='study_name', required=True,
     help='The short name of the study.'
 )
 parser_permissions.add_argument(
@@ -130,15 +130,15 @@ parser_permissions.add_argument(
 parser_upload_cluster = subargs.add_parser(c_TOOL_CLUSTER,
     help="Upload a cluster file. \""+args.prog+" "+c_TOOL_CLUSTER+" -h\" for more details")
 parser_upload_cluster.add_argument(
-    '--file', dest='clusterFile', required=True,
+    '--file', dest='cluster_file', required=True,
     help='Cluster file to load.'
 )
 parser_upload_cluster.add_argument(
-    '--study_name', dest='studyName', required=True,
+    '--study-name', dest='study_name', required=True,
     help='The name of the study to add the file.'
 )
 parser_upload_cluster.add_argument(
-    '--cluster_name', dest='clusterName', required=True,
+    '--cluster-name', dest='cluster_name', required=True,
     help='The name of the clustering that will be used to refer to the plot.'
 )
 parser_upload_cluster.add_argument(
@@ -150,22 +150,22 @@ parser_upload_cluster.add_argument(
     help='Genome assembly used to generate the data.'
 )
 parser_upload_cluster.add_argument(
-    '--description', dest='clusterDescription',
+    '--description', dest='cluster_description',
     default="Coordinates and optional metadata to visualize clusters.",
     help='Text describing the cluster file.'
 )
 parser_upload_cluster.add_argument(
-    '--x', dest='xLab',
+    '--x', dest='x_lab',
     default=None,
     help='X axis label test.'
 )
 parser_upload_cluster.add_argument(
-    '--y', dest='yLab',
+    '--y', dest='y_lab',
     default=None,
     help='y axis label test.'
 )
 parser_upload_cluster.add_argument(
-    '--z', dest='zLab',
+    '--z', dest='z_lab',
     default=None,
     help='z axis label test.'
 )
@@ -174,7 +174,7 @@ parser_upload_cluster.add_argument(
 parser_upload_expression = subargs.add_parser(c_TOOL_EXPRESSION,
     help="Upload a gene expression matrix file. \""+args.prog+" "+c_TOOL_EXPRESSION+" -h\" for more details")
 parser_upload_expression.add_argument(
-    '--file', dest='expressionFile', required=True,
+    '--file', dest='expression_file', required=True,
     help='Expression file to load.'
 )
 
@@ -182,7 +182,7 @@ parser_upload_expression.add_argument(
 parser_upload_metadata = subargs.add_parser(c_TOOL_METADATA,
     help="Upload a metadata file. \""+args.prog+" "+c_TOOL_METADATA+" -h\" for more details")
 parser_upload_metadata.add_argument(
-    '--file', dest='metadataFile', required=True,
+    '--file', dest='metadata_file', required=True,
     help='Metadata file to load.'
 )
 
@@ -195,47 +195,47 @@ print("-----Args")
 connection = None
 
 ## Handle list studies
-if hasattr(parsed_args,"summarizeList"):
+if hasattr(parsed_args, "summarize_list"):
     print("LIST STUDIES")
     connection = login(manager=connection, test=parsed_args.testing)
     ret = connection.get_studies(test=parsed_args.testing)
-    manageCallReturn(ret)
+    manage_call_return(ret)
     print("There are "+str(len(ret[SCPAPI.c_STUDIES_RET_KEY]))+" studies to which you have access.")
-    if not parsed_args.summarizeList:
+    if not parsed_args.summarize_list:
         print(os.linesep.join(ret[SCPAPI.c_STUDIES_RET_KEY]))
 
 ## Create new study
-if hasattr(parsed_args,"studyDescription") and not parsed_args.studyName is None:
+if hasattr(parsed_args, "study_description") and not parsed_args.study_name is None:
     print("CREATE STUDY")
     connection = login(manager=connection, test=parsed_args.testing)
-    ret = connection.create_study(studyName=parsed_args.studyName,
-                                  studyDescription=parsed_args.studyDescription,
+    ret = connection.create_study(study_name=parsed_args.study_name,
+                                  study_description=parsed_args.study_description,
                                   branding=parsed_args.branding,
                                   billing=parsed_args.billing,
                                   test=parsed_args.testing)
-    manageCallReturn(ret)
+    manage_call_return(ret)
 
 ## Share with user
-if hasattr(parsed_args,"permission"):
+if hasattr(parsed_args, "permission"):
     print("SET PERMISSION")
     connection = login(manager=connection, test=parsed_args.testing)
-    ret = connection.set_permission(studyName=parsed_args.studyName,
+    ret = connection.set_permission(study_name=parsed_args.study_name,
                                     email=parsed_args.email,
                                     access=parsed_args.permission,
                                     test=parsed_args.testing)
-    manageCallReturn(ret)
+    manage_call_return(ret)
 
 ## Validate files
-if parsed_args.validate and not hasattr(parsed_args,"summarizeList"):
+if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
     print("VALIDATE FILES")
     command = ["verify_portal_file.py"]
 
-    if hasattr(parsed_args,"clusterFile"):
-        command.extend(["--coordinates_file", parsed_args.clusterFile])
-    if hasattr(parsed_args,"expressionFile"):
-        command.extend(["--expression_files", parsed_args.expressionFile])
-    if hasattr(parsed_args,"metadataFile"):
-        command.extend(["--metadata_file", parsed_args.metadataFile])
+    if hasattr(parsed_args, "cluster_file"):
+        command.extend(["--coordinates-file", parsed_args.cluster_file])
+    if hasattr(parsed_args, "expression_file"):
+        command.extend(["--expression-files", parsed_args.expression_file])
+    if hasattr(parsed_args, "metadata_file"):
+        command.extend(["--metadata-file", parsed_args.metadata_file])
 
     if parsed_args.testing:
         print("TESTING:: no command executed."+os.linesep+"Would have executed:"+os.linesep+" ".join(command))
@@ -247,20 +247,20 @@ if parsed_args.validate and not hasattr(parsed_args,"summarizeList"):
             exit(valid_code)
 
 ## Upload cluster file
-if hasattr(parsed_args,"clusterFile"):
+if hasattr(parsed_args, "cluster_file"):
     print("UPLOAD CLUSTER FILE")
     connection = login(manager=connection, test=parsed_args.testing)
-    ret = connection.upload_cluster(file=parsed_args.clusterFile,
-                                    studyName=parsed_args.studyName,
-                                    clusterName=parsed_args.clusterName,
-                                    description=parsed_args.clusterDescription,
+    ret = connection.upload_cluster(file=parsed_args.cluster_file,
+                                    study_name=parsed_args.study_name,
+                                    cluster_name=parsed_args.cluster_name,
+                                    description=parsed_args.cluster_description,
                                     species=parsed_args.species,
                                     genome=parsed_args.genome,
-                                    x=parsed_args.xLab,
-                                    y=parsed_args.yLab,
-                                    z=parsed_args.zLab,
+                                    x=parsed_args.x_lab,
+                                    y=parsed_args.y_lab,
+                                    z=parsed_args.z_lab,
                                     test=parsed_args.testing)
-    manageCallReturn(ret)
+    manage_call_return(ret)
 
 ## Upload metadata file
 ### TODO

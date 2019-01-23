@@ -309,80 +309,80 @@ class SCPAPIManager(APIManager):
                 resp[c_STUDIES_RET_KEY] = self.studies
         return(resp)
 
-    def isValidStudyDescription(self,studyDescription):
+    def is_valid_study_description(self, study_description):
         '''
         Confirms a study description does not contain characters that are not allowed.
 
-        :param studyDescription: String description
+        :param study_description: String description
         :return: Boolean indicator of validity, True is valid
         '''
 
-        noError = True
-        for letter in studyDescription:
+        no_error = True
+        for letter in study_description:
             if letter in c_INVALID_STUDYDESC_CHAR:
                 print("The following letter is not valid in a study description:'"+letter+"'")
-                noError = False
-        return noError
+                no_error = False
+        return no_error
 
-    def isValidStudyName(self, studyName):
+    def is_valid_study_name(self, study_name):
         '''
         Confirms a study name does not contain characters that are not allowed.
 
-        :param studyName: String study name
+        :param study_name: String study name
         :return: Boolean indicator oc validity, True is valid
         '''
 
-        noError = True
-        for letter in studyName:
+        no_error = True
+        for letter in study_name:
             if not letter in c_VALID_STUDYNAME_CHAR:
                 print("The following letter is not valid in a study name:'"+letter+"'")
-                noError = False
-        return noError
+                no_error = False
+        return no_error
 
-    def create_study(self, studyName,
-                     studyDescription="Single Cell Genomics study",
+    def create_study(self, study_name,
+                     study_description="Single Cell Genomics study",
                      branding=None,
                      billing=None,
-                     isPublic=False,
+                     is_public=False,
                      test=False):
         '''
         Create a study name using the REST API.
         Confirms the study does not exist before creating.
         Confirms name and description are valid.
 
-        :param studyName: String study name
-        :param studyDescription: String study description
+        :param study_name: String study name
+        :param study_description: String study description
         :param branding: String branding
         :param billing: String FireCloud Billing object
-        :param isPublic: Boolean indicator if the sudy should be public (True)
+        :param is_public: Boolean indicator if the sudy should be public (True)
         :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
         :return: Response
         '''
-        print("CREATE STUDY:: " + studyName)
+        print("CREATE STUDY:: " + study_name)
         # Study variable validation
         ## Study must not exist
-        if self.study_exists(studyName=studyName, test=test):
+        if self.study_exists(study_name=study_name, test=test):
             return ({
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_STUDY_EXISTS
             })
         # Study name is restricted on letters
-        if not isValidStudyName(studyName):
+        if not is_valid_study_name(study_name):
             return ({
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_INVALID_STUDY_NAME
             })
         # Study description should not have html and scripting
-        if not isValidStudyDescription(studyDescription):
+        if not is_valid_study_description(study_description):
             return ({
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_INVALID_STUDY_DESC
             })
 
         # Make payload and do post
-        studyData = {"name": studyName,
-                     "description":studyDescription,
-                     "public":isPublic}
+        studyData = {"name": study_name,
+                     "description":study_description,
+                     "public":is_public}
         if not branding is None:
             studyData["firecloud_project"]=billing
         if not branding is None:
@@ -393,18 +393,18 @@ class SCPAPIManager(APIManager):
             self.get_studies()
         return(resp)
 
-    def set_permission(self, studyName, email, access, deliver_email=False, test=False):
+    def set_permission(self, study_name, email, access, deliver_email=False, test=False):
         '''
         Sets permission on a study.
 
-        :param studyName: String study name to update permissions
+        :param study_name: String study name to update permissions
         :param email: String email (user) to update permission
         :param access: String access level for permission
         :param deliver_email: Boolean, is the user interested in email notifications for study changes (True, receive emails)
         :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality
         :return: Dict with response and additional information including status and errors
         '''
-        print("SET PERMISSION: "+" ".join(str(i) for i in [studyName, email, access]))
+        print("SET PERMISSION: "+" ".join(str(i) for i in [study_name, email, access]))
         # Make sure the access value is valid
         if not access in c_PERMISSIONS:
             return {
@@ -412,13 +412,13 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_INVALID_SHARE_MODE
             }
         # Error if the study does not exist
-        if not self.study_exists(studyName=studyName, test=test) and not test:
+        if not self.study_exists(study_name=study_name, test=test) and not test:
             return {
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        studyId = self.study_name_to_id(studyName, test=test)
+        studyId = self.study_name_to_id(study_name, test=test)
 
         # Get the share id for the email
         ret_shares = self.do_get(command=self.api + "studies/"+str(studyId)+"/study_shares",
@@ -456,11 +456,11 @@ class SCPAPIManager(APIManager):
                                        test=test)
             return(update_ret)
 
-    def study_exists(self, studyName, test=False):
+    def study_exists(self, study_name, test=False):
         '''
         Indicates if the user has access to a study of the given name
 
-        :param studyName: String study name
+        :param study_name: String study name
         :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality
         :return: Boolean, True indicates the study is known to the user and exists
         '''
@@ -472,7 +472,7 @@ class SCPAPIManager(APIManager):
                 #### TODO throw exception
         if test:
             return(True)
-        return(studyName in self.studies)
+        return(study_name in self.studies)
 
     def study_name_to_id(self, name, test=False):
         '''
@@ -490,8 +490,8 @@ class SCPAPIManager(APIManager):
             return(self.name_to_id.get(name, None))
 
     def upload_cluster(self, file,
-                             studyName,
-                             clusterName,
+                             study_name,
+                             cluster_name,
                              description="Cluster file.",
                              species=None,
                              genome=None,
@@ -502,8 +502,8 @@ class SCPAPIManager(APIManager):
         '''
         *** In development, not complete.***
         :param file:
-        :param studyName:
-        :param clusterName:
+        :param study_name:
+        :param cluster_name:
         :param description:
         :param species:
         :param genome:
@@ -523,7 +523,7 @@ class SCPAPIManager(APIManager):
         requests_log.propagate = True
 
         # Error if the study does not exist
-        if not self.study_exists(studyName=studyName, test=test) and not test:
+        if not self.study_exists(study_name=study_name, test=test) and not test:
             return {
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
@@ -531,7 +531,7 @@ class SCPAPIManager(APIManager):
         # Convert study name to study id
         # python manage_study.py upload-cluster --file ../demo_data/coordinates_example.txt --study apitest --cluster_name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
         # sutdy id 5c0aaa5e328cee0a3b19c4a9
-        studyId = self.study_name_to_id(studyName, test=test)
+        studyId = self.study_name_to_id(study_name, test=test)
         fileInfo = {"study_file":{"file_type":"Cluster",
                     "species":"Felis catus",
                     "name":"cluster"}}
