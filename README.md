@@ -17,7 +17,7 @@ To get set up to use these scripts:
 ```
 $ git clone https://github.com/broadinstitute/single_cell_portal.git
 $ cd single_cell_portal
-$ python3 -m venv env
+$ python3 -m venv env --copies
 $ source env/bin/activate
 $ pip install -r requirements.txt
 ```
