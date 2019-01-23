@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 
+"""Python library for interacting with SCP REST API
+
+This library is used in client code like manage_study.py.  You can find
+documentation on the upstream REST API that this module wraps at:
+https://portals.broadinstitute.org/single_cell/api/swagger_docs/v1
+"""
+
 import requests
 import Commandline
 import random

@@ -1,6 +1,22 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Command-line interface for managing studies in Single Cell Portal (SCP)
+
+DESCRIPTION
+This CLI exposes SCP functionality via several subparsers, e.g. "list-study",
+"upload-study".  You can invoke this functionality by passing a subparser name
+into your command-line call, as shown in the EXAMPLES section below.
+
+EXAMPLES
+# List studies in SCP
+$ python manage_study.py list-studies
+
+# Get help for list-studies subparser
+$ python manage_study.py list-studies --help
+
+"""
+
 import argparse
 import Commandline
 import os
