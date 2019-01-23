@@ -80,59 +80,59 @@ class APIManager:
     def __init__(self):
         return
 
-    def login(self, token=None, test=False):
+    def login(self, token=None, dry_run=False):
         """
         Authenticates as user and get's token to perform actions on the user's behalf.
 
         :param token: User token to use with API
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Boolean Indicator of success or failure (False)
         """
 
         ## TODO add in auth from a file.
         print("LOGIN")
         if token is None:
-            token = self.do_browser_login(test=test)
+            token = self.do_browser_login(dry_run=dry_run)
         self.token = token
         self.studies = None
 
-    def do_browser_login(self, test=False):
+    def do_browser_login(self, dry_run=False):
         '''
         Authenticate through the browser
 
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Authentication token
         '''
 
         print("BROWSER LOGIN")
-        if test:
-            print("TESTING:: Did not login")
-            return("TESTING_TOKEN")
+        if dry_run:
+            print("DRY_RUN:: Did not login")
+            return("DRY_RUN_TOKEN")
         cmdline = Commandline.Commandline()
         cmdline.func_CMD(command="gcloud auth application-default login")
         cmd_ret = cmdline.func_CMD(command="gcloud auth application-default print-access-token",stdout=True)
         return(cmd_ret.decode("ASCII").strip(os.linesep))
 
-    def do_get(self, command, test=False):
+    def do_get(self, command, dry_run=False):
         '''
         Perform a GET.
 
         :param command: String GET command to send to the REST endpoint
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Return dict with response and error codes/status
         '''
 
         ## TODO add timeout and exception handling (Timeout exeception)
         print("DO GET")
         print(command)
-        if test:
+        if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {'Accept': 'application/json'}
         if hasattr(self,"token"):
             head[c_AUTH] = 'token {}'.format(self.token)
         return(self.check_api_return(requests.get(command, headers=head)))
 
-    def do_post(self, command, values, files=None, test=False):
+    def do_post(self, command, values, files=None, dry_run=False):
         '''
         *** In development ***
         Perform POST.
@@ -140,7 +140,7 @@ class APIManager:
         :param command: String POST command to send to the REST endpoint.
         :param values: Parameter values to send {name: value}
         :param files:
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Return dict with response and error codes/status
         '''
 
@@ -149,8 +149,8 @@ class APIManager:
         print(command)
         print(values)
         print(files)
-        if test:
-            print("TESTING:: Returning success.")
+        if dry_run:
+            print("DRY_RUN:: Returning success.")
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {c_AUTH: 'token {}'.format(self.token),
                 'Accept': 'application/json'}
@@ -165,13 +165,13 @@ class APIManager:
                                                              files=files,
                                                              json=values)))
 
-    def do_patch(self, command, values, test=False):
+    def do_patch(self, command, values, dry_run=False):
         '''
         Perform PATCH
 
         :param command: String PATCH command to send to the REST endpoint
         :param values: Parameter values to send {name: value}
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Return dict with response and error code/status
         '''
 
@@ -179,24 +179,24 @@ class APIManager:
         print("DO PATCH")
         print(command)
         print(values)
-        if test:
+        if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
         return(self.check_api_return(requests.patch(command, headers=head, json=values)))
 
-    def do_delete(self, command, test=False):
+    def do_delete(self, command, dry_run=False):
         '''
         Perform Delete
 
         :param command: String DELETE command to send to the REST endpoint
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Return dict with response and error code/status
         '''
 
         ## TODO add timeout and exception handling (Timeout exeception)
         print("DO DELETE")
         print(command)
-        if test:
+        if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_DELETE_OK})
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
         return(self.check_api_return(requests.delete(command, headers=head)))
@@ -288,19 +288,19 @@ class SCPAPIManager(APIManager):
             return(False)
         return(genome in self.species_genomes[species])
 
-    def get_studies(self, test=False):
+    def get_studies(self, dry_run=False):
         '''
         Get studies available to user.
 
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
         '''
 
         print("GET STUDIES")
-        resp = self.do_get(self.api + "studies",test=test)
-        if test:
-            print("TESTING:: Returned dummy names.")
-            resp[c_STUDIES_RET_KEY] = ["TESTING 1","TESTING 2"]
+        resp = self.do_get(self.api + "studies",dry_run=dry_run)
+        if dry_run:
+            print("DRY_RUN:: Returned dummy names.")
+            resp[c_STUDIES_RET_KEY] = ["DRY_RUN 1","DRY_RUN 2"]
         else:
             if(resp[c_SUCCESS_RET_KEY]):
                 self.studies = [str(element['name']) for element in resp[c_RESPONSE].json()]
@@ -344,7 +344,7 @@ class SCPAPIManager(APIManager):
                      branding=None,
                      billing=None,
                      is_public=False,
-                     test=False):
+                     dry_run=False):
         '''
         Create a study name using the REST API.
         Confirms the study does not exist before creating.
@@ -355,13 +355,13 @@ class SCPAPIManager(APIManager):
         :param branding: String branding
         :param billing: String FireCloud Billing object
         :param is_public: Boolean indicator if the sudy should be public (True)
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
         '''
         print("CREATE STUDY:: " + study_name)
         # Study variable validation
         ## Study must not exist
-        if self.study_exists(study_name=study_name, test=test):
+        if self.study_exists(study_name=study_name, dry_run=dry_run):
             return ({
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_STUDY_EXISTS
@@ -387,13 +387,13 @@ class SCPAPIManager(APIManager):
             studyData["firecloud_project"]=billing
         if not branding is None:
             studyData["branding_group_id"] = branding
-        resp = self.do_post(command=self.api + "studies", values=studyData, test=test)
+        resp = self.do_post(command=self.api + "studies", values=studyData, dry_run=dry_run)
         # Update study list
         if resp[c_SUCCESS_RET_KEY] and not test:
             self.get_studies()
         return(resp)
 
-    def set_permission(self, study_name, email, access, deliver_email=False, test=False):
+    def set_permission(self, study_name, email, access, deliver_email=False, dry_run=False):
         '''
         Sets permission on a study.
 
@@ -401,7 +401,7 @@ class SCPAPIManager(APIManager):
         :param email: String email (user) to update permission
         :param access: String access level for permission
         :param deliver_email: Boolean, is the user interested in email notifications for study changes (True, receive emails)
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality
+        :param dry_run: If true, will do a dry run with no actual execution of functionality
         :return: Dict with response and additional information including status and errors
         '''
         print("SET PERMISSION: "+" ".join(str(i) for i in [study_name, email, access]))
@@ -412,17 +412,17 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_INVALID_SHARE_MODE
             }
         # Error if the study does not exist
-        if not self.study_exists(study_name=study_name, test=test) and not test:
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not test:
             return {
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        studyId = self.study_name_to_id(study_name, test=test)
+        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
 
         # Get the share id for the email
         ret_shares = self.do_get(command=self.api + "studies/"+str(studyId)+"/study_shares",
-                                 test=test)
+                                 dry_run=dry_run)
         share_id = None
         for share in ret_shares[c_RESPONSE].json():
             if share["email"]==email:
@@ -442,49 +442,49 @@ class SCPAPIManager(APIManager):
             # Set shares for study given it does not exist
             ret = self.do_post(command=self.api+"studies/"+str(studyId)+"/study_shares",
                                values=permissions_info,
-                               test=test)
+                               dry_run=dry_run)
             return(ret)
         else:
             # Delete share
             if(access==c_ACCESS_REMOVE):
                 ret_delete = self.do_delete(command=self.api+"studies/"+str(studyId)+"/study_shares/"+share_id,
-                                            test=test)
+                                            dry_run=dry_run)
                 return(ret_delete)
             # Update shares for a study that has the shares
             update_ret = self.do_patch(command=self.api+"studies/"+str(studyId)+"/study_shares/"+share_id,
                                        values=permissions_info,
-                                       test=test)
+                                       dry_run=dry_run)
             return(update_ret)
 
-    def study_exists(self, study_name, test=False):
+    def study_exists(self, study_name, dry_run=False):
         '''
         Indicates if the user has access to a study of the given name
 
         :param study_name: String study name
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality
+        :param dry_run: If true, will do a dry run with no actual execution of functionality
         :return: Boolean, True indicates the study is known to the user and exists
         '''
         print("STUDY EXISTS?")
         if self.studies is None:
-            ret = self.get_studies(test=test)
+            ret = self.get_studies(dry_run=dry_run)
             if not ret[c_SUCCESS_RET_KEY]:
                 return False
                 #### TODO throw exception
-        if test:
+        if dry_run:
             return(True)
         return(study_name in self.studies)
 
-    def study_name_to_id(self, name, test=False):
+    def study_name_to_id(self, name, dry_run=False):
         '''
         Changes the a study name into the correct a portal id
 
         :param name: String study name
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: String portal id
         '''
         print("STUDY NAME TO ID")
-        if test:
-            print("TESTING:: returning a dummy id")
+        if dry_run:
+            print("DRY_RUN:: returning a dummy id")
             return("1")
         else:
             return(self.name_to_id.get(name, None))
@@ -498,7 +498,7 @@ class SCPAPIManager(APIManager):
                              x="X",
                              y="Y",
                              z="Z",
-                             test=False):
+                             dry_run=False):
         '''
         *** In development, not complete.***
         :param file:
@@ -510,7 +510,7 @@ class SCPAPIManager(APIManager):
         :param x:
         :param y:
         :param z:
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return:
         '''
         print("UPLOAD CLUSTER FILE")
@@ -523,7 +523,7 @@ class SCPAPIManager(APIManager):
         requests_log.propagate = True
 
         # Error if the study does not exist
-        if not self.study_exists(study_name=study_name, test=test) and not test:
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not test:
             return {
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
@@ -531,7 +531,7 @@ class SCPAPIManager(APIManager):
         # Convert study name to study id
         # python manage_study.py upload-cluster --file ../demo_data/coordinates_example.txt --study apitest --cluster_name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
         # sutdy id 5c0aaa5e328cee0a3b19c4a9
-        studyId = self.study_name_to_id(study_name, test=test)
+        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
         fileInfo = {"study_file":{"file_type":"Cluster",
                     "species":"Felis catus",
                     "name":"cluster"}}
@@ -542,7 +542,7 @@ class SCPAPIManager(APIManager):
         ret = self.do_post(command=self.api + "studies/" + str(studyId) + "/study_files",
                            values={},
                            files=files,
-                           test=test)
+                           dry_run=dry_run)
         print("HHH")
         print(ret["response"].text)
         dir(ret["response"])
@@ -650,15 +650,15 @@ class MatrixAPIManager(APIManager):
         }
         return(ret_error_codes.get(error_code, "That error code is not in use."))
 
-    def get_supported_types(self, test=False):
+    def get_supported_types(self, dry_run=False):
         '''
         Query and update supported file types for delivery by the matrix service
 
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality
+        :param dry_run: If true, will do a dry run with no actual execution of functionality
         :return: Returns the response, also updates the supported types (in the Matrix Manager)
         '''
         print("GET SUPPORTED TYPES")
-        if test:
+        if dry_run:
             self.supportedTypes = ["test_type","test_type"]
             return {c_SUCCESS_RET_KEY: True}
         if self.supportedTypes is None:
@@ -667,14 +667,14 @@ class MatrixAPIManager(APIManager):
                 self.supportedTypes = resp[c_RESPONSE].json()
         return(resp)
 
-    def request_matrix(self, ids, format="zarr", test=False):
+    def request_matrix(self, ids, format="zarr", dry_run=False):
         '''
         *** In development ****
         Request a matrix by supplying bundle IDs
 
         :param ids: HCA bundle ids
         :param format: String supported file format to format the matrix to be received
-        :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
         '''
         print("REQUEST MATRIX BY IDs")
@@ -684,6 +684,6 @@ class MatrixAPIManager(APIManager):
         bundleInfo = {"bundle_fqids":ids,"format":format}
         resp = self.do_post(self.api,
                             values=bundleInfo,
-                            test=test)
+                            dry_run=dry_run)
         return(resp)
 

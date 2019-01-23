@@ -53,18 +53,18 @@ def manage_call_return(call_return):
     if not call_return[SCPAPI.c_SUCCESS_RET_KEY]:
         exit(call_return[SCPAPI.c_CODE_RET_KEY])
 
-def login(manager=None,test=False):
+def login(manager=None, dry_run=False):
     '''
     Login to authorize credentials.
 
     :param manager: API Manager
-    :param test: If true, will run in testing mode, running as a dry run with no actual execution of functionality.
+    :param dry_run: If true, will do a dry run with no actual execution of functionality.
     :return:
     '''
     if manager is None:
         manager=SCPAPI.SCPAPIManager()
         manager.login(token=parsed_args.token,
-                      test=test)
+                      dry_run=dry_run)
     return(manager)
 
 
@@ -78,8 +78,8 @@ args.add_argument(
     help='Personal token after logging into Google (Oauth2). This token is not persisted after the finish of the script'
 )
 args.add_argument(
-    '--test', dest='testing', action='store_true',
-    help='Turn on testing mode which will walk through and log what will occur without performing the actions.'
+    '--dry_run', dest='dry_run', action='store_true',
+    help='Turn on dry_run mode which will walk through and log what will occur without performing the actions.'
 )
 args.add_argument(
     '--no-validate', dest='validate',
@@ -207,8 +207,8 @@ connection = None
 ## Handle list studies
 if hasattr(parsed_args, "summarize_list"):
     print("LIST STUDIES")
-    connection = login(manager=connection, test=parsed_args.testing)
-    ret = connection.get_studies(test=parsed_args.testing)
+    connection = login(manager=connection, dry_run=parsed_args.dry_run)
+    ret = connection.get_studies(dry_run=parsed_args.dry_run)
     manage_call_return(ret)
     print("You have access to "+str(len(ret[SCPAPI.c_STUDIES_RET_KEY]))+" studies.")
     if not parsed_args.summarize_list:
@@ -217,22 +217,22 @@ if hasattr(parsed_args, "summarize_list"):
 ## Create new study
 if hasattr(parsed_args, "study_description") and not parsed_args.study_name is None:
     print("CREATE STUDY")
-    connection = login(manager=connection, test=parsed_args.testing)
+    connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.create_study(study_name=parsed_args.study_name,
                                   study_description=parsed_args.study_description,
                                   branding=parsed_args.branding,
                                   billing=parsed_args.billing,
-                                  test=parsed_args.testing)
+                                  dry_run=parsed_args.dry_run)
     manage_call_return(ret)
 
 ## Share with user
 if hasattr(parsed_args, "permission"):
     print("SET PERMISSION")
-    connection = login(manager=connection, test=parsed_args.testing)
+    connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.set_permission(study_name=parsed_args.study_name,
                                     email=parsed_args.email,
                                     access=parsed_args.permission,
-                                    test=parsed_args.testing)
+                                    dry_run=parsed_args.dry_run)
     manage_call_return(ret)
 
 ## Validate files
@@ -247,7 +247,7 @@ if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
     if hasattr(parsed_args, "metadata_file"):
         command.extend(["--metadata-file", parsed_args.metadata_file])
 
-    if parsed_args.testing:
+    if parsed_args.dry_run:
         print("TESTING:: no command executed."+os.linesep+"Would have executed:"+os.linesep+" ".join(command))
     else:
         valid_code = Commandline.Commandline().func_CMD(" ".join(command))
@@ -259,7 +259,7 @@ if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
 ## Upload cluster file
 if hasattr(parsed_args, "cluster_file"):
     print("UPLOAD CLUSTER FILE")
-    connection = login(manager=connection, test=parsed_args.testing)
+    connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.upload_cluster(file=parsed_args.cluster_file,
                                     study_name=parsed_args.study_name,
                                     cluster_name=parsed_args.cluster_name,
@@ -269,7 +269,7 @@ if hasattr(parsed_args, "cluster_file"):
                                     x=parsed_args.x_lab,
                                     y=parsed_args.y_lab,
                                     z=parsed_args.z_lab,
-                                    test=parsed_args.testing)
+                                    dry_run=parsed_args.dry_run)
     manage_call_return(ret)
 
 ## Upload metadata file
