@@ -80,7 +80,7 @@ args.add_argument(
 # Create tools (subparser)
 subargs = args.add_subparsers()
 
-## List studies  subparser
+## List studies subparser
 parser_list_studies = subargs.add_parser(c_TOOL_LIST_STUDY,
     help="Used to list studies. \""+args.prog+" "+c_TOOL_LIST_STUDY+" -h\" for more details")
 parser_list_studies.add_argument(
@@ -226,7 +226,7 @@ if hasattr(parsed_args,"permission"):
     manageCallReturn(ret)
 
 ## Validate files
-if parsed_args.validate:
+if parsed_args.validate and not hasattr(parsed_args,"summarizeList"):
     print("VALIDATE FILES")
     command = ["verify_portal_file.py"]
 
