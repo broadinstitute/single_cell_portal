@@ -19,6 +19,9 @@ EXAMPLES
 # List studies in SCP
 $ python manage_study.py list-studies
 
+# Get number of studies in SCP, using token to bypass browser log-in
+$ python manage_study.py --token=`gcloud auth print-access-token` list-studies --summary
+
 # Get help for list-studies subparser
 $ python manage_study.py list-studies --help
 
