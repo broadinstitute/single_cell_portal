@@ -72,7 +72,7 @@ args.add_argument(
     help='Turn on testing mode which will walk through and log what will occur without performing the actions.'
 )
 args.add_argument(
-    '--no_validate', dest='validate',
+    '--no-validate', dest='validate',
     action='store_false',
     help='Do not check file locally before uploading.'
 )
@@ -97,7 +97,7 @@ parser_create_studies.add_argument(
     help='Short description of the study.'
 )
 parser_create_studies.add_argument(
-    '--study_name', dest='studyName', required=True,
+    '--study-name', dest='studyName', required=True,
     help='The short name of the study.'
 )
 parser_create_studies.add_argument(
@@ -118,7 +118,7 @@ parser_permissions.add_argument(
     help='User email to update study permission.'
 )
 parser_permissions.add_argument(
-    '--study_name', dest='studyName', required=True,
+    '--study-name', dest='studyName', required=True,
     help='The short name of the study.'
 )
 parser_permissions.add_argument(
