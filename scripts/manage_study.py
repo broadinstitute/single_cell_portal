@@ -22,8 +22,8 @@ $ python manage_study.py list-studies
 # Get number of studies in SCP, using token to bypass browser log-in
 $ python manage_study.py --token=`gcloud auth print-access-token` list-studies --summary
 
-# Get help for list-studies subparser
-$ python manage_study.py list-studies --help
+# Get help for "create-study" subparser
+$ python manage_study.py create-study --help
 
 """
 
@@ -108,11 +108,11 @@ parser_create_studies.add_argument(
 )
 parser_create_studies.add_argument(
     '--study-name', dest='study_name', required=True,
-    help='The short name of the study.'
+    help='Short name of the study.'
 )
 parser_create_studies.add_argument(
     '--branding', dest='branding', default=None,
-    help='The portal branding to associate with the study.'
+    help='Portal branding to associate with the study.'
 )
 parser_create_studies.add_argument(
     '--billing', dest='billing', default=None,
@@ -129,11 +129,11 @@ parser_permissions.add_argument(
 )
 parser_permissions.add_argument(
     '--study-name', dest='study_name', required=True,
-    help='The short name of the study.'
+    help='Short name of the study.'
 )
 parser_permissions.add_argument(
     '--access', dest='permission', choices=SCPAPI.c_PERMISSIONS, required=True,
-    help='The access to give the user. This can only be one of the following value:'+" ".join(SCPAPI.c_PERMISSIONS)
+    help='Access to give the user. This can only be one of the following value:'+" ".join(SCPAPI.c_PERMISSIONS)
 )
 
 ## Create cluster file upload subparser
@@ -145,15 +145,15 @@ parser_upload_cluster.add_argument(
 )
 parser_upload_cluster.add_argument(
     '--study-name', dest='study_name', required=True,
-    help='The name of the study to add the file.'
+    help='Name of the study to add the file.'
 )
 parser_upload_cluster.add_argument(
     '--cluster-name', dest='cluster_name', required=True,
-    help='The name of the clustering that will be used to refer to the plot.'
+    help='Name of the clustering that will be used to refer to the plot.'
 )
 parser_upload_cluster.add_argument(
     '--species', dest='species', required=True,
-    help='The species from which the data is generated.'
+    help='Species from which the data is generated.'
 )
 parser_upload_cluster.add_argument(
     '--genome', dest='genome', required=True,
@@ -172,12 +172,12 @@ parser_upload_cluster.add_argument(
 parser_upload_cluster.add_argument(
     '--y', dest='y_lab',
     default=None,
-    help='y axis label test.'
+    help='Y axis label test.'
 )
 parser_upload_cluster.add_argument(
     '--z', dest='z_lab',
     default=None,
-    help='z axis label test.'
+    help='Z axis label test.'
 )
 
 ## Create expression file upload subparser
