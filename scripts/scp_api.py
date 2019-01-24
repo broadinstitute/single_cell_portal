@@ -22,7 +22,7 @@ c_RESPONSE = "response"
 c_STUDIES_RET_KEY = "studies"
 c_SUCCESS_RET_KEY = "success"
 
-## Standard Error Codes
+## Standard status codes
 c_STUDY_EXISTS = 101
 c_STUDY_EXISTS_TEXT = "Can not create a study with a name that is in use."
 c_STUDY_DOES_NOT_EXIST = 102
@@ -36,23 +36,23 @@ c_INVALID_SHARE_MISSING_TEXT = "Can not remove the share, it does not exist."
 c_NO_ERROR = 0
 c_NO_ERROR_TEXT = "No error occurred."
 
-## API Error codes
+## API status codes
 c_API_OK = 200
 c_DELETE_OK = 204
 c_API_SYNTAX_ERROR = 400
 c_API_SYNTAX_ERROR_TEXT = "The request was malformed and has bad syntax."
 c_API_AUTH = 401
-c_API_AUTH_TEXT = "User is not authenticated"
+c_API_AUTH_TEXT = "User is not authenticated."
 c_API_AUTH_STUDY = 403
-c_API_AUTH_STUDY_TEXT = "User is not authorized to edit study"
+c_API_AUTH_STUDY_TEXT = "User is not authorized to edit study."
 c_API_UNKNOWN_STUDY = 404
 c_API_UNKNOWN_STUDY_TEXT = "Study is not found"
 c_API_CONTENT_HEADERS = 406
-c_API_CONTENT_HEADERS_TEXT = "Accept or Content-Type headers missing or misconfigured"
+c_API_CONTENT_HEADERS_TEXT = "Accept or Content-Type headers missing or misconfigured."
 c_API_INVALID_STUDY = 422
-c_API_INVALID_STUDY_TEXT = "Study validation failed"
+c_API_INVALID_STUDY_TEXT = "Study validation failed."
 c_API_BACKEND_ERROR = 500
-c_API_BACKEND_ERROR_TEXT = "Internal server error"
+c_API_BACKEND_ERROR_TEXT = "Internal server error."
 
 # Share access modes
 c_ACCESS_EDIT = "Edit"
@@ -61,7 +61,7 @@ c_ACCESS_VIEW = "View"
 c_ACCESS_REMOVE = "Remove"
 c_PERMISSIONS = [c_ACCESS_EDIT, c_ACCESS_REVIEWER, c_ACCESS_VIEW, c_ACCESS_REMOVE]
 
-# SCP Portal Specific
+# SCP specific
 c_CLUSTER_FILE_TYPE = "Cluster"
 c_TEXT_TYPE = "text/plain"
 c_INVALID_STUDYDESC_CHAR = ["<",".","+","?",">"]
@@ -87,7 +87,7 @@ class APIManager:
 
         :param token: User token to use with API
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
-        :return: Boolean Indicator of success or failure (False)
+        :return: Boolean indicating of success or failure
         """
 
         ## TODO add in auth from a file.
@@ -120,7 +120,7 @@ class APIManager:
 
         :param command: String GET command to send to the REST endpoint
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
-        :return: Return dict with response and error codes/status
+        :return: Dict with response and status code
         '''
 
         ## TODO add timeout and exception handling (Timeout exeception)
@@ -142,7 +142,7 @@ class APIManager:
         :param values: Parameter values to send {name: value}
         :param files:
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
-        :return: Return dict with response and error codes/status
+        :return: Dict with response and status code
         '''
 
         ## TODO addtimeout and exception handling (Timeout exeception)
@@ -173,7 +173,7 @@ class APIManager:
         :param command: String PATCH command to send to the REST endpoint
         :param values: Parameter values to send {name: value}
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
-        :return: Return dict with response and error code/status
+        :return: Dict with response and status code/status
         '''
 
         ## TODO add timeout and exception handling (Timeout exeception)
@@ -191,7 +191,7 @@ class APIManager:
 
         :param command: String DELETE command to send to the REST endpoint
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
-        :return: Return dict with response and error code/status
+        :return: Dict with response and status code/status
         '''
 
         ## TODO add timeout and exception handling (Timeout exeception)
@@ -207,7 +207,7 @@ class APIManager:
         Create dict that has if status code was successful, status code,and response
 
         :param ret: Response
-        :return: Dict of response, error code, and status.
+        :return: Dict of response, status code, and status.
         '''
 
         print(ret)
@@ -247,15 +247,15 @@ class SCPAPIManager(APIManager):
         self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
 
     @staticmethod
-    def describe_error_code(error_code):
+    def describe_status_code(status_code):
         '''
-        Translate the error code to the text errors as per their endpoint documentation.
+        Translate the status code to the text message, per SCP REST API documentation.
 
-        :param error_code: Numeric error code to translate
-        :return: String error code text
+        :param status_code: Numeric status code to translate
+        :return: String status code text
         '''
 
-        ret_error_codes = {
+        ret_status_codes = {
             c_STUDY_EXISTS:c_STUDY_EXISTS_TEXT,
             c_STUDY_DOES_NOT_EXIST:c_STUDY_DOES_NOT_EXIST_TEXT,
             c_INVALID_STUDY_NAME:c_INVALID_STUDY_NAME_TEXT,
@@ -272,7 +272,7 @@ class SCPAPIManager(APIManager):
             c_API_INVALID_STUDY:c_API_INVALID_STUDY_TEXT,
             c_API_BACKEND_ERROR:c_API_BACKEND_ERROR_TEXT
         }
-        return(ret_error_codes.get(error_code, "That error code is not in use."))
+        return(ret_status_codes.get(status_code, "That status code is not in use."))
 
     def check_species_genome(self, species, genome=None):
         '''
@@ -635,21 +635,21 @@ class MatrixAPIManager(APIManager):
         self.api = "https://matrix.data.humancellatlas.org/v0/matrix/"
         self.supportedTypes = None
 
-    def describe_error_code(error_code):
+    def describe_status_code(status_code):
         '''
-        Translate the error code to the text errors as per their endpoint documentation.
+        Translate the status code to the text errors as per their endpoint documentation.
 
-        :param error_code: Numeric error code to translate
-        :return: String error code text
+        :param status_code: Numeric status code to translate
+        :return: String status code text
         '''
 
-        ret_error_codes = {
+        ret_status_codes = {
             c_MATRIX_API_OK:c_NO_ERROR_TEXT,
             c_MATRIX_REQUEST_API_OK:c_NO_ERROR_TEXT,
             c_MATRIX_BAD_FORMAT:c_MATRIX_BAD_FORMAT_TEXT,
             c_API_SYNTAX_ERROR:c_API_SYNTAX_ERROR_TEXT
         }
-        return(ret_error_codes.get(error_code, "That error code is not in use."))
+        return(ret_status_codes.get(status_code, "That status code is not in use."))
 
     def get_supported_types(self, dry_run=False):
         '''

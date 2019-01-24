@@ -49,7 +49,7 @@ def manage_call_return(call_return):
     '''
     # Print error code and describe code then exit if not sucess
     print("Error Code = " + str(call_return[scp_api.c_CODE_RET_KEY]))
-    print(scp_api.SCPAPIManager.describe_error_code(call_return[scp_api.c_CODE_RET_KEY]))
+    print(scp_api.SCPAPIManager.describe_status_code(call_return[scp_api.c_CODE_RET_KEY]))
     if not call_return[scp_api.c_SUCCESS_RET_KEY]:
         exit(call_return[scp_api.c_CODE_RET_KEY])
 
