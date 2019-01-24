@@ -11,20 +11,13 @@ To visit the portal please go to: https://portals.broadinstitute.org/single_cell
 For tutorials and descriptions of files please go to: https://github.com/broadinstitute/single_cell_portal/wiki
 
 ## Convenience Scripts
-Scripts to help when working with data files for the portal are made available in this repo and require __python 3.X__. Using these scripts to verify the format of input files can be found at https://github.com/broadinstitute/single_cell_portal/wiki/File-Definitions .
+Scripts to help when working with data files for the portal are made available in this repo and require Python 3. Using these scripts to verify the format of input files can be found at https://github.com/broadinstitute/single_cell_portal/wiki/File-Definitions.
 
-To download:   
-use the download button at https://github.com/broadinstitute/single_cell_portal   
-
-To clone using git in a command line terminal:
+To get set up to use these scripts:
 ```
 $ git clone https://github.com/broadinstitute/single_cell_portal.git
-```
-
-We recommend using [`virtualenv`](https://virtualenv.pypa.io/en/stable/) for managing package dependencies.  To install all required packages, clone this repo as described above, then:
-```
 $ cd single_cell_portal
-$ virtualenv -p python3 env
+$ python3 -m venv env --copies
 $ source env/bin/activate
 $ pip install -r requirements.txt
 ```
