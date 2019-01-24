@@ -12,6 +12,7 @@ import Commandline
 import random
 import string
 import os
+import json
 
 # Constants
 c_AUTH = 'Authorization'
@@ -297,10 +298,10 @@ class SCPAPIManager(APIManager):
         '''
 
         print("GET STUDIES")
-        resp = self.do_get(self.api + "studies",dry_run=dry_run)
+        resp = self.do_get(self.api + "studies", dry_run=dry_run)
         if dry_run:
             print("DRY_RUN:: Returned dummy names.")
-            resp[c_STUDIES_RET_KEY] = ["DRY_RUN 1","DRY_RUN 2"]
+            resp[c_STUDIES_RET_KEY] = ["DRY_RUN 1", "DRY_RUN 2"]
         else:
             if(resp[c_SUCCESS_RET_KEY]):
                 self.studies = [str(element['name']) for element in resp[c_RESPONSE].json()]
@@ -380,16 +381,16 @@ class SCPAPIManager(APIManager):
             })
 
         # Make payload and do post
-        studyData = {"name": study_name,
+        study_data = {"name": study_name,
                      "description":study_description,
                      "public":is_public}
         if not branding is None:
-            studyData["firecloud_project"]=billing
+            study_data["firecloud_project"] = billing
         if not branding is None:
-            studyData["branding_group_id"] = branding
-        resp = self.do_post(command=self.api + "studies", values=studyData, dry_run=dry_run)
+            study_data["branding_group_id"] = branding
+        resp = self.do_post(command=self.api + "studies", values=study_data, dry_run=dry_run)
         # Update study list
-        if resp[c_SUCCESS_RET_KEY] and not test:
+        if resp[c_SUCCESS_RET_KEY] and not dry_run:
             self.get_studies()
         return(resp)
 
@@ -412,7 +413,7 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_INVALID_SHARE_MODE
             }
         # Error if the study does not exist
-        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not test:
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
             return {
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
@@ -523,7 +524,7 @@ class SCPAPIManager(APIManager):
         requests_log.propagate = True
 
         # Error if the study does not exist
-        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not test:
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
             return {
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
