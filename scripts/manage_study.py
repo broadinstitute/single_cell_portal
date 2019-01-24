@@ -30,7 +30,7 @@ $ python manage_study.py create-study --help
 import argparse
 import Commandline
 import os
-import SCPAPI
+import scp_api
 
 # Subparser tool names
 c_TOOL_LIST_STUDY = "list-studies"
@@ -44,14 +44,14 @@ def manage_call_return(call_return):
     '''
     Accesses the error codes in the underlying library and check the return code.
 
-    :param call_return: Dict returned from SCPAPI call with REST call return info
+    :param call_return: Dict returned from scp_api call with REST call return info
     :return: No return will exit on error
     '''
     # Print error code and describe code then exit if not sucess
-    print("Error Code = " + str(call_return[SCPAPI.c_CODE_RET_KEY]))
-    print(SCPAPI.SCPAPIManager.describe_error_code(call_return[SCPAPI.c_CODE_RET_KEY]))
-    if not call_return[SCPAPI.c_SUCCESS_RET_KEY]:
-        exit(call_return[SCPAPI.c_CODE_RET_KEY])
+    print("Error Code = " + str(call_return[scp_api.c_CODE_RET_KEY]))
+    print(scp_api.SCPAPIManager.describe_error_code(call_return[scp_api.c_CODE_RET_KEY]))
+    if not call_return[scp_api.c_SUCCESS_RET_KEY]:
+        exit(call_return[scp_api.c_CODE_RET_KEY])
 
 def login(manager=None, dry_run=False):
     '''
@@ -62,7 +62,7 @@ def login(manager=None, dry_run=False):
     :return:
     '''
     if manager is None:
-        manager=SCPAPI.SCPAPIManager()
+        manager=scp_api.SCPAPIManager()
         manager.login(token=parsed_args.token,
                       dry_run=dry_run)
     return(manager)
@@ -132,8 +132,8 @@ parser_permissions.add_argument(
     help='Short name of the study.'
 )
 parser_permissions.add_argument(
-    '--access', dest='permission', choices=SCPAPI.c_PERMISSIONS, required=True,
-    help='Access to give the user. This can only be one of the following value:'+" ".join(SCPAPI.c_PERMISSIONS)
+    '--access', dest='permission', choices=scp_api.c_PERMISSIONS, required=True,
+    help='Access to give the user. This can only be one of the following value:'+" ".join(scp_api.c_PERMISSIONS)
 )
 
 ## Create cluster file upload subparser
@@ -210,9 +210,9 @@ if hasattr(parsed_args, "summarize_list"):
     connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.get_studies(dry_run=parsed_args.dry_run)
     manage_call_return(ret)
-    print("You have access to "+str(len(ret[SCPAPI.c_STUDIES_RET_KEY]))+" studies.")
+    print("You have access to "+str(len(ret[scp_api.c_STUDIES_RET_KEY]))+" studies.")
     if not parsed_args.summarize_list:
-        print(os.linesep.join(ret[SCPAPI.c_STUDIES_RET_KEY]))
+        print(os.linesep.join(ret[scp_api.c_STUDIES_RET_KEY]))
 
 ## Create new study
 if hasattr(parsed_args, "study_description") and not parsed_args.study_name is None:

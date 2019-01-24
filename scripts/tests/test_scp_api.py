@@ -6,7 +6,7 @@ import json
 import sys
 sys.path.append('.')
 
-import SCPAPI
+import scp_api
 
 # This method will be used by the mock to replace requests.get
 def mocked_requests_get(*args, **kwargs):
@@ -30,8 +30,7 @@ class SCPAPITestCase(unittest.TestCase):
 
     @patch('requests.get', side_effect=mocked_requests_get)
     def test_get_studies(self, mock_get):
-        scp_api = SCPAPI.SCPAPIManager()
-        studies = scp_api.get_studies()['studies']
+        studies = scp_api.SCPAPIManager().get_studies()['studies']
         expected_studies = [
             " Single nucleus RNA-seq of cell diversity in the adult mouse hippocampus (sNuc-Seq)",
             "Study only for unit test"
