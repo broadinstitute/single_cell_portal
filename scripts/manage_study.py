@@ -75,11 +75,11 @@ args = argparse.ArgumentParser(
 )
 args.add_argument(
     '--token', dest='token', default=None,
-    help='Personal token after logging into Google (Oauth2). This token is not persisted after the finish of the script'
+    help='Personal token after logging into Google (Oauth2).  This token is not persisted after the finish of the script.'
 )
 args.add_argument(
     '--dry_run', dest='dry_run', action='store_true',
-    help='Turn on dry_run mode which will walk through and log what will occur without performing the actions.'
+    help='Walk through and log what would occur, without performing the actions.'
 )
 args.add_argument(
     '--no-validate', dest='validate',
@@ -95,7 +95,7 @@ parser_list_studies = subargs.add_parser(c_TOOL_LIST_STUDY,
     help="List studies. \""+args.prog+" "+c_TOOL_LIST_STUDY+" -h\" for more details")
 parser_list_studies.add_argument(
     '--summary', dest='summarize_list', action='store_true',
-    help='Do not list but summarize only.'
+    help='Do not list, only summarize number of accessible studies'
 )
 
 ## Create study subparser
@@ -133,7 +133,7 @@ parser_permissions.add_argument(
 )
 parser_permissions.add_argument(
     '--access', dest='permission', choices=scp_api.c_PERMISSIONS, required=True,
-    help='Access to give the user. This can only be one of the following value:'+" ".join(scp_api.c_PERMISSIONS)
+    help='Access to give the user.  Must be one of the following values: '+" ".join(scp_api.c_PERMISSIONS)
 )
 
 ## Create cluster file upload subparser
@@ -165,19 +165,19 @@ parser_upload_cluster.add_argument(
     help='Text describing the cluster file.'
 )
 parser_upload_cluster.add_argument(
-    '--x', dest='x_lab',
+    '--x', dest='x_label',
     default=None,
-    help='X axis label test.'
+    help='X axis label (test).'
 )
 parser_upload_cluster.add_argument(
-    '--y', dest='y_lab',
+    '--y', dest='y_label',
     default=None,
-    help='Y axis label test.'
+    help='Y axis label (test).'
 )
 parser_upload_cluster.add_argument(
-    '--z', dest='z_lab',
+    '--z', dest='z_label',
     default=None,
-    help='Z axis label test.'
+    help='Z axis label (test).'
 )
 
 ## Create expression file upload subparser
@@ -248,12 +248,12 @@ if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
         command.extend(["--metadata-file", parsed_args.metadata_file])
 
     if parsed_args.dry_run:
-        print("TESTING:: no command executed."+os.linesep+"Would have executed:"+os.linesep+" ".join(command))
+        print("TESTING:: no command executed."+os.linesep+"Would have executed: " + os.linesep + " ".join(command))
     else:
         valid_code = Commandline.Commandline().func_CMD(" ".join(command))
         print(valid_code)
         if not valid_code:
-            print("There was an error validating the files, did not upload. Code="+str(valid_code))
+            print("There was an error validating the files, did not upload. Code=" + str(valid_code))
             exit(valid_code)
 
 ## Upload cluster file
@@ -266,9 +266,9 @@ if hasattr(parsed_args, "cluster_file"):
                                     description=parsed_args.cluster_description,
                                     species=parsed_args.species,
                                     genome=parsed_args.genome,
-                                    x=parsed_args.x_lab,
-                                    y=parsed_args.y_lab,
-                                    z=parsed_args.z_lab,
+                                    x=parsed_args.x_label,
+                                    y=parsed_args.y_label,
+                                    z=parsed_args.z_label,
                                     dry_run=parsed_args.dry_run)
     manage_call_return(ret)
 
