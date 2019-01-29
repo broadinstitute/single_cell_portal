@@ -1,0 +1,87 @@
+[
+  {
+    "embargo": null, 
+    "view_count": 11864, 
+    "use_existing_workspace": false, 
+    "user_id": {
+      "$oid": "57602728833b3b018173fcc4"
+    }, 
+    "description": "<p><span style=\"font-family:arial,helvetica,sans-serif\"><span style=\"font-size:24px\"><strong>Single nucleus RNA-seq of cell diversity in the adult mouse hippocampus.</strong></span></span></p>\r\n\r\n<p><span style
+=\"font-size:20px\"><span style=\"font-family:arial,helvetica,sans-serif\">Habib N, Li Y, Heidenreich M, Swiech L, Avraham-Davidi I, Trombetta J, Hession C, Zhang F,&nbsp;Regev A.&nbsp;<strong>Div-Seq: Single-nucleus RNA-Seq reveals dynam
+ics of rare adult newborn neurons.</strong>&nbsp;<cite>Science&nbsp;</cite>&nbsp;28 Jul 2016&nbsp;<a href=\"https://dx.doi.org/10.1126/science.aad7038\">DOI: 10.1126/science.aad7038</a><br />\r\nContact:&nbsp;naomi@broadinstitute.org</spa
+n></span></p>\r\n\r\n<p><span style=\"font-family:arial,helvetica,sans-serif\"><span style=\"font-size:20px\">Single cell RNA-Seq provides rich information about cell types and states. However, it is difficult to capture rare dynamic proc
+esses, such as adult neurogenesis, because isolation of rare neurons from adult tissue is challenging and markers for each phase are limited. Here, we develop Div-Seq, which combines scalable single-nucleus RNA-Seq (sNuc-Seq) with pulse l
+abeling of proliferating cells by EdU to profile individual dividing cells. sNuc-Seq and Div-Seq can sensitively identify closely related hippocampal cell types and track transcriptional dynamics of newborn neurons within the adult hippoc
+ampal neurogenic niche, respectively. This study contains the sNuc-Seq analysis performed as a part of the Div-Seq method development.</span></span></p>\r\n\r\n<p><span style=\"font-family:arial,helvetica,sans-serif\"><span style=\"font-s
+ize:20px\">Using sNuc-Seq, we analyzed 1,367 single nuclei from hippocampal anatomical sub-regions (DG, CA1, CA2, and CA3) from adult mice, including enrichment of genetically-tagged lowly abundant GABAergic neurons (<a href=\"http://scie
+nce.sciencemag.org/content/early/2016/07/27/science.aad7038.full#ref-9\" id=\"xref-ref-9-1\"><em>9</em></a>). sNuc-Seq robustly generated high quality data across animal age groups (including 2 years old mice), detecting 5,100 expressed g
+enes per nucleus on average, with comparable complexity to single neuron RNA-Seq from young mice (<a href=\"http://science.sciencemag.org/content/early/2016/07/27/science.aad7038.full#ref-1\" id=\"xref-ref-1-3\" style=\"font-style: italic
+;\">1</a>, <a href=\"http://science.sciencemag.org/content/early/2016/07/27/science.aad7038.full#ref-2\">2</a>,&nbsp;<a href=\"http://science.sciencemag.org/content/early/2016/07/27/science.aad7038.full#ref-3\" id=\"xref-ref-3-2\" rel=\"#
+ref-3~.ref-cit\" title=\"\"><em>3</em></a>). Analysis of sNuc-Seq data revealed distinct nuclei clusters (Fig. 1B-D shown below) corresponding to known cell types and anatomical distinctions in the hippocampus.</span></span></p>\r\n\r\n<p
+ style=\"text-align:center\"><img alt=\"\" src=\"/single_cell/ckeditor_assets/pictures/5b310f00328cee0d0126cf66/content_F1.large.jpg?1529941760\" style=\"height:252px; width:800px\" /></p>\r\n\r\n<p><span style=\"font-family:arial,helveti
+ca,sans-serif\"><span style=\"font-size:16px\">Fig. 1 sNuc-Seq identifies cell types in adult mouse brain.(A) Representative images of isolated nuclei are more uniform than of dissociated neurons from adult brain. Scale = 10&mu;m. sNuc-Se
+q method (right): nuclei are isolated, FACS sorted and profiled using modified Smart-SEq. 2 (<a href=\"http://science.sciencemag.org/content/early/2016/07/27/science.aad7038.full#ref-21\">21</a>). (B) Major cell types identified from sNuc
+-Seq data reflected by clusters, shown as 2-D embedding of 1,188 nuclei from adult mouse hippocampus. (C) Cluster-specific genes across single nuclei. Color bar matches cluster color in B. (D) Identification of DG granule cell, CA1, CA2, 
+and CA3 pyramidal cell clusters, by marker genes, shown as: 1, ISH image in hippocampus section (<a href=\"http://science.sciencemag.org/content/early/2016/07/27/science.aad7038.full#ref-10\">10</a>) (arrowhead: high expression; Scale = 4
+00&mu;m.); 2, histogram quantifying expression in relevant cluster; and 3, 2-D embedding of nuclei (as in B) colored by relative expression.</span></span></p>\r\n", 
+    "created_at": "2016-07-06T18:13:09.991Z", 
+    "default_options": {
+      "expression_label": "log(TPM) expression", 
+      "cluster": "Coordinates_Major_cell_types", 
+      "cluster_point_size": "6", 
+      "annotation": "CLUSTER--group--study", 
+      "cluster_point_border": "true", 
+      "cluster_point_alpha": "1.0"
+    }, 
+    "view_order": 2.0, 
+    "updated_at": "2019-01-23T22:08:20.565Z", 
+    "queued_for_deletion": false, 
+    "gene_count": 25392, 
+    "cell_count": 1402, 
+    "data_dir": "5c0212978fe2731b00d283e9937d18017580e913732ac0193e597a8a4167b4d0", 
+    "bucket_id": "fc-36f39ea7-439e-4a49-ad10-6a5a4614300e", 
+    "firecloud_workspace": "-single-nucleus-rna-seq-of-cell-diversity-in-the-adult-mouse-hippocampus-snuc-seq", 
+    "initialized": true, 
+    "url_safe_name": "-single-nucleus-rna-seq-of-cell-diversity-in-the-adult-mouse-hippocampus-snuc-seq", 
+    "_id": {
+      "$oid": "577d4a35421aa904f7922101"
+    }, 
+    "firecloud_project": "single-cell-portal", 
+    "public": true, 
+    "name": " Single nucleus RNA-seq of cell diversity in the adult mouse hippocampus (sNuc-Seq)"
+  },
+  {
+    "embargo": null, 
+    "view_count": 42,
+    "use_existing_workspace": false, 
+    "user_id": {
+      "$oid": "11112728833b3b018173fcc4"
+    }, 
+    "description": "Just for unit tests, does not exist in FireCloud", 
+    "created_at": "2017-01-01T00:00:05.000Z", 
+    "default_options": {
+      "expression_label": "log(TPM) expression", 
+      "cluster": "Coordinates_Major_cell_types", 
+      "cluster_point_size": "6", 
+      "annotation": "CLUSTER--group--study", 
+      "cluster_point_border": "true", 
+      "cluster_point_alpha": "1.0"
+    }, 
+    "view_order": 1.0, 
+    "updated_at": "2018-01-01T00:00:05.000Z", 
+    "queued_for_deletion": false, 
+    "gene_count": 25000, 
+    "cell_count": 1000, 
+    "data_dir": "111112978fe2731b00d283e9937d18017580e913732ac0193e597a8a4167b4d0", 
+    "bucket_id": "fc-36f39ea7-1111-4a49-ad10-6a5a4614300e", 
+    "firecloud_workspace": "-study-only-for-unit-test", 
+    "initialized": true, 
+    "url_safe_name": "-study-only-for-unit-test", 
+    "_id": {
+      "$oid": "11114a35421aa904f7922101"
+    }, 
+    "firecloud_project": "single-cell-portal", 
+    "public": false, 
+    "name": "Study only for unit test"
+  }
+]
