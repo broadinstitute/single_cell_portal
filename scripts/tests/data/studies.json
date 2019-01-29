@@ -8,7 +8,7 @@
     }, 
     "description": "<p><span style=\"font-family:arial,helvetica,sans-serif\"><span style=\"font-size:24px\"><strong>Single nucleus RNA-seq of cell diversity in the adult mouse hippocampus.</strong></span></span></p>\r\n\r\n<p><span style
 =\"font-size:20px\"><span style=\"font-family:arial,helvetica,sans-serif\">Habib N, Li Y, Heidenreich M, Swiech L, Avraham-Davidi I, Trombetta J, Hession C, Zhang F,&nbsp;Regev A.&nbsp;<strong>Div-Seq: Single-nucleus RNA-Seq reveals dynam
-ics of rare adult newborn neurons.</strong>&nbsp;<cite>Science&nbsp;</cite>&nbsp;28 Jul 2016&nbsp;<a href=\"https://dx.doi.org/10.1126/science.aad7038\">DOI: 10.1126/science.aad7038</a><br />\r\nContact:&nbsp;naomi@broadinstitute.org</spa
+ics of rare adult newborn neurons.</strong>&nbsp;<cite>Science&nbsp;</cite>&nbsp;28 Jul 2016&nbsp;<a href=\"https://doi.org/10.1126/science.aad7038\">DOI: 10.1126/science.aad7038</a><br />\r\nContact:&nbsp;naomi@broadinstitute.org</spa
 n></span></p>\r\n\r\n<p><span style=\"font-family:arial,helvetica,sans-serif\"><span style=\"font-size:20px\">Single cell RNA-Seq provides rich information about cell types and states. However, it is difficult to capture rare dynamic proc
 esses, such as adult neurogenesis, because isolation of rare neurons from adult tissue is challenging and markers for each phase are limited. Here, we develop Div-Seq, which combines scalable single-nucleus RNA-Seq (sNuc-Seq) with pulse l
 abeling of proliferating cells by EdU to profile individual dividing cells. sNuc-Seq and Div-Seq can sensitively identify closely related hippocampal cell types and track transcriptional dynamics of newborn neurons within the adult hippoc
