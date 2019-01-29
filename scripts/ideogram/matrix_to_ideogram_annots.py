@@ -327,7 +327,8 @@ if __name__ == '__main__':
     if output_dir[-1] != '/':
         output_dir += '/'
 
-    clusters_groups = get_cluster_groups(cluster_names, cluster_paths, metadata_path)
+    clusters_groups = get_cluster_groups(cluster_names, cluster_paths,
+        metadata_path, ref_cluster_names=ref_cluster_names)
 
     MatrixToIdeogramAnnots(matrix_path, matrix_delimiter, gen_pos_file,
         clusters_groups, output_dir, heatmap_thresholds)

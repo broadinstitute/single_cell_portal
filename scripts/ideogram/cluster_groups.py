@@ -6,7 +6,7 @@ This module is a helper for matrix_to_ideogram_annots.py.
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
-def get_clusters_from_file(path):
+def get_clusters_from_file(path, ref_cluster_names=[]):
     """Get cluster names, labels, and cells from cluster file or metadata file
     """
     clusters = {}
@@ -32,7 +32,7 @@ def get_clusters_from_file(path):
         for line in lines[3:]:
             columns = line.strip().split('\t')
             cluster_label = columns[cluster_index].strip()
-            if cluster_label in ['Oligodendrocytes (non-malignant)', 'Microglia/Macrophage']:
+            if cluster_label in ref_cluster_names:
                 continue
             cell = columns[0]
             if got_all_cells is False:
@@ -46,7 +46,7 @@ def get_clusters_from_file(path):
 
     return [clusters, all_cells]
 
-def get_cluster_groups(group_names, paths, metadata_path):
+def get_cluster_groups(group_names, paths, metadata_path, ref_cluster_names=None):
     """Get cluster groups data structure from raw passed CLI arguments"""
     cluster_groups = {}
 
@@ -59,15 +59,18 @@ def get_cluster_groups(group_names, paths, metadata_path):
     print('metadata_path')
     print(metadata_path)
 
+    print('ref_cluster_names')
+    print(ref_cluster_names)
+
     for i, path in enumerate(paths):
         group_name = group_names[i]
-        clusters, cells = get_clusters_from_file(path)
+        clusters, cells = get_clusters_from_file(path, ref_cluster_names=ref_cluster_names)
         cluster_groups[group_name] = {
             'cells': cells,
             'cluster_file': clusters
         }
-        
-    metadata_clusters, cells = get_clusters_from_file(metadata_path)
+
+    metadata_clusters, cells = get_clusters_from_file(metadata_path, ref_cluster_names=ref_cluster_names)
 
     for group_name in cluster_groups:
         cluster_groups[group_name]['metadata_file'] = metadata_clusters
