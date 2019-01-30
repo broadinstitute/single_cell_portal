@@ -104,9 +104,6 @@ class MatrixToIdeogramAnnots:
             for scope in ['cluster_file', 'metadata_file']:
                 for cluster_name in cluster_group[scope]:
 
-                    print('cluster_group[scope][cluster_name].keys()')
-                    print(cluster_group[scope][cluster_name].keys())
-
                     expression_means = self.compute_gene_expression_means(matrix, cluster_group, scope, cluster_name)
 
                     keys = ['name', 'start', 'length']
@@ -262,8 +259,6 @@ class MatrixToIdeogramAnnots:
             scores_lists.append(scores_list)
 
         scores_lists.reverse()
-        print('scores_lists')
-        print(scores_lists)
         return scores_lists
 
 def parse_heatmap_thresholds(path):
@@ -295,7 +290,7 @@ if __name__ == '__main__':
                     help='Path to heatmap thresholds file')
     ap.add_argument('--ref_heatmap_thresholds',
                     help='Numeric thresholds for heatmap of reference (normal) cluster groups',
-                    nargs='+')
+                    nargs='+', default=None)
     ap.add_argument('--cluster_paths',
                     help='Path or URL to cluster group files',
                     nargs='+')
