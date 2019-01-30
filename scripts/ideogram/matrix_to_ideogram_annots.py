@@ -39,7 +39,7 @@ def make_tarfile(output_filename, source_dir):
 class MatrixToIdeogramAnnots:
 
     def __init__(self, matrix_path, matrix_delimiter, gen_pos_file,
-                 cluster_groups, output_dir, heatmap_thresholds):
+                 cluster_groups, output_dir, heatmap_thresholds_path):
         """Class and parameter docs in module summary and argument parser"""
 
         self.matrix_path = matrix_path
@@ -47,7 +47,8 @@ class MatrixToIdeogramAnnots:
         self.cluster_groups = cluster_groups
         self.output_dir = output_dir
         self.genomic_position_file_path = gen_pos_file
-        self.heatmap_thresholds = heatmap_thresholds
+        ht_path = heatmap_thresholds_path
+        self.heatmap_thresholds = parse_heatmap_thresholds(ht_path)
 
         self.genes = self.get_genes()
 
@@ -264,61 +265,57 @@ class MatrixToIdeogramAnnots:
 def parse_heatmap_thresholds(path):
     """Parses file containing rows of numbers, i.e. heatmap thresholds
     """
+    if path is None: return None
     with open(path) as f:
         thresholds = [float(x.strip()) for x in f.readlines()]
         return thresholds
 
-if __name__ == '__main__':
-
-    # Parse command-line arguments
-    ap = ArgumentParser(description=__doc__,  # Use text from file summary up top
+def create_parser():
+    """Set up parsing for command-line arguments
+    """
+    parser = ArgumentParser(description=__doc__,  # Use text from file summary up top
                         formatter_class=RawDescriptionHelpFormatter)
-    ap.add_argument('--matrix_path',
+    parser.add_argument('--matrix_path',
                     help='Path to expression matrix file')
-    ap.add_argument('--matrix_delimiter',
+    parser.add_argument('--matrix_delimiter',
                     help='Delimiter in expression matrix.  Default: \\t',
                     default='\t')
-    ap.add_argument('--gen_pos_file',
+    parser.add_argument('--gen_pos_file',
                     help='Path to gen_pos.txt genomic positions file from inferCNV ')
-    ap.add_argument('--cluster_names',
+    parser.add_argument('--cluster_names',
                     help='Names of cluster groups',
                     nargs='+')
-    ap.add_argument('--ref_cluster_names',
+    parser.add_argument('--ref_cluster_names',
                     help='Names of reference (normal) cluster groups',
                     nargs='+', default=[])
-    ap.add_argument('--ordered_labels',
+    parser.add_argument('--ordered_labels',
                     help='Sorted labels for clusters',
                     nargs='+', default=[])
-    ap.add_argument('--heatmap_thresholds_path',
-                    help='Path to heatmap thresholds file')
-    ap.add_argument('--ref_heatmap_thresholds',
+    parser.add_argument('--heatmap_thresholds_path',
+                    help='Path to heatmap thresholds file', required=False)
+    parser.add_argument('--ref_heatmap_thresholds',
                     help='Numeric thresholds for heatmap of reference (normal) cluster groups',
-                    nargs='+')
-    ap.add_argument('--cluster_paths',
+                    nargs='+', required=False)
+    parser.add_argument('--cluster_paths',
                     help='Path or URL to cluster group files',
                     nargs='+')
-    ap.add_argument('--metadata_path',
+    parser.add_argument('--metadata_path',
                     help='Path or URL to metadata file')
-    ap.add_argument('--output_dir',
+    parser.add_argument('--output_dir',
                     help='Path to write output')
 
-    args = ap.parse_args()
+    return parser
 
+def main():
+    args = create_parser().parse_args()
     matrix_path = args.matrix_path
     matrix_delimiter = args.matrix_delimiter
     gen_pos_file = args.gen_pos_file
     cluster_names = args.cluster_names
     ref_cluster_names = args.ref_cluster_names
     ordered_labels = args.ordered_labels
-    if args.heatmap_thresholds_path:
-        path = args.heatmap_thresholds_path
-        heatmap_thresholds = parse_heatmap_thresholds(path)
-    else:
-        heatmap_thresholds = None
-    if args.ref_heatmap_thresholds:
-        ref_heatmap_thresholds = args.ref_heatmap_thresholds
-    else:
-        ref_heatmap_thresholds = None
+    heatmap_thresholds_path = args.heatmap_thresholds_path
+    ref_heatmap_thresholds = args.ref_heatmap_thresholds
     cluster_paths = args.cluster_paths
     metadata_path = args.metadata_path
     output_dir = args.output_dir
@@ -330,4 +327,7 @@ if __name__ == '__main__':
         metadata_path, ref_cluster_names=ref_cluster_names, ordered_labels=ordered_labels)
 
     MatrixToIdeogramAnnots(matrix_path, matrix_delimiter, gen_pos_file,
-        clusters_groups, output_dir, heatmap_thresholds)
+        clusters_groups, output_dir, heatmap_thresholds_path)
+
+if __name__ == '__main__':
+    main()
