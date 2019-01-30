@@ -14,12 +14,12 @@ chromosome arms as observed in some cancers.
 Example:
 
 python3 scripts/ideogram/matrix_to_ideogram_annots.py \
---matrix_path expression_pre_vis_transform.txt \
---gen_pos_file gencode_v19_gene_pos.txt \
---cluster_names "tSNE" "tSNE_non_malignant_cells" \
---cluster_paths tsne.txt tsne.non.mal.txt \
---metadata_path metadata.txt \
---output_dir ./
+--matrix-path expression_pre_vis_transform.txt \
+--gen-pos-file gencode_v19_gene_pos.txt \
+--cluster-names "tSNE" "tSNE_non_malignant_cells" \
+--cluster-paths tsne.txt tsne.non.mal.txt \
+--metadata-path metadata.txt \
+--output-dir ./
 
 """
 
@@ -45,6 +45,8 @@ class MatrixToIdeogramAnnots:
         self.matrix_path = matrix_path
         self.matrix_delimiter = matrix_delimiter
         self.cluster_groups = cluster_groups
+        if output_dir[-1] != '/':
+            output_dir += '/'
         self.output_dir = output_dir
         self.genomic_position_file_path = gen_pos_file
         ht_path = heatmap_thresholds_path
@@ -275,33 +277,33 @@ def create_parser():
     """
     parser = ArgumentParser(description=__doc__,  # Use text from file summary up top
                         formatter_class=RawDescriptionHelpFormatter)
-    parser.add_argument('--matrix_path',
+    parser.add_argument('--matrix-path',
                     help='Path to expression matrix file')
-    parser.add_argument('--matrix_delimiter',
+    parser.add_argument('--matrix-delimiter',
                     help='Delimiter in expression matrix.  Default: \\t',
                     default='\t')
-    parser.add_argument('--gen_pos_file',
+    parser.add_argument('--gen-pos-file',
                     help='Path to gen_pos.txt genomic positions file from inferCNV ')
-    parser.add_argument('--cluster_names',
+    parser.add_argument('--cluster-names',
                     help='Names of cluster groups',
                     nargs='+')
-    parser.add_argument('--ref_cluster_names',
+    parser.add_argument('--ref-cluster-names',
                     help='Names of reference (normal) cluster groups',
                     nargs='+', default=[])
-    parser.add_argument('--ordered_labels',
+    parser.add_argument('--ordered-labels',
                     help='Sorted labels for clusters',
                     nargs='+', default=[])
-    parser.add_argument('--heatmap_thresholds_path',
+    parser.add_argument('--heatmap-thresholds-path',
                     help='Path to heatmap thresholds file', required=False)
-    parser.add_argument('--ref_heatmap_thresholds',
+    parser.add_argument('--ref-heatmap-thresholds',
                     help='Numeric thresholds for heatmap of reference (normal) cluster groups',
                     nargs='+', required=False)
-    parser.add_argument('--cluster_paths',
+    parser.add_argument('--cluster-paths',
                     help='Path or URL to cluster group files',
                     nargs='+')
-    parser.add_argument('--metadata_path',
+    parser.add_argument('--metadata-path',
                     help='Path or URL to metadata file')
-    parser.add_argument('--output_dir',
+    parser.add_argument('--output-dir',
                     help='Path to write output')
 
     return parser
@@ -319,9 +321,6 @@ def main():
     cluster_paths = args.cluster_paths
     metadata_path = args.metadata_path
     output_dir = args.output_dir
-
-    if output_dir[-1] != '/':
-        output_dir += '/'
 
     clusters_groups = get_cluster_groups(cluster_names, cluster_paths,
         metadata_path, ref_cluster_names=ref_cluster_names, ordered_labels=ordered_labels)
