@@ -50,7 +50,7 @@ def order_labels(cluster_groups, group_name, source, ordered_labels):
     for cluster_name in clusters:
         cluster = clusters[cluster_name]
         ordered_cluster = {}
-        if ordered_labels is None:
+        if len(ordered_labels) == 0:
             ordered_cluster = cluster
         else:
             for label in ordered_labels:
@@ -62,7 +62,7 @@ def order_labels(cluster_groups, group_name, source, ordered_labels):
 
     return cluster_groups
 
-def get_cluster_groups(group_names, paths, metadata_path, ref_cluster_names=None, ordered_labels=None):
+def get_cluster_groups(group_names, paths, metadata_path, ref_cluster_names=[], ordered_labels=[]):
     """Get cluster groups dictionary that will be transformed to Ideogram annotations
     """
     cluster_groups = {}

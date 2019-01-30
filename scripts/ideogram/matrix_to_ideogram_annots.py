@@ -285,15 +285,15 @@ if __name__ == '__main__':
                     nargs='+')
     ap.add_argument('--ref_cluster_names',
                     help='Names of reference (normal) cluster groups',
-                    nargs='+')
+                    nargs='+', default=[])
     ap.add_argument('--ordered_labels',
                     help='Sorted labels for clusters',
-                    nargs='+')
+                    nargs='+', default=[])
     ap.add_argument('--heatmap_thresholds_path',
                     help='Path to heatmap thresholds file')
     ap.add_argument('--ref_heatmap_thresholds',
                     help='Numeric thresholds for heatmap of reference (normal) cluster groups',
-                    nargs='+', default=None)
+                    nargs='+')
     ap.add_argument('--cluster_paths',
                     help='Path or URL to cluster group files',
                     nargs='+')
