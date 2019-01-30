@@ -286,6 +286,9 @@ if __name__ == '__main__':
     ap.add_argument('--ref_cluster_names',
                     help='Names of reference (normal) cluster groups',
                     nargs='+')
+    ap.add_argument('--ordered_labels',
+                    help='Sorted labels for clusters',
+                    nargs='+')
     ap.add_argument('--heatmap_thresholds_path',
                     help='Path to heatmap thresholds file')
     ap.add_argument('--ref_heatmap_thresholds',
@@ -306,6 +309,7 @@ if __name__ == '__main__':
     gen_pos_file = args.gen_pos_file
     cluster_names = args.cluster_names
     ref_cluster_names = args.ref_cluster_names
+    ordered_labels = args.ordered_labels
     if args.heatmap_thresholds_path:
         path = args.heatmap_thresholds_path
         heatmap_thresholds = parse_heatmap_thresholds(path)
@@ -323,7 +327,7 @@ if __name__ == '__main__':
         output_dir += '/'
 
     clusters_groups = get_cluster_groups(cluster_names, cluster_paths,
-        metadata_path, ref_cluster_names=ref_cluster_names)
+        metadata_path, ref_cluster_names=ref_cluster_names, ordered_labels=ordered_labels)
 
     MatrixToIdeogramAnnots(matrix_path, matrix_delimiter, gen_pos_file,
         clusters_groups, output_dir, heatmap_thresholds)

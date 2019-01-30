@@ -3,9 +3,6 @@
 This module is a helper for matrix_to_ideogram_annots.py.
 """
 
-import pprint
-pp = pprint.PrettyPrinter(indent=4)
-
 def get_clusters_from_file(path, ref_cluster_names=[]):
     """Get cluster names, labels, and cells from cluster file or metadata file
     """
@@ -47,6 +44,8 @@ def get_clusters_from_file(path, ref_cluster_names=[]):
     return [clusters, all_cells]
 
 def order_labels(cluster_groups, group_name, source, ordered_labels):
+    """Sort cluster labels, print summary information about cluster
+    """
     clusters = cluster_groups[group_name][source]
     for cluster_name in clusters:
         cluster = clusters[cluster_name]
@@ -63,21 +62,10 @@ def order_labels(cluster_groups, group_name, source, ordered_labels):
 
     return cluster_groups
 
-def get_cluster_groups(group_names, paths, metadata_path, ref_cluster_names=None):
-    """Get cluster groups data structure from raw passed CLI arguments"""
+def get_cluster_groups(group_names, paths, metadata_path, ref_cluster_names=None, ordered_labels=None):
+    """Get cluster groups dictionary that will be transformed to Ideogram annotations
+    """
     cluster_groups = {}
-
-    print('group_names')
-    print(group_names)
-
-    print('paths')
-    print(paths)
-
-    print('metadata_path')
-    print(metadata_path)
-
-    print('ref_cluster_names')
-    print(ref_cluster_names)
 
     for i, path in enumerate(paths):
         group_name = group_names[i]
@@ -92,19 +80,7 @@ def get_cluster_groups(group_names, paths, metadata_path, ref_cluster_names=None
     for group_name in cluster_groups:
         cluster_groups[group_name]['metadata_file'] = metadata_clusters
 
-    print('cluster_groups')
-    print(cluster_groups)
-
-    ordered_labels = None
-    # ordered_labels = [
-    #     'malignant_97',
-    #     'malignant_93',
-    #     'malignant_MGH53',
-    #     'malignant_MGH36'
-    # ]
-
-    # Print number of cells in each cluster label, for each cluster
-    # (annotation), scope, and group
+    # Print summaries and order cluster labels
     for group_name in cluster_groups:
         print('Cluster group: ' + group_name)
         metadata_clusters = cluster_groups[group_name]['metadata_file']
