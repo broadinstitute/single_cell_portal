@@ -22,6 +22,8 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
+Then [install and initialize Google Cloud SDK](https://cloud.google.com/sdk/docs/quickstarts) on your machine; many scripts here require it.
+
 ## Reporting Bugs and Improvements
 To report a bug or suggest an improvement please create a new issue at: https://github.com/broadinstitute/single_cell_portal/issues
 
