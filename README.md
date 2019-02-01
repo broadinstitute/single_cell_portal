@@ -15,11 +15,11 @@ Scripts to help when working with data files for the portal are made available i
 
 To get set up to use these scripts:
 ```
-$ git clone https://github.com/broadinstitute/single_cell_portal.git
-$ cd single_cell_portal
-$ python3 -m venv env --copies
-$ source env/bin/activate
-$ pip install -r requirements.txt
+git clone https://github.com/broadinstitute/single_cell_portal.git
+cd single_cell_portal
+python3 -m venv env --copies
+source env/bin/activate
+pip install -r requirements.txt
 ```
 
 ## Reporting Bugs and Improvements
