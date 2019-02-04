@@ -280,10 +280,10 @@ def create_parser():
     parser.add_argument('--matrix-path',
                     help='Path to expression matrix file')
     parser.add_argument('--matrix-delimiter',
-                    help='Delimiter in expression matrix.  Default: \\t',
+                    help='Delimiter in expression matrix',
                     default='\t')
     parser.add_argument('--gen-pos-file',
-                    help='Path to gen_pos.txt genomic positions file from inferCNV ')
+                    help='Path to gen_pos.txt genomic positions file from inferCNV')
     parser.add_argument('--cluster-names',
                     help='Names of cluster groups',
                     nargs='+')
@@ -308,8 +308,7 @@ def create_parser():
 
     return parser
 
-def main():
-    args = create_parser().parse_args()
+def convert_matrix_and_write(args):
     matrix_path = args.matrix_path
     matrix_delimiter = args.matrix_delimiter
     gen_pos_file = args.gen_pos_file
@@ -317,7 +316,7 @@ def main():
     ref_cluster_names = args.ref_cluster_names
     ordered_labels = args.ordered_labels
     heatmap_thresholds_path = args.heatmap_thresholds_path
-    ref_heatmap_thresholds = args.ref_heatmap_thresholds
+    # ref_heatmap_thresholds = args.ref_heatmap_thresholds
     cluster_paths = args.cluster_paths
     metadata_path = args.metadata_path
     output_dir = args.output_dir
@@ -329,4 +328,5 @@ def main():
         clusters_groups, output_dir, heatmap_thresholds_path)
 
 if __name__ == '__main__':
-    main()
+    args = create_parser().parse_args()
+    convert_matrix_and_write(args)
