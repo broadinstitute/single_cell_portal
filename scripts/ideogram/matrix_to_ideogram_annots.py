@@ -295,9 +295,9 @@ def create_parser():
                     nargs='+', default=[])
     parser.add_argument('--heatmap-thresholds-path',
                     help='Path to heatmap thresholds file', required=False)
-    parser.add_argument('--ref-heatmap-thresholds',
-                    help='Numeric thresholds for heatmap of reference (normal) cluster groups',
-                    nargs='+', required=False)
+    # parser.add_argument('--ref-heatmap-thresholds',
+    #                 help='Numeric thresholds for heatmap of reference (normal) cluster groups',
+    #                 nargs='+', required=False)
     parser.add_argument('--cluster-paths',
                     help='Path or URL to cluster group files',
                     nargs='+')

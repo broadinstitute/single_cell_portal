@@ -57,6 +57,12 @@ class MatrixToIdeogramAnnotsTestCase(unittest.TestCase):
         ]
         self.assertEqual(keys, expected_keys)
 
+        # Test a particular Ideogram annotation
+        annot = annots['annots'][0]['annots'][0]
+        # gene name, genomic start, genomic length, expression value averages
+        expected_annot = ['ACOX3', 8368009, 74441, 3.308, 2.154, 1.967, 2.687]
+        self.assertEqual(annot, expected_annot)
+
     def test_conversion_without_references(self):
         """Converter should handle default case without reference clusters
         I.e., without values for --ref-cluster-names
@@ -89,6 +95,12 @@ class MatrixToIdeogramAnnotsTestCase(unittest.TestCase):
             'malignant_MGH36', 'malignant_MGH53', 'malignant_97', 'malignant_93'
         ]
         self.assertEqual(keys, expected_keys)
+
+        # Test a particular Ideogram annotation
+        annot = annots['annots'][0]['annots'][0]
+        # gene name, genomic start, genomic length, expression value averages
+        expected_annot = ['ACOX3', 8368009, 74441, 0.726, 0.448, 3.308, 2.154, 1.967, 2.687]
+        self.assertEqual(annot, expected_annot)
 
 if __name__ == '__main__':
     unittest.main()
