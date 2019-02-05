@@ -1,4 +1,5 @@
 import unittest
+from glob import glob
 
 import sys
 sys.path.append('..')
@@ -21,13 +22,14 @@ class MatrixToIdeogramAnnotsTestCase(unittest.TestCase):
         args = create_parser().parse_args(args)
         convert_matrix_and_write(args)
 
-        studies = []
+        files = glob(output_dir + 'ideogram_exp_means/*')
 
-        expected_studies = [
-            " Single nucleus RNA-seq of cell diversity in the adult mouse hippocampus (sNuc-Seq)",
-            "Study only for unit test"
+        expected_files = [
+            'output_infercnv_example/ideogram_exp_means/ideogram_exp_means__Observations--Sample--group--study.json',
+            'output_infercnv_example/ideogram_exp_means/ideogram_exp_means__Observations--Sample--group--cluster.json'
         ]
-        self.assertEqual(studies, expected_studies)
+
+        self.assertEqual(files, expected_files)
 
 if __name__ == '__main__':
     unittest.main()
