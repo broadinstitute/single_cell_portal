@@ -14,12 +14,12 @@ chromosome arms as observed in some cancers.
 Example:
 
 python3 scripts/ideogram/matrix_to_ideogram_annots.py \
---matrix_path expression_pre_vis_transform.txt \
---gen_pos_file gencode_v19_gene_pos.txt \
---cluster_names "tSNE" "tSNE_non_malignant_cells" \
---cluster_paths tsne.txt tsne.non.mal.txt \
---metadata_path metadata.txt \
---output_dir ./
+--matrix-path expression_pre_vis_transform.txt \
+--gen-pos-file gencode_v19_gene_pos.txt \
+--cluster-names "tSNE" "tSNE_non_malignant_cells" \
+--cluster-paths tsne.txt tsne.non.mal.txt \
+--metadata-path metadata.txt \
+--output-dir ./
 
 """
 
@@ -39,14 +39,18 @@ def make_tarfile(output_filename, source_dir):
 class MatrixToIdeogramAnnots:
 
     def __init__(self, matrix_path, matrix_delimiter, gen_pos_file,
-                 cluster_groups, output_dir):
+                 cluster_groups, output_dir, heatmap_thresholds_path):
         """Class and parameter docs in module summary and argument parser"""
 
         self.matrix_path = matrix_path
         self.matrix_delimiter = matrix_delimiter
         self.cluster_groups = cluster_groups
+        if output_dir[-1] != '/':
+            output_dir += '/'
         self.output_dir = output_dir
         self.genomic_position_file_path = gen_pos_file
+        ht_path = heatmap_thresholds_path
+        self.heatmap_thresholds = parse_heatmap_thresholds(ht_path)
 
         self.genes = self.get_genes()
 
@@ -96,6 +100,8 @@ class MatrixToIdeogramAnnots:
 
         matrix = self.get_expression_matrix_dict()
 
+        missing_genes = {}
+
         for group_name in self.cluster_groups:
             cluster_group = self.cluster_groups[group_name]
             for scope in ['cluster_file', 'metadata_file']:
@@ -110,7 +116,11 @@ class MatrixToIdeogramAnnots:
 
                     for i, expression_mean in enumerate(expression_means[1:]):
                         gene_id = expression_mean[0]
-                        gene = genes[gene_id]
+                        if gene_id in genes:
+                            gene = genes[gene_id]
+                        else:
+                            missing_genes[gene_id] = 1
+                            continue
 
                         chr = gene['chr']
                         start = int(gene['start'])
@@ -135,8 +145,17 @@ class MatrixToIdeogramAnnots:
                         annots = annots_by_chr[chr]
                         annots_list.append({'chr': chr, 'annots': annots})
 
-                    ideogram_annots = {'keys': keys, 'annots': annots_list}
+                    ideogram_annots = {
+                        'keys': keys,
+                        'metadata': {'heatmapThresholds': self.heatmap_thresholds},
+                        'annots': annots_list
+                    }
                     ideogram_annots_list.append([group_name, scope, cluster_name, ideogram_annots])
+
+        if len(missing_genes) > 0:
+            print('Genes in matrix but not in gene position file:')
+            print(len(missing_genes))
+            print(missing_genes.keys())
 
         return ideogram_annots_list
 
@@ -204,6 +223,9 @@ class MatrixToIdeogramAnnots:
 
         cells = matrix['cells']
 
+        print('cells')
+        print(cells)
+
         cluster_labels = list(cluster_group[scope][cluster_name].keys())
 
         keys = ['name'] + cluster_labels
@@ -223,10 +245,11 @@ class MatrixToIdeogramAnnots:
                 # cell_annot = cluster[name]
                 cell_annot_expressions = []
                 for cell in cluster[cluster_label]:
+                    if cell not in cells: continue
                     index_of_cell_in_matrix = cells[cell] - 1
                     gene_exp_in_cell = gene_exp_list[index_of_cell_in_matrix]
                     cell_annot_expressions.append(gene_exp_in_cell)
-
+                if len(cell_annot_expressions) == 0: continue
                 mean_cluster_expression = round(mean(cell_annot_expressions), 3)
                 scores_list.append(mean_cluster_expression)
 
@@ -238,44 +261,72 @@ class MatrixToIdeogramAnnots:
 
             scores_lists.append(scores_list)
 
+        scores_lists.reverse()
         return scores_lists
 
-if __name__ == '__main__':
+def parse_heatmap_thresholds(path):
+    """Parses file containing rows of numbers, i.e. heatmap thresholds
+    """
+    if path is None: return None
+    with open(path) as f:
+        thresholds = [float(x.strip()) for x in f.readlines()]
+        return thresholds
 
-    # Parse command-line arguments
-    ap = ArgumentParser(description=__doc__,  # Use text from file summary up top
+def create_parser():
+    """Set up parsing for command-line arguments
+    """
+    parser = ArgumentParser(description=__doc__,  # Use text from file summary up top
                         formatter_class=RawDescriptionHelpFormatter)
-    ap.add_argument('--matrix_path',
+    parser.add_argument('--matrix-path',
                     help='Path to expression matrix file')
-    ap.add_argument('--matrix_delimiter',
-                    help='Delimiter in expression matrix.  Default: \\t',
+    parser.add_argument('--matrix-delimiter',
+                    help='Delimiter in expression matrix',
                     default='\t')
-    ap.add_argument('--gen_pos_file',
-                    help='Path to gen_pos.txt genomic positions file from inferCNV ')
-    ap.add_argument('--cluster_names',
+    parser.add_argument('--gen-pos-file',
+                    help='Path to gen_pos.txt genomic positions file from inferCNV')
+    parser.add_argument('--cluster-names',
                     help='Names of cluster groups',
                     nargs='+')
-    ap.add_argument('--cluster_paths',
+    parser.add_argument('--ref-cluster-names',
+                    help='Names of reference (normal) cluster groups',
+                    nargs='+', default=[])
+    parser.add_argument('--ordered-labels',
+                    help='Sorted labels for clusters',
+                    nargs='+', default=[])
+    parser.add_argument('--heatmap-thresholds-path',
+                    help='Path to heatmap thresholds file', required=False)
+    # parser.add_argument('--ref-heatmap-thresholds',
+    #                 help='Numeric thresholds for heatmap of reference (normal) cluster groups',
+    #                 nargs='+', required=False)
+    parser.add_argument('--cluster-paths',
                     help='Path or URL to cluster group files',
                     nargs='+')
-    ap.add_argument('--metadata_path',
+    parser.add_argument('--metadata-path',
                     help='Path or URL to metadata file')
-    ap.add_argument('--output_dir',
+    parser.add_argument('--output-dir',
                     help='Path to write output')
 
-    args = ap.parse_args()
+    return parser
 
+def convert_matrix_and_write(args):
     matrix_path = args.matrix_path
     matrix_delimiter = args.matrix_delimiter
     gen_pos_file = args.gen_pos_file
     cluster_names = args.cluster_names
+    ref_cluster_names = args.ref_cluster_names
+    ordered_labels = args.ordered_labels
+    heatmap_thresholds_path = args.heatmap_thresholds_path
+    # ref_heatmap_thresholds = args.ref_heatmap_thresholds
     cluster_paths = args.cluster_paths
     metadata_path = args.metadata_path
     output_dir = args.output_dir
 
-    if output_dir[-1] != '/':
-        output_dir += '/'
+    clusters_groups = get_cluster_groups(cluster_names, cluster_paths,
+        metadata_path, ref_cluster_names=ref_cluster_names, ordered_labels=ordered_labels)
 
-    clusters_groups = get_cluster_groups(cluster_names, cluster_paths, metadata_path)
+    MatrixToIdeogramAnnots(matrix_path, matrix_delimiter, gen_pos_file,
+        clusters_groups, output_dir, heatmap_thresholds_path)
 
-    MatrixToIdeogramAnnots(matrix_path, matrix_delimiter, gen_pos_file, clusters_groups, output_dir)
+if __name__ == '__main__':
+    args = create_parser().parse_args()
+    convert_matrix_and_write(args)
