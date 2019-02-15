@@ -42,13 +42,14 @@ def get_references(cluster_path, ref_group_name, delimiter):
     group_index = groups.index(ref_group_name)
 
     # Reference cell labels
-    ref_labels = set()
+    ref_labels = []
 
     for row in cluster_rows[2:]:  # Skip header rows
         columns = row.strip().split(delimiter)
         cell = columns[0]
         label = columns[group_index]
-        ref_labels.add(label)
+        if label not in ref_labels:
+            ref_labels.append(label)
         ref_annots[cell] = label
 
     ref_labels = ','.join(ref_labels)
