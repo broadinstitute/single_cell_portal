@@ -8,12 +8,16 @@ transformation.
 """
 
 import argparse
+import os
 
-def write_infercnv_annotations(infercnv_annots, ref_labels, output_dir):
-    """Write transformed SCP cluster file to inferCNV annotations file
+def write_infercnv_inputs(infercnv_annots, ref_labels, output_dir):
+    """Write inferCNV annotations and reference labels to files
     """
     if output_dir[-1] != '/':
         output_dir += '/'
+
+    if os.path.exists(output_dir) == False:
+        os.mkdir(output_dir)
 
     output_path = output_dir + 'infercnv_annots_from_scp.tsv'
     with open(output_path, 'w') as f:
@@ -47,7 +51,7 @@ def get_references(cluster_path, ref_group_name, delimiter):
         ref_labels.add(label)
         ref_annots[cell] = label
 
-    ref_labels = '"' + '","'.join(ref_labels) + '"'
+    ref_labels = ','.join(ref_labels)
 
     return [ref_annots, ref_labels]
 
@@ -115,4 +119,4 @@ if __name__ == '__main__':
         args.ref_group_name, args.delimiter)
     infercnv_annots = get_infercnv_annots(args.metadata_path,
         args.obs_group_name, args.delimiter, ref_list[0])
-    write_infercnv_annotations(infercnv_annots, ref_list[1], args.output_dir)
+    write_infercnv_inputs(infercnv_annots, ref_list[1], args.output_dir)
