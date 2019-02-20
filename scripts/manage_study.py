@@ -136,6 +136,7 @@ parser_permissions.add_argument(
     help='Access to give the user.  Must be one of the following values: '+" ".join(scp_api.c_PERMISSIONS)
 )
 
+'''
 ## Create cluster file upload subparser
 parser_upload_cluster = subargs.add_parser(c_TOOL_CLUSTER,
     help="Upload a cluster file. \""+args.prog+" "+c_TOOL_CLUSTER+" -h\" for more details")
@@ -195,6 +196,7 @@ parser_upload_metadata.add_argument(
     '--file', dest='metadata_file', required=True,
     help='Metadata file to load.'
 )
+'''
 
 parsed_args = args.parse_args()
 print("Args----")
@@ -234,7 +236,7 @@ if hasattr(parsed_args, "permission"):
                                     access=parsed_args.permission,
                                     dry_run=parsed_args.dry_run)
     manage_call_return(ret)
-
+'''
 ## Validate files
 if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
     print("VALIDATE FILES")
@@ -271,7 +273,7 @@ if hasattr(parsed_args, "cluster_file"):
                                     z=parsed_args.z_label,
                                     dry_run=parsed_args.dry_run)
     manage_call_return(ret)
-
+'''
 ## Upload metadata file
 ### TODO
 

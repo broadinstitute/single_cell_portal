@@ -368,13 +368,13 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_STUDY_EXISTS
             })
         # Study name is restricted on letters
-        if not is_valid_study_name(study_name):
+        if not self.is_valid_study_name(study_name):
             return ({
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_INVALID_STUDY_NAME
             })
         # Study description should not have html and scripting
-        if not is_valid_study_description(study_description):
+        if not self.is_valid_study_description(study_description):
             return ({
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_INVALID_STUDY_DESC
