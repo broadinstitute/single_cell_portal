@@ -36,6 +36,7 @@ task run_infercnv {
     String tmp_output_dir
     String diskSpace
     String expression_delimiter
+    String tmp_infercnv_input_annotations_file
 
     command <<<
     	if [ ! -d ${tmp_output_dir} ]; then
@@ -46,24 +47,23 @@ task run_infercnv {
             --delimiter $'${expression_delimiter}' \
             --output_name "${tmp_output_dir}/expression.r_format.txt"
         inferCNV.R \
-            --cutoff 4.5 \
             --delim $'${expression_delimiter}' \
+            --ref_groups ${ref_groups} \
+            --annotations_file ${tmp_infercnv_input_annotations_file}
             --log "${tmp_output_dir}/infercnv.log" \
-            --noise_filter 0.3 \
             --output_dir ${tmp_output_dir} \
-            --window 101 \
             ${tmp_output_dir}/expression.r_format.txt ${tmp_gen_pos_file}
         >>>
     output {
         File log = "${tmp_output_dir}/infercnv.log"
-        File figure = "${tmp_output_dir}.infercnv.pdf"
+        File figure = "${tmp_output_dir}.infercnv.png"
         File post_expression ="${tmp_output_dir}_expression_post_viz_transform.txt"
         File pre_expression="${tmp_output_dir}/expression_pre_vis_transform.txt"
         File observations="${tmp_output_dir}/observations.txt"
     }
 
     runtime {
-        docker: "singlecellportal/infercnv:0.8.2-rc1"
+        docker: "singlecellportal/infercnv:0.8.2-rc3"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
@@ -73,7 +73,7 @@ task run_infercnv {
 }
 
 task run_matrix_to_ideogram_annots {
-    File matrix_path
+	File matrix_path
     String matrix_delimiter
     File gene_positions
     Array[String] input_cluster_names
@@ -101,7 +101,7 @@ task run_matrix_to_ideogram_annots {
     }
 
 	runtime {
-        docker: "singlecellportal/infercnv:0.8.2-rc1"
+        docker: "singlecellportal/infercnv:0.8.2-rc3"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
