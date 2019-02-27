@@ -1,13 +1,15 @@
 # Docker file for inferCNV
-FROM ubuntu:xenial
+FROM r-base:3.5.2
 MAINTAINER eweitz@broadinstitute.org
-RUN echo "deb http://cran.rstudio.com/bin/linux/ubuntu xenial/" | tee -a /etc/apt/sources.list && \
-gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9 && \
-gpg -a --export E084DAB9 | apt-key add -
 RUN apt-get update && \
-apt-get -y install curl libssl-dev libcurl4-openssl-dev libxml2-dev r-base r-base-dev git python3
+apt-get -y install curl libssl-dev libcurl4-openssl-dev libxml2-dev git python3
 RUN echo "options(repos = c(CRAN = 'https://cran.rstudio.com'))" >.Rprofile && \
-echo "install.packages(c('devtools','ape','RColorBrewer','optparse','logging', 'gplots', 'futile.logger', 'binhf', 'fastcluster', 'dplyr', 'coin'), dependencies = TRUE)" > install_devtools.r && \
+echo "install.packages(c('devtools','ape','RColorBrewer','optparse','logging', 'gplots', 'futile.logger', 'binhf', 'fastcluster', 'dplyr', 'coin', 'rmarkdown', 'doParallel', 'future'), dependencies = TRUE)" > install_devtools.r && \
+echo "install.packages('BiocManager')" >> install_devtools.r && \
+echo "BiocManager::install('SingleCellExperiment', version = '3.8')" >> install_devtools.r && \
+echo "BiocManager::install('BiocStyle', version = '3.8')" >> install_devtools.r && \
+echo "BiocManager::install('edgeR', version = '3.8')" >> install_devtools.r && \
+echo "install.packages(c('HiddenMarkov', 'fitdistrplus', 'fastcluster', 'Matrix', 'stats', 'gplots', 'utils', 'methods', 'knitr', 'testthat'), dependencies = TRUE)" >> install_devtools.r && \
 echo "library('devtools')" >> install_devtools.r && R --no-save < install_devtools.r
 
 WORKDIR /
@@ -18,10 +20,11 @@ WORKDIR /
 # Get script to convert inferCNV outputs to Ideogram.js annotations, then clean
 WORKDIR /
 RUN rm -rf infercnv
-RUN git clone https://github.com/broadinstitute/infercnv
-WORKDIR infercnv
-RUN git checkout reusable-heatmap-thresholds
-RUN git checkout c156e73bbbb5f95ecb82f6018ae7e4f9c1538882
+RUN git clone https://github.com/broadinstitute/inferCNV
+WORKDIR inferCNV
+RUN git checkout cli-annotations-file
+# Checkout code as of 2019-02-26
+RUN git checkout 5ee12bf63723ae7471839fe4eb33bfbc751a2059 
 RUN R CMD INSTALL .
 
 # Delete extraneous inferCNV directories
@@ -35,8 +38,9 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 WORKDIR /
 RUN git clone https://github.com/broadinstitute/single_cell_portal scp
 WORKDIR scp
-RUN git checkout ew-reference-analysis
-RUN git checkout ac4b8c24426cb97e2f6149edff1816bdaad58685
+RUN git checkout master
+# Checkout code as of 2019-02-26
+RUN git checkout d110e2584ffe3053ac577c679741749e9b572818
 WORKDIR /
 RUN mkdir -p single_cell_portal/scripts/ideogram
 RUN mv scp/scripts/ideogram single_cell_portal/scripts/
