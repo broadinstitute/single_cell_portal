@@ -42,12 +42,13 @@ RUN git checkout master
 # Checkout code as of 2019-02-26
 RUN git checkout d110e2584ffe3053ac577c679741749e9b572818
 WORKDIR /
-RUN mkdir -p single_cell_portal/scripts/ideogram
+RUN mkdir -p single_cell_portal/scripts
 RUN mv scp/scripts/ideogram single_cell_portal/scripts/
+RUN mv scp/scripts/scp_to_infercnv.py single_cell_portal/scripts/
 RUN rm -rf scp
 
 # set path
-ENV PATH=${PATH}:/inferCNV/scripts:/single_cell_portal/scripts/ideogram
+ENV PATH=${PATH}:/inferCNV/scripts:/single_cell_portal/scripts
 
 # install GMD from source
 WORKDIR /

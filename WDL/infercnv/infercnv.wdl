@@ -15,6 +15,7 @@ workflow infercnv {
         tmp_output_dir = output_dir,
         diskSpace = diskSpace,
         expression_delimiter = delimiter
+        tmp_infercnv_input_annotations_file = infercnv_annotations_file
     }
     
     call run_matrix_to_ideogram_annots {
