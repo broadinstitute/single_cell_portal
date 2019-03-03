@@ -20,11 +20,12 @@ WORKDIR /
 # Get script to convert inferCNV outputs to Ideogram.js annotations, then clean
 WORKDIR /
 RUN rm -rf infercnv
+RUN echo "Clearing Docker cache"
 RUN git clone https://github.com/broadinstitute/inferCNV
 WORKDIR inferCNV
-RUN git checkout cli-annotations-file
-# Checkout code as of 2019-02-26
-RUN git checkout 5ee12bf63723ae7471839fe4eb33bfbc751a2059 
+RUN git checkout update-cli-example
+# Checkout code as of 2019-03-01
+RUN git checkout 33b72be4ce88a21dde35d89997ec833e7b029269
 RUN R CMD INSTALL .
 
 # Delete extraneous inferCNV directories
@@ -39,7 +40,7 @@ WORKDIR /
 RUN git clone https://github.com/broadinstitute/single_cell_portal scp
 WORKDIR scp
 RUN git checkout master
-# Checkout code as of 2019-02-26
+# Checkout code as of 2019-03-01
 RUN git checkout d110e2584ffe3053ac577c679741749e9b572818
 WORKDIR /
 RUN mkdir -p single_cell_portal/scripts
