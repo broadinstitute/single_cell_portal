@@ -70,6 +70,7 @@ task run_infercnv {
         inferCNV.R \
             --raw_counts_matrix "${tmp_output_dir}/expression.r_format.txt" \
             --annotations_file "${tmp_output_dir}/infercnv_annots_from_scp.tsv" \
+            --ref_group_names "`cat ${tmp_output_dir}/infercnv_reference_cell_labels_from_scp.tsv`" \
             --gene_order_file ${tmp_gen_pos_file} \
             --cutoff 1 \
             --delim $'${expression_delimiter}' \
