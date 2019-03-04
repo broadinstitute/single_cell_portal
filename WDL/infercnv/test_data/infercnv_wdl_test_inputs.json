@@ -2,7 +2,7 @@
   "infercnv.diskSpace": "10",
   "infercnv.gene_pos_file": "/workflow/test_data/gencode_v19_gene_pos_devel.txt",
   "infercnv.cluster_paths": "/workflow/test_data/oligodendroglioma_clusters.txt",
-  "infercnv.delimiter": "10",
+  "infercnv.delimiter": "\t",
   "infercnv.reference_cell_annotation": "Sample",
   "infercnv.expression_file": "/workflow/test_data/oligodendroglioma_expression_downsampled.counts.matrix",
   "infercnv.cluster_names": "Observation",
