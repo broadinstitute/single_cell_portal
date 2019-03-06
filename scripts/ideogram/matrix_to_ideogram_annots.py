@@ -155,7 +155,8 @@ class MatrixToIdeogramAnnots:
         if len(missing_genes) > 0:
             print('Genes in matrix but not in gene position file:')
             print(len(missing_genes))
-            print(missing_genes.keys())
+            print('First such missing gene:')
+            print(list(missing_genes.keys())[0])
 
         return ideogram_annots_list
 
@@ -209,7 +210,8 @@ class MatrixToIdeogramAnnots:
             columns = line.strip().split(self.matrix_delimiter)
             gene = columns[0].strip('"')
             expression_by_cell = list(map(float, columns[1:]))
-
+            if gene == 'name':
+                continue
             genes[gene] = expression_by_cell
 
         em_dict['genes'] = genes
@@ -223,8 +225,8 @@ class MatrixToIdeogramAnnots:
 
         cells = matrix['cells']
 
-        print('cells')
-        print(cells)
+        # print('cells')
+        # print(cells)
 
         cluster_labels = list(cluster_group[scope][cluster_name].keys())
 
