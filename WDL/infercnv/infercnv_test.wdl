@@ -32,9 +32,9 @@ workflow infercnv {
     
     call run_matrix_to_ideogram_annots {
     	input:
-        matrix_path = run_infercnv.observations,
+        matrix_path = run_infercnv.observations_matrix_path,
         ref_group_names_path = run_infercnv.ref_group_names_path,
-        delimiter = delimiter,
+        heatmap_thresholds_path = run_infercnv.ref_group_names_path,
         gene_pos_path = gene_pos_path,
         # cluster_names = cluster_names,
         # cluster_path = cluster_path,
@@ -98,7 +98,8 @@ task run_infercnv {
         >>>
     output {
         File figure = "${output_dir}/infercnv.png"
-        File observations="${output_dir}/infercnv.observations.txt"
+        File observations_matrix_path="${output_dir}/infercnv.observations.txt"
+        File heatmap_thresholds_path="${output_dir}/infercnv.heatmap_thresholds.txt"
         File ref_group_names_path="${output_dir}/infercnv_reference_cell_labels_from_scp.tsv"
     }
 
@@ -115,7 +116,6 @@ task run_infercnv {
 task run_matrix_to_ideogram_annots {
 	  File matrix_path
     File ref_group_names_path
-    String delimiter
     File gene_pos_path
     # String cluster_names
     # File cluster_paths
@@ -124,6 +124,7 @@ task run_matrix_to_ideogram_annots {
     String obs_cluster_name
     File obs_cluster_path
     File metadata_path
+    File heatmap_thresholds_path
     String output_dir
     String diskSpace
     
@@ -141,6 +142,7 @@ task run_matrix_to_ideogram_annots {
             --ref-cluster-names "`cat ${ref_group_names_path}`" \
             --cluster-paths "${ref_cluster_path}" "${obs_cluster_path}" \
             --metadata-path ${metadata_path} \
+            --heatmap-thresholds-path ${heatmap_thresholds_path} \
             --output-dir ${output_dir}
     >>>
     
