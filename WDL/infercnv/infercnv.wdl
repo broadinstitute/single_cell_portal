@@ -26,6 +26,7 @@ workflow infercnv {
     call run_matrix_to_ideogram_annots {
     	input:
         matrix_path = run_infercnv.observations,
+        ref_group_names = run_infercnv.ref_group_names,
         delimiter = delimiter,
         gene_pos_path = gene_pos_path,
         cluster_names = cluster_names,
@@ -81,10 +82,11 @@ task run_infercnv {
     output {
         File figure = "${output_dir}/infercnv.png"
         File observations="${output_dir}/infercnv.observations.txt"
+        String ref_group_names=`cat ${output_dir}/infercnv_reference_cell_labels_from_scp.tsv`
     }
 
     runtime {
-        docker: "singlecellportal/infercnv:0-8-2-rc6"
+        docker: "singlecellportal/infercnv:0-8-2-rc7"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
@@ -95,6 +97,7 @@ task run_infercnv {
 
 task run_matrix_to_ideogram_annots {
 	  File matrix_path
+    String ref_group_names
     String delimiter
     File gene_pos_path
     String cluster_names
@@ -114,7 +117,7 @@ task run_matrix_to_ideogram_annots {
             --matrix-delimiter $'${delimiter}' \
             --gen-pos-file ${gene_pos_path} \
             --cluster-names "${sep='" "' cluster_names}" \
-            --ref-cluster-names "`cat ${output_dir}/infercnv_reference_cell_labels_from_scp.tsv`" \
+            --ref-cluster-names ${ref_group_names} \
             --cluster-paths ${sep=' ' cluster_paths} \
             --metadata-path ${metadata_path} \
             --output-dir ${output_dir}
@@ -125,7 +128,7 @@ task run_matrix_to_ideogram_annots {
   }
 
 	runtime {
-        docker: "singlecellportal/infercnv:0-8-2-rc6"
+        docker: "singlecellportal/infercnv:0-8-2-rc7"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
