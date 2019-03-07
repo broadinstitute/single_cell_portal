@@ -34,7 +34,7 @@ workflow infercnv {
     	input:
         matrix_path = run_infercnv.observations_matrix_path,
         ref_group_names_path = run_infercnv.ref_group_names_path,
-        heatmap_thresholds_path = run_infercnv.ref_group_names_path,
+        heatmap_thresholds_path = run_infercnv.heatmap_thresholds_path,
         gene_pos_path = gene_pos_path,
         # cluster_names = cluster_names,
         # cluster_path = cluster_path,
@@ -147,7 +147,8 @@ task run_matrix_to_ideogram_annots {
     >>>
     
 	output {
-    File output_annotations = "${output_dir}/ideogram_exp_means.tar.gz"
+    # File output_annotations = "${output_dir}/ideogram_exp_means.tar.gz"
+    Array[File] ideogram_annotations = glob("${output_dir}/*.json")
   }
 
 	runtime {
