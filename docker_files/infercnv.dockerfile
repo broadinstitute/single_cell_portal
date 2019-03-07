@@ -40,13 +40,13 @@ RUN apt-get install -y openjdk-8-jdk
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Get script to convert inferCNV outputs to Ideogram.js annotations, then clean
-RUN echo "Clearing Docker cache"
+RUN echo "Clearing Docker cache (2)"
 WORKDIR /
 RUN git clone https://github.com/broadinstitute/single_cell_portal scp
 WORKDIR scp
 RUN git checkout ew-infercnv-beta
-# Checkout code as of 2019-03-04
-RUN git checkout 2dba421875f8ff7ac9ee5e08217bd82e1c2e3c0d
+# Checkout code as of 2019-03-07
+RUN git checkout 7c16d2cc47ef1ade0965f904992b08f0b10de0a4
 WORKDIR /
 RUN mkdir -p single_cell_portal/scripts
 RUN mv scp/scripts/ideogram single_cell_portal/scripts/
@@ -66,7 +66,6 @@ RUN R CMD INSTALL GMD_0.3.3.tar.gz
 WORKDIR /workflow
 ADD https://github.com/broadinstitute/cromwell/releases/download/36.1/cromwell-36.1.jar .
 RUN cp -p /inferCNV/example/oligodendroglioma_expression_downsampled.counts.matrix test_data/
-
 
 # clean up
 RUN rm /GMD_0.3.3.tar.gz

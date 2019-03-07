@@ -7,6 +7,7 @@ workflow infercnv {
     String delimiter
     # String cluster_names
     String ref_cluster_name
+    String ref_group_name
     File ref_cluster_path # Path to cluster file containing reference (normal) cells
     String obs_cluster_name
     File obs_cluster_path # Path to cluster file containing observation (tumor) cells
@@ -42,6 +43,7 @@ workflow infercnv {
         ref_cluster_path = ref_cluster_path,
         obs_cluster_name = obs_cluster_name,
         obs_cluster_path = obs_cluster_path,
+        ref_group_name = ref_group_name,
         metadata_path = metadata_path,
         diskSpace = diskSpace,
         output_dir = output_dir
@@ -104,7 +106,7 @@ task run_infercnv {
     }
 
     # runtime {
-    #     docker: "singlecellportal/infercnv:0-8-2-rc7"
+    #     docker: "singlecellportal/infercnv:0-8-2-rc8"
     #     memory: "8 GB"
     #     bootDiskSizeGb: 12
     #     disks: "local-disk ${diskSpace} HDD"
@@ -127,6 +129,7 @@ task run_matrix_to_ideogram_annots {
     File heatmap_thresholds_path
     String output_dir
     String diskSpace
+    String ref_group_name
     
     command <<<
         if [ ! -d ${output_dir} ]; then
@@ -138,21 +141,25 @@ task run_matrix_to_ideogram_annots {
             --matrix-path ${matrix_path} \
             --matrix-delimiter $' ' \
             --gen-pos-file ${gene_pos_path} \
-            --cluster-names "${ref_cluster_name}" "${obs_cluster_name}" \
+            --cluster-names "${obs_cluster_name}" \
             --ref-cluster-names "`cat ${ref_group_names_path}`" \
-            --cluster-paths "${ref_cluster_path}" "${obs_cluster_path}" \
+            --cluster-paths "${obs_cluster_path}" \
             --metadata-path ${metadata_path} \
             --heatmap-thresholds-path ${heatmap_thresholds_path} \
-            --output-dir ${output_dir}
+            --output-dir ${output_dir} \
+            --reference-group-name "${ref_group_name}"
     >>>
     
 	output {
     # File output_annotations = "${output_dir}/ideogram_exp_means.tar.gz"
-    Array[File] ideogram_annotations = glob("${output_dir}/*.json")
+    # Array[File] ideogram_annotations = glob("${output_dir}/*.json") # Fails, cause unclear
+
+	# TODO: Refine above glob, do away with this relatively inflexible value
+    File ideogram_annotations = "${output_dir}/ideogram_exp_means/ideogram_exp_means__${obs_cluster_name}--${ref_group_name}--group--cluster.json"
   }
 
 	# runtime {
-  #       docker: "singlecellportal/infercnv:0-8-2-rc7"
+  #       docker: "singlecellportal/infercnv:0-8-2-rc8"
   #       memory: "8 GB"
   #       bootDiskSizeGb: 12
   #       disks: "local-disk ${diskSpace} HDD"
