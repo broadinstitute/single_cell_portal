@@ -106,7 +106,7 @@ task run_infercnv {
     }
 
     # runtime {
-    #     docker: "singlecellportal/infercnv:0-8-2-rc8"
+    #     docker: "singlecellportal/infercnv:0-8-2-rc9"
     #     memory: "8 GB"
     #     bootDiskSizeGb: 12
     #     disks: "local-disk ${diskSpace} HDD"
@@ -155,7 +155,7 @@ task run_matrix_to_ideogram_annots {
   }
 
 	# runtime {
-  #       docker: "singlecellportal/infercnv:0-8-2-rc8"
+  #       docker: "singlecellportal/infercnv:0-8-2-rc9"
   #       memory: "8 GB"
   #       bootDiskSizeGb: 12
   #       disks: "local-disk ${diskSpace} HDD"

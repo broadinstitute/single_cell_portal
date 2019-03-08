@@ -106,7 +106,7 @@ task run_infercnv {
     }
 
     runtime {
-        docker: "singlecellportal/infercnv:0-8-2-rc8"
+        docker: "singlecellportal/infercnv:0-8-2-rc9"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
@@ -151,15 +151,11 @@ task run_matrix_to_ideogram_annots {
     >>>
     
 	output {
-    # File output_annotations = "${output_dir}/ideogram_exp_means.tar.gz"
-    # Array[File] ideogram_annotations = glob("${output_dir}/*.json") # Fails, cause unclear
-
-	# TODO: Refine above glob, do away with this relatively inflexible value
-    File ideogram_annotations = "${output_dir}/ideogram_exp_means/ideogram_exp_means__${obs_cluster_name}--${ref_group_name}--group--cluster.json"
+    Array[File] ideogram_annotations = glob("${output_dir}/ideogram_exp_means/*.json")
   }
 
 	runtime {
-        docker: "singlecellportal/infercnv:0-8-2-rc8"
+        docker: "singlecellportal/infercnv:0-8-2-rc9"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
