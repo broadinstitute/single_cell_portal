@@ -131,7 +131,7 @@ class MatrixToIdeogramAnnots:
                             missing_genes[gene_id] = 1
                             continue
 
-                        chr = gene['chr']
+                        chr = gene['chr'].strip('chr') # E.g. chr1 -> 1
                         start = int(gene['start'])
                         stop = int(gene['stop'])
                         length = stop - start
