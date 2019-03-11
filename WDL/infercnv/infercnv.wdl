@@ -97,11 +97,13 @@ task run_infercnv {
             --out_dir ${output_dir} \
             --cluster_by_groups \
             --denoise
+            --median_filter
+            --no_plot
         >>>
     output {
-        File figure = "${output_dir}/infercnv.png"
-        File observations_matrix_path="${output_dir}/infercnv.observations.txt"
-        File heatmap_thresholds_path="${output_dir}/infercnv.heatmap_thresholds.txt"
+        File figure = "${output_dir}/infercnv_median_filtered.png"
+        File observations_matrix_path="${output_dir}/infercnv_median_filtered.observations.txt"
+        File heatmap_thresholds_path="${output_dir}/infercnv_median_filtered.heatmap_thresholds.txt"
         File ref_group_names_path="${output_dir}/infercnv_reference_cell_labels_from_scp.tsv"
     }
 
@@ -151,7 +153,10 @@ task run_matrix_to_ideogram_annots {
     >>>
     
 	output {
-    Array[File] ideogram_annotations = glob("${output_dir}/ideogram_exp_means/*.json")
+    # Array[File] ideogram_annotations = glob("${output_dir}/ideogram_exp_means/*.json") # Fails, cause unknown
+
+    # TODO: Fix above glob expression, discard the less flexible expression below
+    File ideogram_annotations = "${output_dir}/ideogram_exp_means/ideogram_exp_means__${obs_cluster_name}--${ref_group_name}--group--cluster.json"
   }
 
 	runtime {
