@@ -232,9 +232,6 @@ class MatrixToIdeogramAnnots:
 
         cells = matrix['cells']
 
-        # print('cells')
-        # print(cells)
-
         cluster_labels = list(cluster_group[scope][cluster_name].keys())
 
         keys = ['name'] + cluster_labels
