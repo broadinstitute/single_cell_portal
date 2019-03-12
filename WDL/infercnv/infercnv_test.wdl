@@ -1,66 +1,66 @@
 workflow infercnv {
-    File matrix_path
-    File gene_pos_path
-    File metadata_path
+    File matrix_file
+    File gene_pos_file
+    File metadata_file
     String output_dir
     String diskSpace
     String delimiter
     # String cluster_names
     String ref_cluster_name
     String ref_group_name
-    File ref_cluster_path # Path to cluster file containing reference (normal) cells
+    File ref_cluster_file # Path to cluster file containing reference (normal) cells
     String obs_cluster_name
-    File obs_cluster_path # Path to cluster file containing observation (tumor) cells
+    File obs_cluster_file # Path to cluster file containing observation (tumor) cells
     String reference_cell_annotation
     String observation_cell_annotation
     
     call run_infercnv {
     	input:
-        matrix_path = matrix_path,
-        gene_pos_path = gene_pos_path,
+        matrix_file = matrix_file,
+        gene_pos_file = gene_pos_file,
         output_dir = output_dir,
         diskSpace = diskSpace,
         delimiter = delimiter,
         # cluster_path = cluster_path
         ref_cluster_name = ref_cluster_name,
-        ref_cluster_path = ref_cluster_path,
+        ref_cluster_file = ref_cluster_file,
         obs_cluster_name = obs_cluster_name,
-        obs_cluster_path = obs_cluster_path,
-        metadata_path = metadata_path,
+        obs_cluster_file = obs_cluster_file,
+        metadata_file = metadata_file,
         reference_cell_annotation = reference_cell_annotation,
         observation_cell_annotation = observation_cell_annotation
     }
     
     call run_matrix_to_ideogram_annots {
     	input:
-        matrix_path = run_infercnv.observations_matrix_path,
-        ref_group_names_path = run_infercnv.ref_group_names_path,
-        heatmap_thresholds_path = run_infercnv.heatmap_thresholds_path,
-        gene_pos_path = gene_pos_path,
+        matrix_file = run_infercnv.observations_matrix_file,
+        ref_group_names_file = run_infercnv.ref_group_names_file,
+        heatmap_thresholds_file = run_infercnv.heatmap_thresholds_file,
+        gene_pos_file = gene_pos_file,
         # cluster_names = cluster_names,
         # cluster_path = cluster_path,
         ref_cluster_name = ref_cluster_name,
-        ref_cluster_path = ref_cluster_path,
+        ref_cluster_file = ref_cluster_file,
         obs_cluster_name = obs_cluster_name,
-        obs_cluster_path = obs_cluster_path,
+        obs_cluster_file = obs_cluster_file,
         ref_group_name = ref_group_name,
-        metadata_path = metadata_path,
+        metadata_file = metadata_file,
         diskSpace = diskSpace,
         output_dir = output_dir
     }
 }
 
 task run_infercnv {
-    File matrix_path
-    File gene_pos_path
+    File matrix_file
+    File gene_pos_file
     String output_dir
     String diskSpace
     String delimiter
     String ref_cluster_name
-    File ref_cluster_path
+    File ref_cluster_file
     String obs_cluster_name
-    File obs_cluster_path
-    File metadata_path
+    File obs_cluster_file
+    File metadata_file
     String reference_cell_annotation
     String observation_cell_annotation
 
@@ -71,8 +71,8 @@ task run_infercnv {
         
         # Convert SCP files into inferCNV annotations file
         python3 /single_cell_portal/scripts/scp_to_infercnv.py \
-            --metadata-path ${metadata_path} \
-            --reference-cluster-path ${ref_cluster_path} \
+            --metadata-path ${metadata_file} \
+            --reference-cluster-path ${ref_cluster_file} \
             --reference-group-name ${reference_cell_annotation} \
             --observation-group-name ${observation_cell_annotation} \
             --output-dir ${output_dir}
@@ -82,7 +82,7 @@ task run_infercnv {
         
         # Convert matrix as needed
         python3 /inferCNV/scripts/check_matrix_format.py \
-            --input_matrix ${matrix_path} \
+            --input_matrix ${matrix_file} \
             --delimiter $'${delimiter}' \
             --output_name "${output_dir}/expression.r_format.txt"
         
@@ -90,25 +90,25 @@ task run_infercnv {
         inferCNV.R \
             --raw_counts_matrix "${output_dir}/expression.r_format.txt" \
             --annotations_file "${output_dir}/infercnv_annots_from_scp.tsv" \
-            --gene_order_file ${gene_pos_path} \
+            --gene_order_file ${gene_pos_file} \
             --ref_group_names "`cat ${output_dir}/infercnv_reference_cell_labels_from_scp.tsv`" \
             --cutoff 1 \
             --delim $'${delimiter}' \
             --out_dir ${output_dir} \
             --cluster_by_groups \
-            --denoise
-            --median_filter
-            --no_plot
+            --denoise \
+            --no_prelim_plot
         >>>
     output {
-        File figure = "${output_dir}/infercnv_median_filtered.png"
-        File observations_matrix_path="${output_dir}/infercnv_median_filtered.observations.txt"
-        File heatmap_thresholds_path="${output_dir}/infercnv_median_filtered.heatmap_thresholds.txt"
-        File ref_group_names_path="${output_dir}/infercnv_reference_cell_labels_from_scp.tsv"
+        File figure = "${output_dir}/infercnv.png"
+        File observations_matrix_file = "${output_dir}/infercnv.observations.txt"
+        File heatmap_thresholds_file = "${output_dir}/infercnv.heatmap_thresholds.txt"
+        File ref_group_names_file = "${output_dir}/infercnv_reference_cell_labels_from_scp.tsv"
     }
 
     # runtime {
-    #     docker: "singlecellportal/infercnv:0-8-2-rc9"
+    # 	# https://hub.docker.com/r/singlecellportal/infercnv/tags
+    #     docker: "singlecellportal/infercnv:0-8-2-rc11"
     #     memory: "8 GB"
     #     bootDiskSizeGb: 12
     #     disks: "local-disk ${diskSpace} HDD"
@@ -118,17 +118,17 @@ task run_infercnv {
 }
 
 task run_matrix_to_ideogram_annots {
-	  File matrix_path
-    File ref_group_names_path
-    File gene_pos_path
+	File matrix_file
+    File ref_group_names_file
+    File gene_pos_file
     # String cluster_names
     # File cluster_paths
     String ref_cluster_name
-    File ref_cluster_path
+    File ref_cluster_file
     String obs_cluster_name
-    File obs_cluster_path
-    File metadata_path
-    File heatmap_thresholds_path
+    File obs_cluster_file
+    File metadata_file
+    File heatmap_thresholds_file
     String output_dir
     String diskSpace
     String ref_group_name
@@ -140,14 +140,14 @@ task run_matrix_to_ideogram_annots {
 
         # Convert processed matrix output from inferCNV to summary Ideogram.js annotations
         python3 /single_cell_portal/scripts/ideogram/matrix_to_ideogram_annots.py \
-            --matrix-path ${matrix_path} \
+            --matrix-path ${matrix_file} \
             --matrix-delimiter $' ' \
-            --gen-pos-file ${gene_pos_path} \
+            --gen-pos-file ${gene_pos_file} \
             --cluster-names "${obs_cluster_name}" \
-            --ref-cluster-names "`cat ${ref_group_names_path}`" \
-            --cluster-paths "${obs_cluster_path}" \
-            --metadata-path ${metadata_path} \
-            --heatmap-thresholds-path ${heatmap_thresholds_path} \
+            --ref-cluster-names "`cat ${ref_group_names_file}`" \
+            --cluster-paths "${obs_cluster_file}" \
+            --metadata-path ${metadata_file} \
+            --heatmap-thresholds-path ${heatmap_thresholds_file} \
             --output-dir ${output_dir} \
             --reference-group-name "${ref_group_name}"
     >>>
@@ -160,7 +160,8 @@ task run_matrix_to_ideogram_annots {
   }
 
 	# runtime {
-  #       docker: "singlecellportal/infercnv:0-8-2-rc9"
+  #   	# https://hub.docker.com/r/singlecellportal/infercnv/tags
+  #       docker: "singlecellportal/infercnv:0-8-2-rc11"
   #       memory: "8 GB"
   #       bootDiskSizeGb: 12
   #       disks: "local-disk ${diskSpace} HDD"
