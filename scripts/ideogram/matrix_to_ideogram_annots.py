@@ -39,7 +39,7 @@ def make_tarfile(output_filename, source_dir):
 class MatrixToIdeogramAnnots:
 
     def __init__(self, matrix_path, matrix_delimiter, gen_pos_file,
-                 cluster_groups, output_dir, heatmap_thresholds_path):
+                 cluster_groups, output_dir, heatmap_thresholds_path, ref_group_name):
         """Class and parameter docs in module summary and argument parser"""
 
         self.matrix_path = matrix_path
@@ -51,6 +51,7 @@ class MatrixToIdeogramAnnots:
         self.genomic_position_file_path = gen_pos_file
         ht_path = heatmap_thresholds_path
         self.heatmap_thresholds = parse_heatmap_thresholds(ht_path)
+        self.ref_group_name = ref_group_name
 
         self.genes = self.get_genes()
 
@@ -75,6 +76,12 @@ class MatrixToIdeogramAnnots:
             ideogram_annots_json = json.dumps(ideogram_annots)
             scope_map = {'cluster_file': 'cluster', 'metadata_file': 'study'}
             scope = scope_map[scope]
+
+            # If a reference group is provided, only output that set of Ideogram annotations.  
+            # TODO: Move this filter earlier
+            if self.ref_group_name is not None and self.ref_group_name != cluster_name:
+                continue
+
             identifier = group_name + '--' + cluster_name + '--group--' + scope
             file_name = 'ideogram_exp_means__' + identifier + '.json'
             output_path = exp_means_zip_dir + file_name
@@ -119,10 +126,12 @@ class MatrixToIdeogramAnnots:
                         if gene_id in genes:
                             gene = genes[gene_id]
                         else:
+                            if gene_id == 'name':
+                                continue
                             missing_genes[gene_id] = 1
                             continue
 
-                        chr = gene['chr']
+                        chr = gene['chr'].strip('chr') # E.g. chr1 -> 1
                         start = int(gene['start'])
                         stop = int(gene['stop'])
                         length = stop - start
@@ -155,7 +164,8 @@ class MatrixToIdeogramAnnots:
         if len(missing_genes) > 0:
             print('Genes in matrix but not in gene position file:')
             print(len(missing_genes))
-            print(missing_genes.keys())
+            print('First such missing gene:')
+            print(list(missing_genes.keys())[0])
 
         return ideogram_annots_list
 
@@ -209,7 +219,6 @@ class MatrixToIdeogramAnnots:
             columns = line.strip().split(self.matrix_delimiter)
             gene = columns[0].strip('"')
             expression_by_cell = list(map(float, columns[1:]))
-
             genes[gene] = expression_by_cell
 
         em_dict['genes'] = genes
@@ -222,9 +231,6 @@ class MatrixToIdeogramAnnots:
         scores_lists = []
 
         cells = matrix['cells']
-
-        print('cells')
-        print(cells)
 
         cluster_labels = list(cluster_group[scope][cluster_name].keys())
 
@@ -287,6 +293,10 @@ def create_parser():
     parser.add_argument('--cluster-names',
                     help='Names of cluster groups',
                     nargs='+')
+    parser.add_argument('--reference-group-name',
+                    dest='ref_group_name',
+                    help='Name of cell group in SCP cluster file to use as ' +
+                    'label for inferCNV references')
     parser.add_argument('--ref-cluster-names',
                     help='Names of reference (normal) cluster groups',
                     nargs='+', default=[])
@@ -313,6 +323,7 @@ def convert_matrix_and_write(args):
     matrix_delimiter = args.matrix_delimiter
     gen_pos_file = args.gen_pos_file
     cluster_names = args.cluster_names
+    ref_group_name = args.ref_group_name
     ref_cluster_names = args.ref_cluster_names
     ordered_labels = args.ordered_labels
     heatmap_thresholds_path = args.heatmap_thresholds_path
@@ -325,7 +336,7 @@ def convert_matrix_and_write(args):
         metadata_path, ref_cluster_names=ref_cluster_names, ordered_labels=ordered_labels)
 
     MatrixToIdeogramAnnots(matrix_path, matrix_delimiter, gen_pos_file,
-        clusters_groups, output_dir, heatmap_thresholds_path)
+        clusters_groups, output_dir, heatmap_thresholds_path, ref_group_name)
 
 if __name__ == '__main__':
     args = create_parser().parse_args()

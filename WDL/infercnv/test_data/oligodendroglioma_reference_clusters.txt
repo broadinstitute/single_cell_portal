@@ -1,0 +1,44 @@
+NAME	X	Y	Z	Sample
+TYPE	numeric	numeric	numeric	group
+MGH54_P2_C12	1	1	1	Microglia/Macrophage
+MGH36_P6_F03	1	1	1	Microglia/Macrophage
+MGH53_P4_H08	1	1	1	Microglia/Macrophage
+MGH53_P2_E09	1	1	1	Microglia/Macrophage
+MGH36_P5_E12	1	1	1	Microglia/Macrophage
+MGH54_P2_H07	1	1	1	Microglia/Macrophage
+MGH36_P4_H06	1	1	1	Microglia/Macrophage
+MGH53_P1_C01	1	1	1	Microglia/Macrophage
+MGH36_P4_A10	1	1	1	Microglia/Macrophage
+MGH36_P3_D10	1	1	1	Microglia/Macrophage
+MGH54_P2_F09	1	1	1	Microglia/Macrophage
+MGH36_P7_H06	1	1	1	Microglia/Macrophage
+MGH54_P2_H03	1	1	1	Microglia/Macrophage
+MGH36_P8_A02	1	1	1	Microglia/Macrophage
+MGH53_P2_C08	1	1	1	Microglia/Macrophage
+MGH53_P2_A07	1	1	1	Microglia/Macrophage
+MGH53_P1_F10	1	1	1	Microglia/Macrophage
+MGH36_P3_H06	1	1	1	Microglia/Macrophage
+MGH54_P2_F03	1	1	1	Microglia/Macrophage
+MGH54_P16_F12	1	1	1	Oligodendrocytes (non-malignant)
+MGH54_P12_C10	1	1	1	Oligodendrocytes (non-malignant)
+MGH54_P11_C11	1	1	1	Oligodendrocytes (non-malignant)
+MGH54_P15_D06	1	1	1	Oligodendrocytes (non-malignant)
+MGH54_P16_A03	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P7_B09	1	1	1	Oligodendrocytes (non-malignant)
+MGH54_P10_G04	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P2_A02	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P7_F07	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P5_G02	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P11_H03	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P1_A10	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P5_H09	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P11_E03	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P10_F11	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P1_D07	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P2_G04	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P2_G09	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P5_F04	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P11_F08	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P8_F03	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P6_B11	1	1	1	Oligodendrocytes (non-malignant)
+MGH53_P6_H06	1	1	1	Oligodendrocytes (non-malignant)

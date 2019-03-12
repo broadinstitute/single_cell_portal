@@ -1,0 +1,13 @@
+{
+  "infercnv.diskSpace": "String",
+  "infercnv.gene_pos_path": "File",
+  "infercnv.cluster_paths": "File",
+  "infercnv.delimiter": "String",
+  "infercnv.reference_cell_annotation": "String",
+  "infercnv.matrix_path": "File",
+  "infercnv.cluster_names": "String",
+  "infercnv.observation_cell_annotation": "String",
+  "infercnv.metadata_path": "File",
+  "infercnv.output_dir": "String"
+}
+

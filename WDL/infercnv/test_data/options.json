@@ -1,0 +1,5 @@
+{
+  "final_workflow_outputs_dir": "/workflow/outputs/",
+  "final_workflow_log_dir": "/workflow/workflow_logs/",
+  "final_call_logs_dir": "/workflow/call_logs/"
+}

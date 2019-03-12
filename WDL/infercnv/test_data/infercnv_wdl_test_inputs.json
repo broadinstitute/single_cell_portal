@@ -1,0 +1,14 @@
+{  
+  "infercnv.observation_cell_annotation":"samples",
+  "infercnv.output_dir":"infercnv_wdl_output",
+  "infercnv.reference_cell_annotation":"cell.types",
+  "infercnv.gene_pos_path":"/workflow/test_data/synovial_sarcoma_study_livnat/gencode_v19_gene_pos_devel.txt",
+  "infercnv.ref_cluster_name":"tSNE_non_malignant_cells",
+  "infercnv.ref_cluster_path":"/workflow/test_data/synovial_sarcoma_study_livnat/tsne.non.mal.txt",
+  "infercnv.obs_cluster_name":"tSNE",
+  "infercnv.obs_cluster_path":"/workflow/test_data/synovial_sarcoma_study_livnat/tsne.txt",
+  "infercnv.diskSpace":"10",
+  "infercnv.matrix_path":"/workflow/test_data/synovial_sarcoma_study_livnat/SS.tpm.txt",
+  "infercnv.delimiter":"\t",
+  "infercnv.metadata_path":"/workflow/test_data/synovial_sarcoma_study_livnat/metadata.txt"
+}

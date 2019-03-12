@@ -106,15 +106,15 @@ task run_infercnv {
         File ref_group_names_file = "${output_dir}/infercnv_reference_cell_labels_from_scp.tsv"
     }
 
-    runtime {
-    	# https://hub.docker.com/r/singlecellportal/infercnv/tags
-        docker: "singlecellportal/infercnv:0-8-2-rc11"
-        memory: "8 GB"
-        bootDiskSizeGb: 12
-        disks: "local-disk ${diskSpace} HDD"
-        cpu: 8
-        preemptible: 2
-    }
+    # runtime {
+    # 	# https://hub.docker.com/r/singlecellportal/infercnv/tags
+    #     docker: "singlecellportal/infercnv:0-8-2-rc11"
+    #     memory: "8 GB"
+    #     bootDiskSizeGb: 12
+    #     disks: "local-disk ${diskSpace} HDD"
+    #     cpu: 8
+    #     preemptible: 2
+    # }
 }
 
 task run_matrix_to_ideogram_annots {
@@ -159,13 +159,13 @@ task run_matrix_to_ideogram_annots {
     File ideogram_annotations = "${output_dir}/ideogram_exp_means/ideogram_exp_means__${obs_cluster_name}--${ref_group_name}--group--cluster.json"
   }
 
-	runtime {
-    	# https://hub.docker.com/r/singlecellportal/infercnv/tags
-        docker: "singlecellportal/infercnv:0-8-2-rc11"
-        memory: "8 GB"
-        bootDiskSizeGb: 12
-        disks: "local-disk ${diskSpace} HDD"
-        cpu: 8
-        preemptible: 2
-    }
+	# runtime {
+  #   	# https://hub.docker.com/r/singlecellportal/infercnv/tags
+  #       docker: "singlecellportal/infercnv:0-8-2-rc11"
+  #       memory: "8 GB"
+  #       bootDiskSizeGb: 12
+  #       disks: "local-disk ${diskSpace} HDD"
+  #       cpu: 8
+  #       preemptible: 2
+  #   }
 }
