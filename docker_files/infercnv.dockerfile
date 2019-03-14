@@ -2,7 +2,6 @@
 FROM r-base:3.5.2
 
 LABEL org.label-schema.license="BSD-3-Clause" \
-      org.label-schema.vcs-url="https://github.com/broadinstitute/single_cell_portal" \
       org.label-schema.vendor="Broad Institute" \
       maintainer="Eric Weitz <eweitz@broadinstitute.org>"
 
@@ -28,20 +27,18 @@ echo "library('devtools')" >> install_devtools_dev.r && R --no-save < install_de
 RUN mkdir /workflow
 
 WORKDIR /
-# RUN curl -OL "https://github.com/broadinstitute/inferCNV/archive/InferCNV-v0.8.2.tar.gz"
-# RUN tar -xvzf InferCNV-v0.8.2.tar.gz
-# RUN R CMD INSTALL inferCNV-InferCNV-v0.8.2
-# RUN mv inferCNV-InferCNV-v0.8.2/ inferCNV
-# Get script to convert inferCNV outputs to Ideogram.js annotations, then clean
-WORKDIR /
-RUN rm -rf infercnv
-RUN echo "Clearing Docker cache (2)"
-RUN git clone https://github.com/broadinstitute/inferCNV
-WORKDIR inferCNV
-RUN git checkout update-cli
-# Checkout code as of 2019-03-10
-RUN git checkout 47e0cb577cde2e80b459ad203e45d9db19ea53bb
-RUN R CMD INSTALL .
+RUN echo "Clear Docker cache (3)"
+RUN curl -OL "https://github.com/broadinstitute/infercnv/archive/InferCNV-v0.99.0.tar.gz"
+RUN tar -xvzf InferCNV-v0.99.0.tar.gz
+RUN R CMD INSTALL infercnv-InferCNV-v0.99.0
+RUN mv infercnv-InferCNV-v0.99.0/ inferCNV
+
+# RUN git clone https://github.com/broadinstitute/inferCNV
+# WORKDIR inferCNV
+# RUN git checkout update-cli
+# # Checkout code as of 2019-03-10
+# RUN git checkout 47e0cb577cde2e80b459ad203e45d9db19ea53bb
+# RUN R CMD INSTALL .
 
 # Delete extraneous inferCNV directories
 WORKDIR /inferCNV
