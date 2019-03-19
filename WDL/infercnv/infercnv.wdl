@@ -106,9 +106,9 @@ task run_infercnv {
         File ref_group_names_file = "${output_dir}/infercnv_reference_cell_labels_from_scp.tsv"
     }
 
-    runtime {
+	runtime {
     	# https://hub.docker.com/r/singlecellportal/infercnv/tags
-        docker: "singlecellportal/infercnv:0-8-2-rc11"
+        docker: "singlecellportal/infercnv:0-99-0"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
@@ -161,7 +161,7 @@ task run_matrix_to_ideogram_annots {
 
 	runtime {
     	# https://hub.docker.com/r/singlecellportal/infercnv/tags
-        docker: "singlecellportal/infercnv:0-8-2-rc11"
+        docker: "singlecellportal/infercnv:0-99-0"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"

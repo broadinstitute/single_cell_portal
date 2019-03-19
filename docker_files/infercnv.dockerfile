@@ -27,18 +27,18 @@ echo "library('devtools')" >> install_devtools_dev.r && R --no-save < install_de
 RUN mkdir /workflow
 
 WORKDIR /
-RUN echo "Clear Docker cache (3)"
-RUN curl -OL "https://github.com/broadinstitute/infercnv/archive/InferCNV-v0.99.0.tar.gz"
-RUN tar -xvzf InferCNV-v0.99.0.tar.gz
-RUN R CMD INSTALL infercnv-InferCNV-v0.99.0
-RUN mv infercnv-InferCNV-v0.99.0/ inferCNV
+# RUN echo "Clear Docker cache (3)"
+# RUN curl -OL "https://github.com/broadinstitute/infercnv/archive/InferCNV-v0.99.0.tar.gz"
+# RUN tar -xvzf InferCNV-v0.99.0.tar.gz
+# RUN R CMD INSTALL infercnv-InferCNV-v0.99.0
+# RUN mv infercnv-InferCNV-v0.99.0/ inferCNV
 
-# RUN git clone https://github.com/broadinstitute/inferCNV
-# WORKDIR inferCNV
-# RUN git checkout update-cli
-# # Checkout code as of 2019-03-10
-# RUN git checkout 47e0cb577cde2e80b459ad203e45d9db19ea53bb
-# RUN R CMD INSTALL .
+RUN git clone https://github.com/broadinstitute/inferCNV
+WORKDIR inferCNV
+RUN git checkout master
+# Checkout code as of 2019-03-18
+RUN git checkout e5a2936aa0bda1b6864637653db1d5d41e6e2aa7
+RUN R CMD INSTALL .
 
 # Delete extraneous inferCNV directories
 WORKDIR /inferCNV
