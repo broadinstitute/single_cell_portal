@@ -33,11 +33,13 @@ WORKDIR /
 # RUN R CMD INSTALL infercnv-InferCNV-v0.99.0
 # RUN mv infercnv-InferCNV-v0.99.0/ inferCNV
 
+RUN echo "Clear Docker cache (4)"
 RUN git clone https://github.com/broadinstitute/inferCNV
 WORKDIR inferCNV
 RUN git checkout master
-# Checkout code as of 2019-03-18
-RUN git checkout e5a2936aa0bda1b6864637653db1d5d41e6e2aa7
+# Checkout code as of 2019-03-20
+RUN git checkout devel
+RUN git checkout cc4a81288d6dce7d77c0320086ad6a323ad4329b
 RUN R CMD INSTALL .
 
 # Delete extraneous inferCNV directories
@@ -48,13 +50,13 @@ RUN rm -rf example/full_precision __simulations .git
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Get script to convert inferCNV outputs to Ideogram.js annotations, then clean
-RUN echo "Clearing Docker cache (2)"
+RUN echo "Clearing Docker cache (3)"
 WORKDIR /
 RUN git clone https://github.com/broadinstitute/single_cell_portal scp
 WORKDIR scp
-RUN git checkout ew-infercnv-beta
-# Checkout code as of 2019-03-10
-RUN git checkout 90f2ec6ef29b05fa122de61ba7dce33756b4d4f5
+RUN git checkout ew-refine-infercnv
+# Checkout code as of 2019-03-20
+RUN git checkout 46893f766d6441e2577d0e067d92c27c684c89c2
 WORKDIR /
 RUN mkdir -p single_cell_portal/scripts
 RUN mv scp/scripts/ideogram single_cell_portal/scripts/
@@ -67,7 +69,7 @@ ENV PATH=${PATH}:/inferCNV/scripts:/single_cell_portal/scripts
 
 # Finish setting up workflow test scaffolding
 WORKDIR /workflow
-ADD https://github.com/broadinstitute/cromwell/releases/download/36.1/cromwell-36.1.jar .
+ADD https://github.com/broadinstitute/cromwell/releases/download/38/cromwell-38.jar .
 RUN cp -p /inferCNV/example/oligodendroglioma_expression_downsampled.counts.matrix test_data/
 
 WORKDIR /

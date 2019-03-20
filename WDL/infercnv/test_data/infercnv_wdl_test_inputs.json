@@ -11,5 +11,6 @@
   "infercnv.diskSpace":"10",
   "infercnv.matrix_file":"/workflow/test_data/oligodendroglioma_expression_downsampled.counts.matrix.txt",
   "infercnv.delimiter":"\t",
-  "infercnv.metadata_file":"/workflow/test_data/oligodendroglioma_metadata.test.txt"
+  "infercnv.metadata_file":"/workflow/test_data/oligodendroglioma_metadata.test.txt",
+  "infercnv.num_threads": 1
 }

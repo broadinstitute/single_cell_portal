@@ -13,6 +13,7 @@ workflow infercnv {
     File obs_cluster_file # Path to cluster file containing observation (tumor) cells
     String reference_cell_annotation
     String observation_cell_annotation
+    String num_threads # Number of threads (also cores) to use in inferCNV
     
     call run_infercnv {
     	input:
@@ -28,7 +29,8 @@ workflow infercnv {
         obs_cluster_file = obs_cluster_file,
         metadata_file = metadata_file,
         reference_cell_annotation = reference_cell_annotation,
-        observation_cell_annotation = observation_cell_annotation
+        observation_cell_annotation = observation_cell_annotation,
+        num_threads = num_threads
     }
     
     call run_matrix_to_ideogram_annots {
@@ -63,6 +65,7 @@ task run_infercnv {
     File metadata_file
     String reference_cell_annotation
     String observation_cell_annotation
+    String num_threads
 
     command <<<
         if [ ! -d ${output_dir} ]; then
@@ -97,12 +100,14 @@ task run_infercnv {
             --out_dir ${output_dir} \
             --cluster_by_groups \
             --denoise \
-            --no_prelim_plot
+            --no_prelim_plot \
+            --HMM \
+            --num_threads {$num_threads}
         >>>
     output {
         File figure = "${output_dir}/infercnv.png"
-        File observations_matrix_file = "${output_dir}/infercnv.observations.txt"
-        File heatmap_thresholds_file = "${output_dir}/infercnv.heatmap_thresholds.txt"
+        File observations_matrix_file = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.png.observations.txt"
+        File heatmap_thresholds_file = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.png.heatmap_thresholds.txt"
         File ref_group_names_file = "${output_dir}/infercnv_reference_cell_labels_from_scp.tsv"
     }
 
