@@ -1,28 +1,56 @@
 # Docker file for inferCNV
-FROM r-base:3.5.2
+FROM bioconductor/devel_base2
 
 LABEL org.label-schema.license="BSD-3-Clause" \
       org.label-schema.vendor="Broad Institute" \
       maintainer="Eric Weitz <eweitz@broadinstitute.org>"
 
-RUN apt-get update && \
-apt-get -y install curl libssl-dev libcurl4-openssl-dev libxml2-dev git python3 jags
-RUN echo "options(repos = c(CRAN = 'https://cran.rstudio.com'))" >.Rprofile && \
-echo "install.packages(c('devtools', 'RColorBrewer', 'gplots', 'futile.logger', 'ape', 'Matrix', 'fastcluster', 'dplyr', 'ggplot2', 'coin', 'caTools', 'reshape', 'rjags', 'fitdistrplus', 'future', 'foreach', 'doParallel', 'tidyr', 'parallel', 'coda', 'gridExtra', 'argparse'), dependencies = TRUE)" > install_devtools.r && \
-echo "install.packages('BiocManager')" >> install_devtools.r && \
-echo "BiocManager::install('BiocGenerics', version = '3.8')" >> install_devtools.r && \
-echo "BiocManager::install('SummarizedExperiment', version = '3.8')" >> install_devtools.r && \
-echo "BiocManager::install('SingleCellExperiment', version = '3.8')" >> install_devtools.r && \
-echo "BiocManager::install('BiocStyle', version = '3.8')" >> install_devtools.r && \
-echo "BiocManager::install('edgeR', version = '3.8')" >> install_devtools.r && \
-echo "install.packages(c('HiddenMarkov', 'fitdistrplus', 'fastcluster', 'Matrix', 'stats', 'gplots', 'utils', 'methods', 'knitr', 'testthat'), dependencies = TRUE)" >> install_devtools.r && \
-echo "library('devtools')" >> install_devtools.r && R --no-save < install_devtools.r
+RUN apt-get update
+RUN apt-get -y install curl libssl-dev libcurl4-openssl-dev libxml2-dev git python3 jags
+RUN echo "options(repos = c(CRAN = 'https://cran.rstudio.com'))" >.Rprofile
+RUN apt-get install -y r-cran-rjags
+RUN R -e "install.packages('devtools', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('KernSmooth', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('lattice', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('Matrix', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('survival', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('MASS', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('TH.data', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('nlme', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('ape', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('fitdistrplus', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('multcomp', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('coin', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('binhf', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('caTools', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('coda', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('dplyr', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('doparallel', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('fastcluster', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('foreach', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('futile.logger', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('future', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('gplots', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('ggplot2', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('HiddenMarkov', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('reshape', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('rjags', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('RColorBrew', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('doParallel', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('tidyr', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('gridExtra', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('argparse', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('knitr', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('rmarkdown', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('testthat', repos = 'http://cran.us.r-project.org')"
+RUN R -e "BiocManager::install(c('BiocGenerics', 'edgeR', 'SingleCellExperiment', 'SummarizedExperiment', 'BiocStyle', 'BiocCheck'), version = \"3.9\")"
+
+
+RUN R -e "install.packages('optparse', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('logging', repos = 'http://cran.us.r-project.org')"
 
 # Install Java, needed for Cromwell
 RUN apt-get install -y openjdk-8-jdk
-
-RUN echo "install.packages(c('optparse', 'logging'), dependencies = TRUE)" > install_devtools_dev.r && \
-echo "library('devtools')" >> install_devtools_dev.r && R --no-save < install_devtools_dev.r
 
 RUN mkdir /workflow
 
@@ -33,13 +61,12 @@ WORKDIR /
 # RUN R CMD INSTALL infercnv-InferCNV-v0.99.0
 # RUN mv infercnv-InferCNV-v0.99.0/ inferCNV
 
-RUN echo "Clear Docker cache (4)"
+RUN echo "Clear Docker cache (5)"
 RUN git clone https://github.com/broadinstitute/inferCNV
 WORKDIR inferCNV
 RUN git checkout master
-# Checkout code as of 2019-03-20
-RUN git checkout devel
-RUN git checkout cc4a81288d6dce7d77c0320086ad6a323ad4329b
+# Checkout code as of 2019-03-25
+RUN git checkout a1b74cb0a8bc3179d5c057a1e3bb55ca70d0fe53
 RUN R CMD INSTALL .
 
 # Delete extraneous inferCNV directories
