@@ -53,7 +53,7 @@ def manage_call_return(call_return):
     if not call_return[scp_api.c_SUCCESS_RET_KEY]:
         exit(call_return[scp_api.c_CODE_RET_KEY])
 
-def login(manager=None, dry_run=False):
+def login(manager=None, dry_run=False, api_base=None):
     '''
     Login to authorize credentials.
 
@@ -64,7 +64,8 @@ def login(manager=None, dry_run=False):
     if manager is None:
         manager=scp_api.SCPAPIManager()
         manager.login(token=parsed_args.token,
-                      dry_run=dry_run)
+                      dry_run=dry_run,
+                      api_base=api_base)
     return(manager)
 
 
@@ -85,6 +86,12 @@ args.add_argument(
     '--no-validate', dest='validate',
     action='store_false',
     help='Do not check file locally before uploading.'
+)
+
+args.add_argument(
+    '--environment', default='production',
+    choices=['development', 'production'],
+    help='API environment to use'
 )
 
 # Create tools (subparser)
@@ -203,13 +210,19 @@ print("Args----")
 print(vars(parsed_args))
 print("-----Args")
 
+env_origin_map = {
+    'development': 'http://localhost',
+    'production': 'https://portals.broadinstitute.org'
+}
+origin = env_origin_map[parsed_args.environment]
+api_base = origin + '/single_cell/api/v1/'
+
 # Login connection
-connection = None
+connection = login(manager=None, dry_run=parsed_args.dry_run, api_base=api_base)
 
 ## Handle list studies
 if hasattr(parsed_args, "summarize_list"):
     print("LIST STUDIES")
-    connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.get_studies(dry_run=parsed_args.dry_run)
     manage_call_return(ret)
     print("You have access to "+str(len(ret[scp_api.c_STUDIES_RET_KEY]))+" studies.")
@@ -219,7 +232,6 @@ if hasattr(parsed_args, "summarize_list"):
 ## Create new study
 if hasattr(parsed_args, "study_description") and not parsed_args.study_name is None:
     print("CREATE STUDY")
-    connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.create_study(study_name=parsed_args.study_name,
                                   study_description=parsed_args.study_description,
                                   branding=parsed_args.branding,
@@ -230,7 +242,6 @@ if hasattr(parsed_args, "study_description") and not parsed_args.study_name is N
 ## Share with user
 if hasattr(parsed_args, "permission"):
     print("SET PERMISSION")
-    connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.set_permission(study_name=parsed_args.study_name,
                                     email=parsed_args.email,
                                     access=parsed_args.permission,

@@ -30,7 +30,10 @@ class SCPAPITestCase(unittest.TestCase):
 
     @patch('requests.get', side_effect=mocked_requests_get)
     def test_get_studies(self, mock_get):
-        studies = scp_api.SCPAPIManager().get_studies()['studies']
+        manager = scp_api.SCPAPIManager()
+        manager.api_base = 'https://portals.broadinstitute.org/single_cell/api/v1/'
+        manager.verify_https = True
+        studies = manager.get_studies()['studies']
         expected_studies = [
             " Single nucleus RNA-seq of cell diversity in the adult mouse hippocampus (sNuc-Seq)",
             "Study only for unit test"

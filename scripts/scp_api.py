@@ -81,12 +81,14 @@ class APIManager:
     def __init__(self):
         return
 
-    def login(self, token=None, dry_run=False):
+    def login(self, token=None, dry_run=False,
+        api_base='https://portals.broadinstitute.org/single_cell/api/v1/'):
         """
         Authenticates as user and get's token to perform actions on the user's behalf.
 
         :param token: User token to use with API
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
+        :param api_base: Domain of desired API environment
         :return: Boolean indicating of success or failure
         """
 
@@ -95,6 +97,8 @@ class APIManager:
         if token is None:
             token = self.do_browser_login(dry_run=dry_run)
         self.token = token
+        self.api_base = api_base
+        self.verify_https = 'http://localhost' not in self.api_base
         self.studies = None
 
     def do_browser_login(self, dry_run=False):
@@ -129,9 +133,10 @@ class APIManager:
         if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {'Accept': 'application/json'}
-        if hasattr(self,"token"):
+        if hasattr(self, 'token'):
             head[c_AUTH] = 'token {}'.format(self.token)
-        return(self.check_api_return(requests.get(command, headers=head)))
+
+        return(self.check_api_return(requests.get(command, headers=head, verify=self.verify_https)))
 
     def do_post(self, command, values, files=None, dry_run=False):
         '''
@@ -159,12 +164,14 @@ class APIManager:
         if files is None:
             return(self.check_api_return(requests.post(command,
                                                              headers=head,
-                                                             json=values)))
+                                                             json=values,
+                                                             verify=self.verify_https)))
         else:
             return(self.check_api_return(requests.post(command,
                                                              headers=head,
                                                              files=files,
-                                                             json=values)))
+                                                             json=values,
+                                                             verify=self.verify_https)))
 
     def do_patch(self, command, values, dry_run=False):
         '''
@@ -183,7 +190,7 @@ class APIManager:
         if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
-        return(self.check_api_return(requests.patch(command, headers=head, json=values)))
+        return(self.check_api_return(requests.patch(command, headers=head, json=values, verify=self.verify_https)))
 
     def do_delete(self, command, dry_run=False):
         '''
@@ -200,7 +207,7 @@ class APIManager:
         if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_DELETE_OK})
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
-        return(self.check_api_return(requests.delete(command, headers=head)))
+        return(self.check_api_return(requests.delete(command, headers=head, verify=self.verify_https)))
 
     def check_api_return(self, ret):
         '''
@@ -241,7 +248,7 @@ class SCPAPIManager(APIManager):
 
         APIManager.__init__(self)
         print("INIT")
-        self.api = "https://portals.broadinstitute.org/single_cell/api/v1/"
+        self.api_base = None # set in APIManager.login()
         self.studies = None
         self.name_to_id = None
         self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
@@ -298,7 +305,7 @@ class SCPAPIManager(APIManager):
         '''
 
         print("GET STUDIES")
-        resp = self.do_get(self.api + "studies", dry_run=dry_run)
+        resp = self.do_get(self.api_base + "studies", dry_run=dry_run)
         if dry_run:
             print("DRY_RUN:: Returned dummy names.")
             resp[c_STUDIES_RET_KEY] = ["DRY_RUN 1", "DRY_RUN 2"]
@@ -388,7 +395,7 @@ class SCPAPIManager(APIManager):
             study_data["firecloud_project"] = billing
         if not branding is None:
             study_data["branding_group_id"] = branding
-        resp = self.do_post(command=self.api + "studies", values=study_data, dry_run=dry_run)
+        resp = self.do_post(command=self.api_base + "studies", values=study_data, dry_run=dry_run)
         # Update study list
         if resp[c_SUCCESS_RET_KEY] and not dry_run:
             self.get_studies()
