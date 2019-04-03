@@ -500,6 +500,84 @@ class SCPAPIManager(APIManager):
         else:
             return(self.name_to_id.get(name, None))
 
+    def upload_study_file(self, file,
+                        file_type,
+                        study_name,
+                        name,
+                        description="",
+                        species=None,
+                        genome=None,
+                        dry_run=False,
+                        **kwargs):
+        import logging
+        logging.basicConfig()
+        logging.getLogger().setLevel(logging.DEBUG)
+        requests_log = logging.getLogger("requests.packages.urllib3")
+        requests_log.setLevel(logging.DEBUG)
+        requests_log.propagate = True
+
+        # Error if the study does not exist
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
+            return {
+                c_SUCCESS_RET_KEY: False,
+                c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
+            }
+        # Convert study name to study id
+        # python manage_study.py --env development --token=`gcloud auth print-access-token` upload-cluster --file ../demo_data/coordinates_example.txt --study apitest --cluster-name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
+        study_id = self.study_name_to_id(study_name, dry_run=dry_run)
+
+        for s in self.study_objects:
+            if s['_id']['$oid'] == study_id:
+                study = s
+                break
+
+        gs_url = 'gs://' + study['bucket_id']
+
+        # Upload to bucket via gsutil
+        command = 'gsutil cp ' + file + ' ' + gs_url
+        cmdline.func_CMD(command=command)
+        filename = file.split('/')[-1]
+
+        # Get GCS details for the file just uploaded
+        command = 'gsutil stat ' + gs_url + '/' + filename
+        stdout = cmdline.func_CMD(command=command, stdout=True)
+
+        # Split on newline, omit first and last lines, transform to dict
+        lines = [line.strip() for line in str(stdout).split('\\n')][1:-1]
+        gsutil_stat = {}
+        for line in lines:
+            [key, value] = line.split(':    ')
+            gsutil_stat[key] = value.strip()
+
+        file_fields = {
+            'study_file':{
+                'file_type': file_type,
+                'name': name,
+                'remote_location': filename,
+                'upload_file_name': filename,
+                'upload_content_type': gsutil_stat['Content-Type'],
+                'upload_file_size': int(gsutil_stat['Content-Length']),
+                'generation': gsutil_stat['Generation']
+            }
+        }
+
+        ret = self.do_post(command=self.api_base + 'studies/' + study_id + '/study_files',
+                           values=file_fields,
+                           dry_run=dry_run)
+
+        print(ret["response"].text)
+        dir(ret["response"])
+        return(ret)
+
+    def upload_expression_matrix(self, file,
+                             study_name,
+                             expression_axis_label,
+                             description="",
+                             species=None,
+                             genome=None,
+                             dry_run=False):
+        return
+
     def upload_cluster(self, file,
                              study_name,
                              cluster_name,
@@ -526,122 +604,19 @@ class SCPAPIManager(APIManager):
         '''
         print("UPLOAD CLUSTER FILE")
 
-        import logging
-        logging.basicConfig()
-        logging.getLogger().setLevel(logging.DEBUG)
-        requests_log = logging.getLogger("requests.packages.urllib3")
-        requests_log.setLevel(logging.DEBUG)
-        requests_log.propagate = True
-
-        # Error if the study does not exist
-        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
-            return {
-                c_SUCCESS_RET_KEY: False,
-                c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
-            }
-        # Convert study name to study id
-        # python manage_study.py upload-cluster --file ../demo_data/coordinates_example.txt --study apitest --cluster_name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
-        # study id 5c0aaa5e328cee0a3b19c4a9
-        study_id = self.study_name_to_id(study_name, dry_run=dry_run)
-
-        for s in self.study_objects:
-            if s['_id']['$oid'] == study_id:
-                study = s
-                break
-
-        gs_url = 'gs://' + study['bucket_id']
-
-        # Upload to bucket via gsutil
-        command = 'gsutil cp ' + file + ' ' + gs_url
-        cmdline.func_CMD(command=command)
-        filename = file.split('/')[-1]
-
-        # Get GCS details for the file just uploaded
-        command = 'gsutil stat ' + gs_url + '/' + filename
-        stdout = cmdline.func_CMD(command=command, stdout=True)
-
-        # Split on newline, omit first and last lines, transform to dict
-        lines = [line.strip() for line in str(stdout).split('\\n')][1:-1]
-        gsutil_stat = {}
-        for line in lines:
-            print(line)
-            [key, value] = line.split(':    ')
-            gsutil_stat[key] = value.strip()
-
-        file_fields = {
-            'study_file':{
-                'file_type': 'Cluster',
-                'name': 'cluster',
-                'remote_location': filename,
-                'upload_file_name': filename,
-                'upload_content_type': gsutil_stat['Content-Type'],
-                'upload_file_size': int(gsutil_stat['Content-Length']),
-                'generation': gsutil_stat['Generation']
-            }
-        }
-        ret = self.do_post(command=self.api_base + 'studies/' + study_id + '/study_files',
-                           values=file_fields,
-                           dry_run=dry_run)
-        print("HHH")
-        print(ret["response"].text)
-        dir(ret["response"])
-        print("HHH@")
-        return(ret)
-        '''
-        import urllib
-        boundary = APIManager.get_boundary()
-        content_type = 'multipart/form-data; boundary=%s' %  boundary
-        boundary = boundary.encode('utf-8')
-
-        body = b'--'+boundary+b'\r\n'
-        body += b'Content-Disposition: form-data; name="study_file[file_type]"\r\n'
-        body += b'\r\n'
-        body += b'Cluster'
-        body += b'--'+boundary+b'\r\n'
-        body += b'Content-Disposition: form-data; name="study_file[upload]"; filename="'+os.path.basename(file).encode('utf-8')+b'"\r\n'
-        body += b'Content-Type: text/plain\r\n'
-        #body += b'\r\n'
-        #body += open(file,'rb').read() + b'\r\n'
-        body += b'--'+boundary+b'--\r\n'
-
-        curReq = urllib.request.Request(self.api_base + "studies/" + str(studyId) + "/study_files")
-        curReq.add_header('User-agent','Single Cell Portal User Scripts (https://portals.broadinstitute.org/single_cell)')
-        curReq.add_header('Content-Type', content_type)
-        curReq.add_header('Authorization',self.token)
-        curReq.add_header('Accept', 'application/json')
-        curReq.add_header('Content-Length',len(body))
-
-        curReq.data = body
-        [print(i) for i in curReq.header_items()]
-        print("BODY")
-        print(curReq.data)
-        ret = None
-        try:
-            ret = urllib.request.urlopen(curReq)
-            print("-----")
-            print(dir(ret))
-            print(ret.getcode())
-            print("-----")
-            return(ret)
-        except urllib.error.HTTPError as e:
-            print(e.code)
-            print(e.reason)
-            print(e.headers)
-            return(ret)
-
-        #print("-----")
-        #print(dir(ret[c_RESPONSE]))
-        #print("-----")
-        #print(ret[c_RESPONSE].json())
-        #print(ret[c_RESPONSE].headers)
-        #print("------url")
-        #print(ret[c_RESPONSE].url)
-        #print("-----url")
-        #print(ret[c_RESPONSE].history)
-        #print(ret[c_RESPONSE].content)
-        #print(ret[c_RESPONSE].raw)
-        '''
-
+        return self.upload_study_file(
+            file,
+            'Cluster',
+            study_name,
+            cluster_name,
+            description="Cluster file.",
+            species=None,
+            genome=None,
+            x="X",
+            y="Y",
+            z="Z",
+            dry_run=False
+        )
 
 class DSSAPIManager(APIManager):
     '''
