@@ -99,7 +99,7 @@ class APIManager:
             token = self.do_browser_login(dry_run=dry_run)
         self.token = token
         self.api_base = api_base
-        self.verify_https = 'http://localhost' not in self.api_base
+        self.verify_https = 'https://localhost' not in self.api_base
         self.studies = None
 
     def do_browser_login(self, dry_run=False):
@@ -134,7 +134,7 @@ class APIManager:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {'Accept': 'application/json'}
         if hasattr(self, 'token'):
-            head[c_AUTH] = 'token {}'.format(self.token)
+            head[c_AUTH] = 'Bearer {}'.format(self.token)
 
         return(self.check_api_return(requests.get(command, headers=head, verify=self.verify_https)))
 
@@ -151,7 +151,7 @@ class APIManager:
         '''
 
         ## TODO addtimeout and exception handling (Timeout exeception)
-        print("DO PUT")
+        print("DO POST")
         print(command)
         print(values)
         print(files)
@@ -167,8 +167,6 @@ class APIManager:
                                                              json=values,
                                                              verify=self.verify_https)))
         else:
-            print('files')
-            print('files')
             return(self.check_api_return(requests.post(command,
                                                              headers=head,
                                                              files=files,
@@ -556,17 +554,33 @@ class SCPAPIManager(APIManager):
         # Upload to bucket via gsutil
         command = 'gsutil cp ' + file + ' ' + gs_url
         cmdline.func_CMD(command=command)
+        filename = file.split('/')[-1]
 
-        fileInfo = {"study_file":{"file_type":"Cluster",
-                    "species":"Felis catus",
-                    "name":"cluster"}}
-        files = {"study_file":{"file_type":"Cluster",
-                               "species":"Felis catus",
-                               "name":"cluster",
-                               "upload":open(file,'rb')}}
-        ret = self.do_post(command=self.api_base + "studies/" + study_id + "/study_files",
-                           values={},
-                           files=files,
+        # Get GCS details for the file just uploaded
+        command = 'gsutil stat ' + gs_url + '/' + filename
+        stdout = cmdline.func_CMD(command=command, stdout=True)
+
+        # Split on newline, omit first and last lines, transform to dict
+        lines = [line.strip() for line in str(stdout).split('\\n')][1:-1]
+        gsutil_stat = {}
+        for line in lines:
+            print(line)
+            [key, value] = line.split(':    ')
+            gsutil_stat[key] = value.strip()
+
+        file_fields = {
+            'study_file':{
+                'file_type': 'Cluster',
+                'name': 'cluster',
+                'remote_location': filename,
+                'upload_file_name': filename,
+                'upload_content_type': gsutil_stat['Content-Type'],
+                'upload_file_size': int(gsutil_stat['Content-Length']),
+                'generation': gsutil_stat['Generation']
+            }
+        }
+        ret = self.do_post(command=self.api_base + 'studies/' + study_id + '/study_files',
+                           values=file_fields,
                            dry_run=dry_run)
         print("HHH")
         print(ret["response"].text)

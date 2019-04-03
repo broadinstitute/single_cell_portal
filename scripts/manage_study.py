@@ -209,7 +209,7 @@ print(vars(parsed_args))
 print("-----Args")
 
 env_origin_map = {
-    'development': 'http://localhost',
+    'development': 'https://localhost',
     'production': 'https://portals.broadinstitute.org'
 }
 origin = env_origin_map[parsed_args.environment]
