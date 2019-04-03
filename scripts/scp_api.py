@@ -73,6 +73,7 @@ c_MATRIX_REQUEST_API_OK = 202
 c_MATRIX_BAD_FORMAT = 102
 c_MATRIX_BAD_FORMAT_TEXT = "The requested format is not supported in the service."
 
+cmdline = Commandline.Commandline()
 
 class APIManager:
     '''
@@ -113,7 +114,6 @@ class APIManager:
         if dry_run:
             print("DRY_RUN:: Did not login")
             return("DRY_RUN_TOKEN")
-        cmdline = Commandline.Commandline()
         cmdline.func_CMD(command="gcloud auth application-default login")
         cmd_ret = cmdline.func_CMD(command="gcloud auth application-default print-access-token",stdout=True)
         return(cmd_ret.decode("ASCII").strip(os.linesep))
@@ -167,6 +167,8 @@ class APIManager:
                                                              json=values,
                                                              verify=self.verify_https)))
         else:
+            print('files')
+            print('files')
             return(self.check_api_return(requests.post(command,
                                                              headers=head,
                                                              files=files,
@@ -251,6 +253,7 @@ class SCPAPIManager(APIManager):
         self.api_base = None # set in APIManager.login()
         self.studies = None
         self.name_to_id = None
+        self.bucket_id = None
         self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
 
     @staticmethod
@@ -311,8 +314,10 @@ class SCPAPIManager(APIManager):
             resp[c_STUDIES_RET_KEY] = ["DRY_RUN 1", "DRY_RUN 2"]
         else:
             if(resp[c_SUCCESS_RET_KEY]):
-                self.studies = [str(element['name']) for element in resp[c_RESPONSE].json()]
-                self.name_to_id = [[str(element['name']), str(element['_id']['$oid'])] for element in resp[c_RESPONSE].json()]
+                studies_json = resp[c_RESPONSE].json()
+                self.study_objects = studies_json
+                self.studies = [str(element['name']) for element in studies_json]
+                self.name_to_id = [[str(element['name']), str(element['_id']['$oid'])] for element in studies_json]
                 self.name_to_id = {key: value for (key,value) in self.name_to_id}
                 resp[c_STUDIES_RET_KEY] = self.studies
         return(resp)
@@ -538,8 +543,20 @@ class SCPAPIManager(APIManager):
             }
         # Convert study name to study id
         # python manage_study.py upload-cluster --file ../demo_data/coordinates_example.txt --study apitest --cluster_name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
-        # sutdy id 5c0aaa5e328cee0a3b19c4a9
-        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+        # study id 5c0aaa5e328cee0a3b19c4a9
+        study_id = self.study_name_to_id(study_name, dry_run=dry_run)
+
+        for s in self.study_objects:
+            if s['_id']['$oid'] == study_id:
+                study = s
+                break
+
+        gs_url = 'gs://' + study['bucket_id']
+
+        # Upload to bucket via gsutil
+        command = 'gsutil cp ' + file + ' ' + gs_url
+        cmdline.func_CMD(command=command)
+
         fileInfo = {"study_file":{"file_type":"Cluster",
                     "species":"Felis catus",
                     "name":"cluster"}}
@@ -547,7 +564,7 @@ class SCPAPIManager(APIManager):
                                "species":"Felis catus",
                                "name":"cluster",
                                "upload":open(file,'rb')}}
-        ret = self.do_post(command=self.api + "studies/" + str(studyId) + "/study_files",
+        ret = self.do_post(command=self.api_base + "studies/" + study_id + "/study_files",
                            values={},
                            files=files,
                            dry_run=dry_run)
@@ -573,7 +590,7 @@ class SCPAPIManager(APIManager):
         #body += open(file,'rb').read() + b'\r\n'
         body += b'--'+boundary+b'--\r\n'
 
-        curReq = urllib.request.Request(self.api + "studies/" + str(studyId) + "/study_files")
+        curReq = urllib.request.Request(self.api_base + "studies/" + str(studyId) + "/study_files")
         curReq.add_header('User-agent','Single Cell Portal User Scripts (https://portals.broadinstitute.org/single_cell)')
         curReq.add_header('Content-Type', content_type)
         curReq.add_header('Authorization',self.token)
