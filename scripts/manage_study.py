@@ -68,7 +68,6 @@ def login(manager=None, dry_run=False, api_base=None):
                       api_base=api_base)
     return(manager)
 
-
 args = argparse.ArgumentParser(
     prog='manage_study.py',
     description=__doc__,
@@ -155,21 +154,13 @@ parser_upload_cluster.add_argument(
     help='Name of the study to add the file.'
 )
 parser_upload_cluster.add_argument(
-    '--cluster-name', dest='cluster_name', required=True,
-    help='Name of the clustering that will be used to refer to the plot.'
-)
-parser_upload_cluster.add_argument(
-    '--species', dest='species', required=True,
-    help='Species from which the data is generated.'
-)
-parser_upload_cluster.add_argument(
-    '--genome', dest='genome', required=True,
-    help='Genome assembly used to generate the data.'
-)
-parser_upload_cluster.add_argument(
-    '--description', dest='cluster_description',
+    '--description', dest='description',
     default="Coordinates and optional metadata to visualize clusters.",
     help='Text describing the cluster file.'
+)
+parser_upload_cluster.add_argument(
+    '--cluster-name', dest='cluster_name', required=True,
+    help='Name of the clustering that will be used to refer to the plot.'
 )
 parser_upload_cluster.add_argument(
     '--x', dest='x_label',
@@ -194,6 +185,29 @@ parser_upload_expression.add_argument(
     '--file', dest='expression_file', required=True,
     help='Expression file to load.'
 )
+parser_upload_expression.add_argument(
+    '--study-name', dest='study_name', required=True,
+    help='Name of the study to add the file.'
+)
+parser_upload_expression.add_argument(
+    '--description', dest='description',
+    default='Gene expression in cells',
+    help='Text describing the gene expression matrix file.'
+)
+parser_upload_expression.add_argument(
+    '--species', dest='species', required=True,
+    help='Species from which the data is generated.'
+)
+parser_upload_expression.add_argument(
+    '--genome', dest='genome', required=True,
+    help='Genome assembly used to generate the data.'
+)
+# TODO: Add upstream support for this in SCP RESI API
+# parser_upload_expression.add_argument(
+#     '--axis_label', dest='axis_label',
+#     default='',
+#     help=''
+# )
 
 ## Create metadata file upload subparser
 parser_upload_metadata = subargs.add_parser(c_TOOL_METADATA,
@@ -275,8 +289,6 @@ if hasattr(parsed_args, "cluster_file"):
                                     study_name=parsed_args.study_name,
                                     cluster_name=parsed_args.cluster_name,
                                     description=parsed_args.cluster_description,
-                                    species=parsed_args.species,
-                                    genome=parsed_args.genome,
                                     x=parsed_args.x_label,
                                     y=parsed_args.y_label,
                                     z=parsed_args.z_label,
@@ -287,7 +299,16 @@ if hasattr(parsed_args, "cluster_file"):
 ### TODO
 
 ## Upload expression file
-### TODO
+## Upload cluster file
+if hasattr(parsed_args, "expression_file"):
+    print("UPLOAD EXPRESSION FILE")
+    connection = login(manager=connection, dry_run=parsed_args.dry_run)
+    ret = connection.upload_expression_matrix(file=parsed_args.expression_file,
+                                    study_name=parsed_args.study_name,
+                                    species=parsed_args.species,
+                                    genome=parsed_args.genome,
+                                    dry_run=parsed_args.dry_run)
+    manage_call_return(ret)
 
 ## Upload miscellaneous file
 ### TODO

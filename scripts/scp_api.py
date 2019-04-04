@@ -14,6 +14,14 @@ import string
 import os
 import json
 
+import logging
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
+
 # Constants
 c_AUTH = 'Authorization'
 c_BOUNDARY_LENGTH = 20
@@ -74,6 +82,7 @@ c_MATRIX_BAD_FORMAT = 102
 c_MATRIX_BAD_FORMAT_TEXT = "The requested format is not supported in the service."
 
 cmdline = Commandline.Commandline()
+
 
 class APIManager:
     '''
@@ -500,21 +509,37 @@ class SCPAPIManager(APIManager):
         else:
             return(self.name_to_id.get(name, None))
 
-    def upload_study_file(self, file,
-                        file_type,
-                        study_name,
-                        name,
-                        description="",
-                        species=None,
-                        genome=None,
-                        dry_run=False,
-                        **kwargs):
-        import logging
-        logging.basicConfig()
-        logging.getLogger().setLevel(logging.DEBUG)
-        requests_log = logging.getLogger("requests.packages.urllib3")
-        requests_log.setLevel(logging.DEBUG)
-        requests_log.propagate = True
+    @staticmethod
+    def upload_via_gsutil(bucket_id, file_path):
+        """Copy file to Google Cloud Storage bucket, return stats and filename
+        """
+
+        gs_url = 'gs://' + bucket_id
+
+        # Upload to bucket via gsutil
+        command = 'gsutil cp ' + file_path + ' ' + gs_url
+        cmdline.func_CMD(command=command)
+        filename = file_path.split('/')[-1]
+
+        # Get GCS details for the file just uploaded
+        command = 'gsutil stat ' + gs_url + '/' + filename
+        stdout = cmdline.func_CMD(command=command, stdout=True)
+
+        # Split on newline, omit first and last lines, transform to dict
+        lines = [line.strip() for line in str(stdout).split('\\n')][1:-1]
+        gsutil_stat = {}
+        for line in lines:
+            [key, value] = line.split(':    ')
+            gsutil_stat[key] = value.strip()
+
+        return [gsutil_stat, filename]
+
+    def upload_study_file(self, file, file_type, study_name, name=None,
+                    description="", dry_run=False, **kwargs):
+        """Wrapper for study file upload.
+
+        Upload via gsutil, then point SCP to resulting object in bucket.
+        """
 
         # Error if the study does not exist
         if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
@@ -531,26 +556,12 @@ class SCPAPIManager(APIManager):
                 study = s
                 break
 
-        gs_url = 'gs://' + study['bucket_id']
+        bucket_id = study['bucket_id']
 
-        # Upload to bucket via gsutil
-        command = 'gsutil cp ' + file + ' ' + gs_url
-        cmdline.func_CMD(command=command)
-        filename = file.split('/')[-1]
-
-        # Get GCS details for the file just uploaded
-        command = 'gsutil stat ' + gs_url + '/' + filename
-        stdout = cmdline.func_CMD(command=command, stdout=True)
-
-        # Split on newline, omit first and last lines, transform to dict
-        lines = [line.strip() for line in str(stdout).split('\\n')][1:-1]
-        gsutil_stat = {}
-        for line in lines:
-            [key, value] = line.split(':    ')
-            gsutil_stat[key] = value.strip()
+        [gsutil_stat, filename] = self.upload_via_gsutil(bucket_id, file)
 
         file_fields = {
-            'study_file':{
+            'study_file': {
                 'file_type': file_type,
                 'name': name,
                 'remote_location': filename,
@@ -562,61 +573,31 @@ class SCPAPIManager(APIManager):
         }
 
         ret = self.do_post(command=self.api_base + 'studies/' + study_id + '/study_files',
-                           values=file_fields,
-                           dry_run=dry_run)
+                           values=file_fields, dry_run=dry_run)
 
         print(ret["response"].text)
         dir(ret["response"])
         return(ret)
 
-    def upload_expression_matrix(self, file,
-                             study_name,
-                             expression_axis_label,
-                             description="",
-                             species=None,
-                             genome=None,
-                             dry_run=False):
-        return
+    def upload_metadata(self, file, study_name, description="", dry_run=False):
+        print("UPLOAD METADATA FILE")
+        return self.upload_study_file(file, 'Metadata', study_name,
+            description=description, dry_run=dry_run)
 
-    def upload_cluster(self, file,
-                             study_name,
-                             cluster_name,
-                             description="Cluster file.",
-                             species=None,
-                             genome=None,
-                             x="X",
-                             y="Y",
-                             z="Z",
-                             dry_run=False):
-        '''
-        *** In development, not complete.***
-        :param file:
-        :param study_name:
-        :param cluster_name:
-        :param description:
-        :param species:
-        :param genome:
-        :param x:
-        :param y:
-        :param z:
-        :param dry_run: If true, will do a dry run with no actual execution of functionality.
-        :return:
-        '''
+    def upload_expression_matrix(self, file, study_name, species=None,
+                            genome=None, description="", dry_run=False):
+        print("UPLOAD EXPRESSION MATRIX FILE")
+        return self.upload_study_file(file, 'Expression Matrix', study_name,
+                                description=description, species=species,
+                                genome=genome, dry_run=dry_run)
+
+    def upload_cluster(self, file, study_name, cluster_name, description="",
+                    x="X", y="Y", z="Z", dry_run=False):
         print("UPLOAD CLUSTER FILE")
 
-        return self.upload_study_file(
-            file,
-            'Cluster',
-            study_name,
-            cluster_name,
-            description="Cluster file.",
-            species=None,
-            genome=None,
-            x="X",
-            y="Y",
-            z="Z",
-            dry_run=False
-        )
+        return self.upload_study_file(file, 'Cluster', study_name,
+            cluster_name=cluster_name, description=description,
+            x=x, y=x, z=x, dry_run=dry_run)
 
 class DSSAPIManager(APIManager):
     '''
