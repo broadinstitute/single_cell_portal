@@ -216,6 +216,15 @@ parser_upload_metadata.add_argument(
     '--file', dest='metadata_file', required=True,
     help='Metadata file to load.'
 )
+parser_upload_metadata.add_argument(
+    '--study-name', dest='study_name', required=True,
+    help='Name of the study to add the file.'
+)
+parser_upload_metadata.add_argument(
+    '--description', dest='description',
+    default='',
+    help='Text describing the metadata file.'
+)
 
 parsed_args = args.parse_args()
 print("Args----")
@@ -296,10 +305,15 @@ if hasattr(parsed_args, "cluster_file"):
     manage_call_return(ret)
 
 ## Upload metadata file
-### TODO
+if hasattr(parsed_args, "metadata_file"):
+    print("UPLOAD METADATA FILE")
+    connection = login(manager=connection, dry_run=parsed_args.dry_run)
+    ret = connection.upload_metadata(file=parsed_args.metadata_file,
+                                    study_name=parsed_args.study_name,
+                                    dry_run=parsed_args.dry_run)
+    manage_call_return(ret)
 
 ## Upload expression file
-## Upload cluster file
 if hasattr(parsed_args, "expression_file"):
     print("UPLOAD EXPRESSION FILE")
     connection = login(manager=connection, dry_run=parsed_args.dry_run)
