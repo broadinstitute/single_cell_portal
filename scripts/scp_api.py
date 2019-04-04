@@ -261,7 +261,9 @@ class SCPAPIManager(APIManager):
         self.studies = None
         self.name_to_id = None
         self.bucket_id = None
-        self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
+
+        # TODO: Hit the taxons API endpoint to get the list of available species.
+        # self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
 
     @staticmethod
     def describe_status_code(status_code):
@@ -291,20 +293,21 @@ class SCPAPIManager(APIManager):
         }
         return(ret_status_codes.get(status_code, "That status code is not in use."))
 
+    '''
     def check_species_genome(self, species, genome=None):
-        '''
-        The SCP only support certain species, this checks the submitted species to make sure it is supported.
+        """The SCP only support certain species, this checks the submitted species to make sure it is supported.
 
         :param species: String species to confirm is supported.
         :param genome: String, if provided optionally checks genome version.
         :return: Boolean, false indicates not supported.
-        '''
+        """
 
         print("CHECK SPECIES (GENOME)")
         if not species.lower() in self.species_genomes:
             print(species+" : this species is not registered with the portal please email the team to have it added.")
             return(False)
         return(genome in self.species_genomes[species])
+    '''
 
     def get_studies(self, dry_run=False):
         '''
