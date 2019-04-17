@@ -65,7 +65,7 @@ task run_infercnv {
     File metadata_file
     String reference_cell_annotation
     String observation_cell_annotation
-    String num_threads
+    Int num_threads
 
     command <<<
         if [ ! -d ${output_dir} ]; then
@@ -88,10 +88,15 @@ task run_infercnv {
             --input_matrix ${matrix_file} \
             --delimiter $'${delimiter}' \
             --output_name "${output_dir}/expression.r_format.txt"
-        
+
+        # Convert dense matrix into sparse matrix, for likely memory savings
+        inferCNV/scripts/prepare_sparsematrix.R 
+          --input "${output_dir}/expression.r_format.txt"
+          --output "${output_dir}/test_sparse_scripted.rds"
+
         # Run inferCNV
         inferCNV.R \
-            --raw_counts_matrix "${output_dir}/expression.r_format.txt" \
+            --raw_counts_matrix "${output_dir}/test_sparse_scripted.rds" \
             --annotations_file "${output_dir}/infercnv_annots_from_scp.tsv" \
             --gene_order_file ${gene_pos_file} \
             --ref_group_names "`cat ${output_dir}/infercnv_reference_cell_labels_from_scp.tsv`" \
@@ -101,7 +106,7 @@ task run_infercnv {
             --cluster_by_groups \
             --denoise \
             --HMM \
-            --num_threads {$num_threads}
+            --num_threads ${num_threads}
         >>>
     output {
         File figure = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.png"

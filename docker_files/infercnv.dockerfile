@@ -61,12 +61,12 @@ WORKDIR /
 # RUN R CMD INSTALL infercnv-InferCNV-v0.99.0
 # RUN mv infercnv-InferCNV-v0.99.0/ inferCNV
 
-RUN echo "Clear Docker cache (5)"
+RUN echo "Clear Docker cache (6)"
 RUN git clone https://github.com/broadinstitute/inferCNV
 WORKDIR inferCNV
 RUN git checkout master
-# Checkout code as of 2019-03-25
-RUN git checkout a1b74cb0a8bc3179d5c057a1e3bb55ca70d0fe53
+# Checkout code as of 2019-04-17
+RUN git checkout 2498bb8f2dddb84bf3b935bf7de1f926b598f490
 RUN R CMD INSTALL .
 
 # Delete extraneous inferCNV directories
@@ -82,8 +82,8 @@ WORKDIR /
 RUN git clone https://github.com/broadinstitute/single_cell_portal scp
 WORKDIR scp
 RUN git checkout ew-refine-infercnv
-# Checkout code as of 2019-03-20
-RUN git checkout 46893f766d6441e2577d0e067d92c27c684c89c2
+# Checkout code as of 2019-03-26
+RUN git checkout 443843ef95497d2474afbdbfd792e96246eac562
 WORKDIR /
 RUN mkdir -p single_cell_portal/scripts
 RUN mv scp/scripts/ideogram single_cell_portal/scripts/
@@ -96,10 +96,12 @@ ENV PATH=${PATH}:/inferCNV/scripts:/single_cell_portal/scripts
 
 # Finish setting up workflow test scaffolding
 WORKDIR /workflow
-ADD https://github.com/broadinstitute/cromwell/releases/download/38/cromwell-38.jar .
+ADD https://github.com/broadinstitute/cromwell/releases/download/39/cromwell-39.jar .
 RUN cp -p /inferCNV/example/oligodendroglioma_expression_downsampled.counts.matrix test_data/
 
 WORKDIR /
 
 #RUN rm /InferCNV-v0.8.2.tar.gz
 CMD inferCNV.R --help
+
+RUN R -e "install.packages('data.table', repos = 'http://cran.us.r-project.org')"

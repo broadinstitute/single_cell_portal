@@ -88,10 +88,15 @@ task run_infercnv {
             --input_matrix ${matrix_file} \
             --delimiter $'${delimiter}' \
             --output_name "${output_dir}/expression.r_format.txt"
-        
+
+        # Convert dense matrix into sparse matrix, for likely memory savings
+        /inferCNV/scripts/prepare_sparsematrix.R \
+          --input "${output_dir}/expression.r_format.txt" \
+          --output "${output_dir}/test_sparse_scripted"
+
         # Run inferCNV
         inferCNV.R \
-            --raw_counts_matrix "${output_dir}/expression.r_format.txt" \
+            --raw_counts_matrix "${output_dir}/test_sparse_scripted.rds" \
             --annotations_file "${output_dir}/infercnv_annots_from_scp.tsv" \
             --gene_order_file ${gene_pos_file} \
             --ref_group_names "`cat ${output_dir}/infercnv_reference_cell_labels_from_scp.tsv`" \
@@ -105,6 +110,8 @@ task run_infercnv {
         >>>
     output {
         File figure = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.png"
+        File debug1 = "${output_dir}/test_sparse_scripted.rds"
+        File debug2 = "prepared_smallest.txt"
         File observations_matrix_file = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.observations.txt"
         File heatmap_thresholds_file = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.heatmap_thresholds.txt"
         File ref_group_names_file = "${output_dir}/infercnv_reference_cell_labels_from_scp.tsv"
