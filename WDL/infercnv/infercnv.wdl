@@ -13,7 +13,7 @@ workflow infercnv {
     File obs_cluster_file # Path to cluster file containing observation (tumor) cells
     String reference_cell_annotation
     String observation_cell_annotation
-    String num_threads # Number of threads (also cores) to use in inferCNV
+    Int num_threads # Number of threads (also cores) to use in inferCNV
     
     call run_infercnv {
     	input:
@@ -65,7 +65,7 @@ task run_infercnv {
     File metadata_file
     String reference_cell_annotation
     String observation_cell_annotation
-    Int num_threads
+    String num_threads
 
     command <<<
         if [ ! -d ${output_dir} ]; then
@@ -90,9 +90,9 @@ task run_infercnv {
             --output_name "${output_dir}/expression.r_format.txt"
 
         # Convert dense matrix into sparse matrix, for likely memory savings
-        inferCNV/scripts/prepare_sparsematrix.R 
-          --input "${output_dir}/expression.r_format.txt"
-          --output "${output_dir}/test_sparse_scripted.rds"
+        /inferCNV/scripts/prepare_sparsematrix.R \
+          --input "${output_dir}/expression.r_format.txt" \
+          --output "${output_dir}/test_sparse_scripted"
 
         # Run inferCNV
         inferCNV.R \
@@ -110,6 +110,8 @@ task run_infercnv {
         >>>
     output {
         File figure = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.png"
+        File sparse_matrix_r_format = "${output_dir}/test_sparse_scripted.rds"
+        # File debug2 = "prepared_smallest.txt"
         File observations_matrix_file = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.observations.txt"
         File heatmap_thresholds_file = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.heatmap_thresholds.txt"
         File ref_group_names_file = "${output_dir}/infercnv_reference_cell_labels_from_scp.tsv"
@@ -117,7 +119,7 @@ task run_infercnv {
 
 	runtime {
     	# https://hub.docker.com/r/singlecellportal/infercnv/tags
-        docker: "singlecellportal/infercnv:0-99-0"
+        docker: "singlecellportal/infercnv:0-99-6"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
@@ -170,7 +172,7 @@ task run_matrix_to_ideogram_annots {
 
 	runtime {
     	# https://hub.docker.com/r/singlecellportal/infercnv/tags
-        docker: "singlecellportal/infercnv:0-99-0"
+        docker: "singlecellportal/infercnv:0-99-6"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"

@@ -50,7 +50,7 @@ RUN R -e "install.packages('optparse', repos = 'http://cran.us.r-project.org')"
 RUN R -e "install.packages('logging', repos = 'http://cran.us.r-project.org')"
 
 # Install Java, needed for Cromwell
-RUN apt-get install -y openjdk-8-jdk
+# RUN apt-get install -y openjdk-8-jdk # Comment out for production build
 
 RUN mkdir /workflow
 
