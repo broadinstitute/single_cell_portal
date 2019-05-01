@@ -10,7 +10,7 @@ import time
 db = firestore.Client()
 
 np.set_printoptions(precision=8, threshold=sys.maxsize, edgeitems=1e9)
-expression_dictionaries= dict()
+expression_dictionaries = dict()
 loom_file = sys.argv[1]
 loom_file_name = os.path.splitext(loom_file)[0]
 
