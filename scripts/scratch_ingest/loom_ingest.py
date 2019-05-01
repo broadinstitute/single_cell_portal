@@ -49,7 +49,7 @@ def add_data_to_firestore(data):
     batch.commit()
     time.sleep(2)
 
-map_genes_to_expression_vaues()
+map_genes_to_expression_values()
 for genes in chunk(expression_dictionaries):
     add_data_to_firestore(genes)
 
