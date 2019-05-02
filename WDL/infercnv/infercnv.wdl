@@ -130,7 +130,7 @@ task run_infercnv {
 
 	runtime {
     	# https://hub.docker.com/r/singlecellportal/infercnv/tags
-        docker: "singlecellportal/infercnv:0.99.5-rc2"
+        docker: "singlecellportal/infercnv:0.99.7_60c7edc-rc1"
         memory: "52 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
@@ -183,7 +183,7 @@ task run_matrix_to_ideogram_annots {
 
 	runtime {
     	# https://hub.docker.com/r/singlecellportal/infercnv/tags
-        docker: "singlecellportal/infercnv:0.99.5-rc2"
+        docker: "singlecellportal/infercnv:0.99.7_60c7edc-rc1"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
