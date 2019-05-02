@@ -1,2 +1,5 @@
 pandas>=0.16.2
 requests>=2.21.0
+google-cloud-firestore==0.32.1
+loompy==2.0.15
+zarr==2.2.0

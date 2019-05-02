@@ -1,20 +1,47 @@
-import numpy as np
-import loompy
+"""Command-line interface for ingesting loom files into firestore
+
+DESCRIPTION
+This CLI maps genes to expression values, cell ids, gene accesions from
+a loom file and puts them into firestore.
+
+PREREQUISITES
+You must have google could firestore installed, authenticated
+ configured.
+
+EXAMPLES
+# Takes loom file and stores it into firestore
+$ python loom_ingest.py  200k_subsample_4k_PMBC.loom
+"""
+
+
+import argparse
+import time
 import sys
 import os
-import  pyrebase
-from google.cloud import firestore
 from itertools import islice
-import time
 
+from google.cloud import firestore
+import loompy
+import numpy as np
+
+expression_dictionaries = dict()
 db = firestore.Client()
 
-np.set_printoptions(precision=8, threshold=sys.maxsize, edgeitems=1e9)
-expression_dictionaries= dict()
-loom_file = sys.argv[1]
-loom_file_name = os.path.splitext(loom_file)[0]
+parser = argparse.ArgumentParser(
+    prog ='loom_ingest.py'
+)
 
-ds = loompy.connect(loom_file)
+parser.add_argument(
+    "loom_file", default=None,
+    help='Path to loom file'
+)
+
+args = parser.parse_args()
+np.set_printoptions(precision=8, threshold=sys.maxsize, edgeitems=1e9)
+
+##Opens loom file
+def open_file(loom_file):
+    return loompy.connect(loom_file), os.path.splitext(loom_file)[0]
 
 ##creating dictoionary
 def map_genes_to_expression_vaues():
@@ -49,6 +76,10 @@ def add_data_to_firestore(data):
     batch.commit()
     time.sleep(2)
 
+##Open loom file
+ds, loom_file_name = open_file(args.loom_file)
+
+#Map expression data to expression values and row attrobutes
 map_genes_to_expression_vaues()
 for genes in chunk(expression_dictionaries):
     add_data_to_firestore(genes)
