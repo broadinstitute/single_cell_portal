@@ -35,18 +35,16 @@ RUN git clone https://github.com/broadinstitute/inferCNV && cd inferCNV && \
       R CMD INSTALL . && rm -rf example/full_precision __simulations .git
 # Delete extraneous inferCNV directories
 
-# Set up workflow test directory
-WORKDIR /workflow
 
-# update to 2019-04-17 commit (note num_threads fix but prepare_sparsematrix.R still broken)
-# Get script to convert inferCNV outputs to Ideogram.js annotations, then clean up
+# update single_cell_portal checkout to 2019-04-17 commit 
+# (note num_threads fixed but prepare_sparsematrix.R still broken)
+# Get scripts to pre-process SCP files content to inferCNV input formal
+# and post-process to convert inferCNV outputs to Ideogram.js annotations, then clean up
 WORKDIR /
 RUN git clone https://github.com/broadinstitute/single_cell_portal scp && cd scp && \
       git checkout ew-refine-infercnv && git checkout 82fd214e93f8c3d761164ad7b6f4290055348bb8
 RUN mkdir -p single_cell_portal/scripts && mv scp/scripts/ideogram single_cell_portal/scripts/ && \
-      mv scp/scripts/scp_to_infercnv.py single_cell_portal/scripts/ && mv scp/WDL/infercnv/* workflow/ \
-      && rm -rf scp
-RUN curl -SLo - https://github.com/broadinstitute/infercnv/raw/master/inst/extdata/oligodendroglioma_expression_downsampled.counts.matrix.gz | gunzip > workflow/test_data/oligodendroglioma_expression_downsampled.counts.matrix
+      mv scp/scripts/scp_to_infercnv.py single_cell_portal/scripts/ && rm -rf scp
 
 # set path
 ENV PATH=${PATH}:/inferCNV/scripts:/single_cell_portal/scripts
