@@ -27,13 +27,11 @@ RUN R -e "BiocManager::install(c('BiocGenerics', 'edgeR', 'SingleCellExperiment'
             'SummarizedExperiment', 'BiocStyle', 'BiocCheck'), version = \"3.9\")"
 
 
-# Checkout and install inferCNV
-# update to 2019-04-26 commit (Fix observations heatmap chromosome labels)
+# Checkout inferCNV code as of 2019-05-01, and install it
 RUN git clone https://github.com/broadinstitute/inferCNV && cd inferCNV && \
-      git checkout master && git checkout 60c7edc5590ad74b4f8354b4426cff496fc74c99 && \
+      git checkout experimental && git checkout e80ae2b893468b50735e51b4543611c4507927bd && \
       R CMD INSTALL . && rm -rf example/full_precision __simulations .git
-# Delete extraneous inferCNV directories
-
+# TODO: Extract everything above here into inferCNV base image.
 
 # update single_cell_portal checkout to 2019-05-01 commit 
 # Get scripts to pre-process SCP files content to inferCNV input formal
