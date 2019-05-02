@@ -13,7 +13,10 @@ workflow infercnv {
     File obs_cluster_file # Path to cluster file containing observation (tumor) cells
     String reference_cell_annotation
     String observation_cell_annotation
-    String num_threads # Number of threads (also cores) to use in inferCNV
+    Int num_threads = 1 # Number of threads (also cores) to use in inferCNV
+    Boolean? is_10x = false # if true, cutoff = 0.1, setting for 10x data
+    Int? max_cells_per_group # user provide max_cells_per_group (25% of largest grouping)
+    
     
     call run_infercnv {
     	input:
@@ -30,7 +33,9 @@ workflow infercnv {
         metadata_file = metadata_file,
         reference_cell_annotation = reference_cell_annotation,
         observation_cell_annotation = observation_cell_annotation,
-        num_threads = num_threads
+        num_threads = num_threads,
+        is_10x = is_10x, 
+        max_cells_per_group = max_cells_per_group
     }
     
     call run_matrix_to_ideogram_annots {
@@ -66,6 +71,8 @@ task run_infercnv {
     String reference_cell_annotation
     String observation_cell_annotation
     Int num_threads
+    Boolean? is_10x
+    Int? max_cells_per_group
 
     command <<<
         if [ ! -d ${output_dir} ]; then
@@ -90,9 +97,9 @@ task run_infercnv {
             --output_name "${output_dir}/expression.r_format.txt"
 
         # Convert dense matrix into sparse matrix, for likely memory savings
-        inferCNV/scripts/prepare_sparsematrix.R 
-          --input "${output_dir}/expression.r_format.txt"
-          --output "${output_dir}/test_sparse_scripted.rds"
+        prepare_sparsematrix.R \
+          --input "${output_dir}/expression.r_format.txt" \
+          --output "${output_dir}/test_sparse_scripted"
 
         # Run inferCNV
         inferCNV.R \
@@ -100,28 +107,34 @@ task run_infercnv {
             --annotations_file "${output_dir}/infercnv_annots_from_scp.tsv" \
             --gene_order_file ${gene_pos_file} \
             --ref_group_names "`cat ${output_dir}/infercnv_reference_cell_labels_from_scp.tsv`" \
-            --cutoff 1 \
+            --cutoff 0.1 \
+            ${true="--cutoff 0.1" false="--cutoff 1" is_10x} \
             --delim $'${delimiter}' \
             --out_dir ${output_dir} \
             --cluster_by_groups \
             --denoise \
             --HMM \
+            ${"--max_cells_per_group " + max_cells_per_group} \
             --num_threads ${num_threads}
         >>>
     output {
-        File figure = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.png"
+        File figure = "${output_dir}/infercnv.png"
         File observations_matrix_file = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.observations.txt"
         File heatmap_thresholds_file = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.heatmap_thresholds.txt"
         File ref_group_names_file = "${output_dir}/infercnv_reference_cell_labels_from_scp.tsv"
+        File hmm_figure = "${output_dir}/infercnv.12_HMM_predHMMi6.hmm_mode-samples.png"
+        File dendrogram = "${output_dir}/infercnv.observations_dendrogram.txt"
+        File groupings = "${output_dir}/infercnv.observation_groupings.txt"
+        File r_object = "${output_dir}/run.final.infercnv_obj"
     }
 
 	runtime {
     	# https://hub.docker.com/r/singlecellportal/infercnv/tags
-        docker: "singlecellportal/infercnv:0-99-0"
-        memory: "8 GB"
+        docker: "singlecellportal/infercnv:0.99.5-rc2"
+        memory: "52 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
-        cpu: 8
+        cpu: 1
         preemptible: 2
     }
 }
@@ -170,11 +183,11 @@ task run_matrix_to_ideogram_annots {
 
 	runtime {
     	# https://hub.docker.com/r/singlecellportal/infercnv/tags
-        docker: "singlecellportal/infercnv:0-99-0"
+        docker: "singlecellportal/infercnv:0.99.5-rc2"
         memory: "8 GB"
         bootDiskSizeGb: 12
         disks: "local-disk ${diskSpace} HDD"
-        cpu: 8
+        cpu: 1
         preemptible: 2
     }
 }
