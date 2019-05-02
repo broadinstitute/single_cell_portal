@@ -44,7 +44,7 @@ def open_file(loom_file):
     return loompy.connect(loom_file), os.path.splitext(loom_file)[0]
 
 ##creating dictoionary
-def map_genes_to_expression_vaues():
+def map_genes_to_expression_values():
     for (ix, selection, view) in ds.scan(axis=0, batch_size=5000):
         #Firestore does not know how to store ndArrays
         exppressions_values = view[:,:].tolist()
