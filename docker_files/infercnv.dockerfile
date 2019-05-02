@@ -10,7 +10,6 @@ RUN apt-get update && apt-get -y install curl libssl-dev libcurl4-openssl-dev \
                                         r-cran-rjags && \
                       apt-get clean && rm -rf /var/tmp/* \
                                           /tmp/* /var/lib/apt/lists/*
-# note: installing Java openjdk-8-jdk, needed for Cromwell
 
 # Install R and Bioconductor packages
 RUN echo "options(repos = c(CRAN = 'https://cran.rstudio.com'))" >.Rprofile
@@ -36,13 +35,12 @@ RUN git clone https://github.com/broadinstitute/inferCNV && cd inferCNV && \
 # Delete extraneous inferCNV directories
 
 
-# update single_cell_portal checkout to 2019-04-17 commit 
-# (note num_threads fixed but prepare_sparsematrix.R still broken)
+# update single_cell_portal checkout to 2019-05-01 commit 
 # Get scripts to pre-process SCP files content to inferCNV input formal
 # and post-process to convert inferCNV outputs to Ideogram.js annotations, then clean up
 WORKDIR /
 RUN git clone https://github.com/broadinstitute/single_cell_portal scp && cd scp && \
-      git checkout ew-refine-infercnv && git checkout 82fd214e93f8c3d761164ad7b6f4290055348bb8
+      git checkout jlc_infercnv && git checkout 2950174e71b281417b07181a8a4af9251207fc5d
 RUN mkdir -p single_cell_portal/scripts && mv scp/scripts/ideogram single_cell_portal/scripts/ && \
       mv scp/scripts/scp_to_infercnv.py single_cell_portal/scripts/ && rm -rf scp
 
