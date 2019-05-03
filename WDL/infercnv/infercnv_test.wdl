@@ -107,7 +107,6 @@ task run_infercnv {
             --annotations_file "${output_dir}/infercnv_annots_from_scp.tsv" \
             --gene_order_file ${gene_pos_file} \
             --ref_group_names "`cat ${output_dir}/infercnv_reference_cell_labels_from_scp.tsv`" \
-            --cutoff 0.1 \
             ${true="--cutoff 0.1" false="--cutoff 1" is_10x} \
             --delim $'${delimiter}' \
             --out_dir ${output_dir} \
