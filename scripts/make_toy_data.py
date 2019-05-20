@@ -1,5 +1,5 @@
 """
-Generate data to simulate large study, e.g. to test download features.
+Generate data to simulate a study, e.g. to test ingest or download features.
 
 This data is structurally similar to real data, but otherwise semantic and
 statistical noise.
@@ -179,7 +179,7 @@ def fetch_genes():
 
     :return: List of gene symbols
     """
-    print("Getting gene list")
+    print('Getting gene list')
     # If preloaded genes file is passed load it, otherwise download from NCBI
     global num_rows
     if preloaded_genes:
@@ -190,11 +190,11 @@ def fetch_genes():
             genes = [[l.strip() for l in line.split()][1] for line in lines if len(line) > 2]
             # if --num_genes param is higher than the number of genes you tried to preload, lower it
             if num_rows > len(genes):
-                print("Not enough genes in preloaded file, reducing gene number to", len(genes))
+                print('Not enough genes in preloaded file, reducing gene number to', len(genes))
                 num_rows = len(genes)
             genes = genes[:num_rows]
             ids = ids[:num_rows]
-            print("Preloaded", "{:,}".format(len(genes)), "Genes")
+            print('Preloaded', '{:,}'.format(len(genes)), 'genes')
             return genes, ids
     else:
         # Load the genes from NCBI
@@ -323,7 +323,7 @@ def get_signature_content(prefix):
         # Generate values below header
         values = header + '\n'
         # make sure we don't have any duplicate gene names in the dense matrix-- attach the gene id which should always uniq
-        combined_gene_names = [genes[i] + "_" + ids[i] for i in range(num_rows)]
+        combined_gene_names = [genes[i] + '_' + ids[i] for i in range(num_rows)]
         # actual generator portion
         for i, group_of_genes in enumerate(split_seq(combined_gene_names, num_chunks)):
             expr = []
@@ -351,12 +351,12 @@ def generate_metadata_and_cluster(barcodes):
     :return: metadata file content, cluster file content
     """
     # file heaeders
-    metadata_header = "NAME\tCLUSTER\tSUBCLUSTER\nTYPE\tgroup\tgroup\n"
-    cluster_header = "NAME\tX\tY\tZ\nTYPE\tnumeric\tnumeric\tnumeric\n"
+    metadata_header = 'NAME\tCLUSTER\tSUBCLUSTER\nTYPE\tgroup\tgroup\n'
+    cluster_header = 'NAME\tX\tY\tZ\nTYPE\tnumeric\tnumeric\tnumeric\n'
     # clusters- P means positive, N means negative (For X Axis values)
-    clusters = np.asarray(["P", "N"])
+    clusters = np.asarray(['P', 'N'])
     # subclusters- P means positive, N means negative (For X Y Z axis)
-    subclusters = np.asarray(["PPP", "PPN", "PNP", "PNN", "NPP", "NPN", "NNP", "NNN"])
+    subclusters = np.asarray(['PPP', 'PPN', 'PNP', 'PNN', 'NPP', 'NPN', 'NNP', 'NNN'])
     # make a var for bar length for convenience
     bar_length = len(barcodes)
     # reshape the barcodes to make generating the files easier
@@ -377,7 +377,7 @@ def generate_metadata_and_cluster(barcodes):
     y_mod = np.repeat([1, -1, 1, -1], cluster_length / 2)
     z_mod = np.repeat([1, -1, 1, -1, 1, -1, 1, -1], subcluster_length)
     # multiply the dimension sign arrays by the random numbers to properly cluster
-    print("Modifiying cluster coordinates")
+    print('Modifiying cluster coordinates')
     mods = np.asarray([x_mod, y_mod, z_mod]).T
     cluster_coords *= mods
     # cluster table row is barcode, X, Y, Z
@@ -423,9 +423,9 @@ def pool_processing(prefix):
     if sparse:
         # write the genes.tsv file for sparse matrix
         with open(genes_name, 'w+') as g:
-                print('Writing gene file')
-                # row format: (tab delimited) gene_id   gene_name
-                [g.write(ids[i] + '\t' + genes[i] + '\n') for i in range(num_rows)]
+            print('Writing gene file')
+            # row format: (tab delimited) gene_id   gene_name
+            [g.write(ids[i] + '\t' + genes[i] + '\n') for i in range(num_rows)]
         # write the barcodes.tsv file for sparse matrix
         with open(barcodes_name, 'w+') as b:
             print('Writing barcodes')
@@ -482,7 +482,7 @@ def pool_processing(prefix):
                 exprs_written += len(exprs)
             # keep track of number of writes to files, inform user
             num_writes += 1
-            print(num_writes, 'Writes completed')
+            print('Writes completed:', num_writes)
     # if user specified in --visualize param, write the cluster and metadata files
     if visualize:
         print('Writing metadata file')
