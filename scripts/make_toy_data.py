@@ -179,7 +179,7 @@ def fetch_genes():
 
     :return: List of gene symbols
     """
-    print("Getting Gene List")
+    print("Getting gene list")
     # If preloaded genes file is passed load it, otherwise download from NCBI
     global num_rows
     if preloaded_genes:
@@ -194,10 +194,10 @@ def fetch_genes():
                 num_rows = len(genes)
             genes = genes[:num_rows]
             ids = ids[:num_rows]
-            print("PreLoaded", "{:,}".format(len(genes)), "Genes")
+            print("Preloaded", "{:,}".format(len(genes)), "Genes")
             return genes, ids
     else:
-        # load the genes from ncbi
+        # Load the genes from NCBI
         genes = []
 
         eutils = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
@@ -221,8 +221,8 @@ def fetch_genes():
                     genes.append(result['name'])
                 num_genes_received += len(gene_ids_group)
                 if i > 0 and i % 10 == 0:
-                    print("Received", num_genes_received, "Genes")
-            print("Received", num_genes_received, "Genes")
+                    print('Received', num_genes_received, 'genes')
+            print('Received', num_genes_received, 'genes')
         else:
             gene_summary = esummary + '&db=gene&retmax='+str(num_rows + 20)+'&id=' + ','.join(gene_ids)
             response = request.urlopen(gene_summary).read().decode()
@@ -232,9 +232,9 @@ def fetch_genes():
                     continue
                 result = results[gene_id]
                 genes.append(result['name'])
-        print("Received Gene List")
+        print('Received gene list')
         # return the genes and fake ids
-        return genes, ["FAKE00" + str(i) for i in range(num_rows)]
+        return genes, ['FAKE00' + str(i) for i in range(num_rows)]
 
 
 def fetch_cells(prefix):
@@ -243,7 +243,7 @@ def fetch_cells(prefix):
     :param prefix: String of two uppercase letters, e.g. "AB"
     :return: dense matrix header & list of barcodes
     """
-    print("Generating Matrix")
+    print('Generating matrix')
     letters = ['A', 'B', 'C', 'D']
 
     bytes_per_column = 4.7 * num_rows  # ~1.65 KB (KiB) per 80 cells, uncompressed
@@ -252,7 +252,7 @@ def fetch_cells(prefix):
         num_columns = int(bytes_per_file/bytes_per_column)
     # Generate header
     barcodes = []
-    header = "GENE\t"
+    header = 'GENE\t'
     # if we have a preloaded barcodes file, read it in, otherwise generate the random barcodes
     if preloaded_barcodes:
         with open(preloaded_barcodes) as f:
@@ -261,21 +261,21 @@ def fetch_cells(prefix):
             barcodes = [line.strip() for line in lines if len(line) > 2]
             if num_columns > len(barcodes):
                 # if user param --num_barcdes is higher than the number in the preloaded file, drop it down
-                print("Not enough barcodes in preloaded file, reducing gene number to", len(genes))
+                print('Not enough barcodes in preloaded file, reducing gene number to', len(genes))
                 num_columns = len(barcodes)
             if visualize and num_columns % 8 != 0:
                 # if we want to create cluster files, we have 8 clusters, so drop down the number of barcodes to a multiple of 8
                 num_columns -= num_columns % 8
-                print("Visualization relies on having 8 subclusters, reducing number of cells/columns to", num_columns)
+                print('Visualization relies on having 8 subclusters, reducing number of cells/columns to', num_columns)
             barcodes = barcodes[:num_columns]
-            print("PreLoaded", "{:,}".format(len(barcodes)), "Cells")
+            print('Preloaded', '{:,}'.format(len(barcodes)), 'cells')
             # make the header
             header += '\t'.join(barcodes)
     else:
         # if no preloaded barcodes, randomly generate tem
         if visualize and num_columns % 8 != 0:
                 num_columns -= num_columns % 8
-                print("Visualization relies on having 8 subclusters, reducing number of cells/columns to", num_columns)
+                print('Visualization relies on having 8 subclusters, reducing number of cells/columns to', num_columns)
         for i in range(num_columns):
             random_string = ''
             for j in range(1, 16):
@@ -294,9 +294,9 @@ def fetch_cells(prefix):
                 barcodes = barcodes + [barcode]
             header += barcode + '\t'
             if i % 10000 == 0 and i > 0:
-                print("Created", "{:,}".format(i), "Cell Headers")
+                print('Created', '{:,}'.format(i), 'cell headers')
         header = header
-        print("Generated Cell Headers")
+        print('Generated cell headers')
     return header, barcodes
 
 
@@ -369,7 +369,7 @@ def generate_metadata_and_cluster(barcodes):
     # metadata table rows are barcode, cluster_group, sub_cluster_group
     metadata_table = np.concatenate((barcodes_arr, cluster_groups, sub_cluster_groups), axis=1)
 
-    print("Generating Cluster Coordinates")
+    print('Generating cluster coordinates')
     # generate random coordinate values, but accurately, so P in a dimension has a positive value, while N has a negative value
     # round the random numbers to 4 digits
     cluster_coords = np.round(np.random.uniform(size=(bar_length, 3)), 4)
@@ -377,13 +377,13 @@ def generate_metadata_and_cluster(barcodes):
     y_mod = np.repeat([1, -1, 1, -1], cluster_length / 2)
     z_mod = np.repeat([1, -1, 1, -1, 1, -1, 1, -1], subcluster_length)
     # multiply the dimension sign arrays by the random numbers to properly cluster
-    print("Modifiying Cluster Coordinates")
+    print("Modifiying cluster coordinates")
     mods = np.asarray([x_mod, y_mod, z_mod]).T
     cluster_coords *= mods
     # cluster table row is barcode, X, Y, Z
     cluster_table = np.concatenate((barcodes_arr, cluster_coords), axis=1)
     # join the tables into strings (tab seperated) and add the proper headers
-    print('Generating Cluster and metadata Strings')
+    print('Generating cluster and metadata strings')
     metadata_string = metadata_header + '\n'.join(['\t'.join(row) for row in metadata_table])
     cluster_string = cluster_header + '\n'.join(['\t'.join(row) for row in cluster_table])
     return metadata_string, cluster_string
@@ -398,8 +398,8 @@ def pool_processing(prefix):
     genes_name = prefix + '_toy_data_' + filename_leaf + '.genes.tsv'
     barcodes_name = prefix + '_toy_data_' + filename_leaf + '.barcodes.tsv'
     matrix_name = prefix + '_toy_data_' + filename_leaf + '.matrix.mtx'
-    cluster_name = prefix + '_toy_data_' + filename_leaf + '.Coordinates.txt'
-    metadata_name = prefix + '_toy_data_' + filename_leaf + '.Metadata.txt'
+    cluster_name = prefix + '_toy_data_' + filename_leaf + '.cluster.txt'
+    metadata_name = prefix + '_toy_data_' + filename_leaf + '.metadata.txt'
 
     # get list of files we are creating
     files_to_write = []
@@ -411,7 +411,7 @@ def pool_processing(prefix):
         files_to_write = files_to_write + [metadata_name, cluster_name]
 
     # delete existing files-- since we append files we don't want to append to existing ones
-    print("Deleting Existing Files with Same Name")
+    print('Deleting existing files with same name')
     for file in files_to_write:
         if os.path.exists(file):
             os.remove(file)
@@ -423,19 +423,19 @@ def pool_processing(prefix):
     if sparse:
         # write the genes.tsv file for sparse matrix
         with open(genes_name, 'w+') as g:
-                print("Writing Gene File")
+                print('Writing gene file')
                 # row format: (tab delimited) gene_id   gene_name
                 [g.write(ids[i] + '\t' + genes[i] + '\n') for i in range(num_rows)]
         # write the barcodes.tsv file for sparse matrix
         with open(barcodes_name, 'w+') as b:
-            print("Writing Barcodes")
+            print('Writing barcodes')
             # row format: barcode_name
             b.write('\n'.join(barcodes))
     # We write the sparse matrix and dense matrix at the same time using the row generator (because we want to make sure our expression scores are the same for [cell, gene])
     if sparse:
-        print("Writing Sparse Matrix")
+        print('Writing sparse matrix')
     if dense:
-        print("Writing Dense Matrix")
+        print('Writing dense matrix')
     if sparse or dense:
         # helpful stat tracking
         # nuumber of expressions cores
@@ -443,7 +443,7 @@ def pool_processing(prefix):
         # number of times we had to write to a file
         num_writes = 0
         # we will have to do num_chunks writes total
-        print("Number of writes:", "{:,}".format(num_chunks))
+        print('Number of writes:', '{:,}'.format(num_chunks))
         # iterate through the generator
         # Generate sparse string header
         sparse_str = '%%MatrixMarket matrix coordinate integer general\n'
@@ -454,14 +454,14 @@ def pool_processing(prefix):
             if dense:
                 # append to content string to the dense matrix file
                 with open(dense_name, 'a+') as f:
-                    print("Writing To Dense Matrix, @size:", "{:,}".format(len(content)))
+                    print('Writing To dense matrix, @size:', '{:,}'.format(len(content)))
                     f.write(content)
             # write part of sparse matrix if user said too
             if sparse:
                 # append sparse matrix rows to the sparse matrix
                 with open(matrix_name, 'a+') as m:
                     # this step is computationally expensive so tell the user
-                    print("Creating Sparse Matrix String")
+                    print('Creating sparse matrix string')
                     # we output it sorted by gene and then barcode
                     # sparse matrix format: gene_num, barcode_num, expr (space seperated)
                     for i, expr in enumerate(exprs):
@@ -474,7 +474,7 @@ def pool_processing(prefix):
                             line = ' '.join([gene_num, barcode_num, str(expr) + '\n'])
                             sparse_str += line
                     # write the multiple rows strings
-                    print("Writing", "{:,}".format(i+1), "Scores, @ size:", "{:,}".format(len(sparse_str)))
+                    print('Writing', '{:,}'.format(i+1), 'scores, @ size:', '{:,}'.format(len(sparse_str)))
                     m.write(sparse_str)
                     # reset the string
                     sparse_str = ''
@@ -482,23 +482,23 @@ def pool_processing(prefix):
                 exprs_written += len(exprs)
             # keep track of number of writes to files, inform user
             num_writes += 1
-            print(num_writes, "Writes Completed")
+            print(num_writes, 'Writes completed')
     # if user specified in --visualize param, write the cluster and metadata files
     if visualize:
-        print("Writing Metadata File")
+        print('Writing metadata file')
         metadata_string, cluster_string = generate_metadata_and_cluster(barcodes)
         with open(metadata_name, 'w+') as md:
             md.write(metadata_string)
-        print("Writing Cluster File")
+        print('Writing cluster file')
         with open(cluster_name, 'w+') as c:
             c.write(cluster_string)
     # cleanup step: inform user of what files we wrote
-    [print("Wrote File:", file) for file in files_to_write]
+    [print('Wrote file:', file) for file in files_to_write]
 
     # if user said too in --gzip param, gzip and overwrite file
     if gzip_files:
         for file in files_to_write:
-            print("Gzipping:", file)
+            print('Gzipping:', file)
             with open(file, 'rb') as f_in:
                 with gzip.open(file + '.gz', 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
