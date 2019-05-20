@@ -33,12 +33,6 @@ import os
 
 import numpy as np
 
-# Boolean input type for argparse
-def boolean_string(s):
-    if s not in {'False', 'True'}:
-        raise ValueError('Not a valid boolean string')
-    return s == 'True'
-
 args = argparse.ArgumentParser(
     prog='make_toy_data.py',
     description=__doc__,
@@ -74,15 +68,9 @@ args.add_argument(
     )
 )
 args.add_argument(
-    '--sparse', default=False, type=boolean_string,
+    '--matrix-types', nargs='+', choices=['dense', 'sparse'], default=['dense'],
     help=(
-        'Output sparse expression matrix files?'
-    )
-)
-args.add_argument(
-    '--dense', default=True, type=boolean_string,
-    help=(
-        'Output dense expression matrix files?'
+        'Format(s) of output expression matrix files.'
     )
 )
 args.add_argument(
@@ -128,7 +116,7 @@ args.add_argument(
     )
 )
 args.add_argument(
-    '--visualize', default=False, type=boolean_string,
+    '--visualize', action='store_true',
     help=(
         'Generate cluster and metadata files.'
     )
@@ -141,17 +129,18 @@ filename_leaf = parsed_args.filename_leaf
 size_per_file = parsed_args.size_per_file
 gzip_files = parsed_args.gzip_files
 num_cores = parsed_args.num_cores
-sparse = parsed_args.sparse
+matrix_types = parsed_args.matrix_types
 crush = parsed_args.crush
 num_rows = parsed_args.num_genes
 num_columns = parsed_args.num_cells
-dense = parsed_args.dense
 preloaded_genes = parsed_args.preloaded_genes
 preloaded_barcodes = parsed_args.preloaded_barcodes
 max_write_size = parsed_args.max_write_size
 random_seed = parsed_args.random_seed
 visualize = parsed_args.visualize
 
+dense = 'dense' in matrix_types
+sparse = 'sparse' in matrix_types
 
 # set the seed for number generation
 np.random.seed(random_seed)
