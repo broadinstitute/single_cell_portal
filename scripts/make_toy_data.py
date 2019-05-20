@@ -28,10 +28,10 @@ import multiprocessing
 import gzip
 import json
 from urllib import request, parse
-import numpy as np
 import shutil
 import os
 
+import numpy as np
 
 # Boolean input type for argparse
 def boolean_string(s):
