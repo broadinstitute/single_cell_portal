@@ -10,16 +10,16 @@ Examples:
 python make_toy_data.py
 
 # Generate 6 files, 2 MB each
-python make_toy_data.py --num_files=6 --size_per_file=2_MiB
+python make_toy_data.py --num-files=6 --size-per-file=2_MiB
 
 # Generate 1 file named AB_meso.txt, 2 GB in raw size, then compress it
-python make_toy_data.py --num_files=1 --filename_leaf="meso" --size_per_file=2_GiB --gzip
+python make_toy_data.py --num-files=1 --filename-leaf="meso" --size-per-file=2_GiB --gzip
 
 # Generate 1 group of files with sparse matrix files, dense matrix files, metadata and cluster files
-python make_toy_data.py --num_files=1 --filename_leaf="portal" --num_cells=1000 --num_genes=20 --sparse=True --dense=True --visualize=True
+python make_toy_data.py --num-files=1 --filename-leaf="portal" --num-cells=1000 --num-genes=20 --sparse=True --dense=True --visualize=True
 
 # Generate 1 group of files with sparse matrix files, dense matrix files, metadata and cluster files using preloaded barcodes and gene names
-python make_toy_data.py --num_files=1 --filename_leaf="portal" --num_cells=1000 --num_genes=20 --sparse=True --dense=True --visualize=True --preloaded_genes=path_to_preloaded_genes --preloaded_barcodes=path_to_preloaded_barcoded
+python make_toy_data.py --num-files=1 --filename-leaf="portal" --num-cells=1000 --num-genes=20 --sparse=True --dense=True --visualize=True --preloaded-genes=path_to_preloaded_genes --preloaded-barcodes=path_to_preloaded_barcoded
 """
 
 from random import randrange, uniform, randint
@@ -45,18 +45,18 @@ args = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter
 )
 args.add_argument(
-    '--num_files', default=3, type=int, dest='num_files',
+    '--num-files', default=3, type=int,
     help='Number of toy data files to output'
 )
 args.add_argument(
-    '--filename_leaf', default='toy', dest='filename_leaf',
+    '--filename-leaf', default='toy',
     help=(
         '"Leaf" to distinguish this file set from others.  ' +
         'File naming pattern: AB_<leaf>.txt, CD_<leaf>.txt, ...'
     )
 )
 args.add_argument(
-    '--size_per_file', default="25_MiB", dest='size_per_file',
+    '--size-per-file', default="25_MiB",
     help=(
         '<filesize_value>_<filesize_unit_symbol>, ' +
         'e.g. 300_MiB means 300 mebibytes per file.  '
@@ -67,68 +67,68 @@ args.add_argument(
     help='Flag: compress files with gzip?'
 )
 args.add_argument(
-    '--num_cores', default=None, type=int, dest='num_cores',
+    '--num-cores', default=None, type=int,
     help=(
         'Number of CPUs to use.  ' +
         'Defaults to number of CPUs in machine, minus 1 (if multicore).'
     )
 )
 args.add_argument(
-    '--sparse', default=False, type=boolean_string, dest='sparse',
+    '--sparse', default=False, type=boolean_string,
     help=(
         'Output sparse expression matrix files?'
     )
 )
 args.add_argument(
-    '--dense', default=True, type=boolean_string, dest='dense',
+    '--dense', default=True, type=boolean_string,
     help=(
         'Output dense expression matrix files?'
     )
 )
 args.add_argument(
-    '--crush', default=0.8, type=float, dest='crush',
+    '--crush', default=0.8, type=float,
     help=(
         'Fraction of cells with zero expression'
     )
 )
 args.add_argument(
-    '--num_genes', default=80, type=int, dest='num_genes',
+    '--num-genes', default=80, type=int,
     help=(
         'Number of Genes'
     )
 )
 args.add_argument(
-    '--num_cells', default=None, type=int, dest='num_cells',
+    '--num-cells', default=None, type=int,
     help=(
-        'Number of Cells'
+        'Number of cells'
     )
 )
 args.add_argument(
-    '--preloaded_genes', default=None, dest='preloaded_genes',
+    '--preloaded-genes', default=None,
     help=(
-        'A preloaded file of gene names (eg gene tsv file from sparse matrix output)'
+        'A preloaded file of gene names (e.g. gene TSV file from sparse matrix output)'
     )
 )
 args.add_argument(
-    '--preloaded_barcodes', default=None, dest='preloaded_barcodes',
+    '--preloaded-barcodes', default=None,
     help=(
-        'A preloaded file of barcode names (eg barcodes tsv file from sparse matrix output)'
+        'A preloaded file of barcode names (e.g. barcodes TSV file from sparse matrix output)'
     )
 )
 args.add_argument(
-    '--max_write_size', default=8e7, type=float, dest='max_write_size',
+    '--max-write-size', default=8e7, type=float,
     help=(
-        'Max Chunk Size (estimate) for writes'
+        'Estimated maximum chunk size for writes'
     )
 )
 args.add_argument(
-    '--random_seed', default=0, type=float, dest='random_seed',
+    '--random-seed', default=0, type=float,
     help=(
         'Random seed for number generation'
     )
 )
 args.add_argument(
-    '--visualize', default=False, type=boolean_string, dest='visualize',
+    '--visualize', default=False, type=boolean_string,
     help=(
         'Generate cluster and metadata files.'
     )
