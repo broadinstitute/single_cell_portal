@@ -1,25 +1,25 @@
 """
 Generate data to simulate a study, e.g. to test ingest or download features.
 
+DESCRIPTION
 This data is structurally similar to real data, but otherwise semantic and
 statistical noise.
 
-Examples:
-
-# Generate 3 files, 25 MB each
+EXAMPLES
+# Generate 3 dense matrix files, 25 MB each
 python make_toy_data.py
 
-# Generate 6 files, 2 MB each
-python make_toy_data.py --num-files=6 --size-per-file=2_MiB
+# Generate 6 dense matrix files, 2 MB each
+python make_toy_data.py --num-files 6 --size-per-file 2_MiB
 
-# Generate 1 file named AB_meso.txt, 2 GB in raw size, then compress it
-python make_toy_data.py --num-files=1 --filename-leaf="meso" --size-per-file=2_GiB --gzip
+# Generate 1 dense matrix file named AB_meso.txt, 2 GB in raw size, then compress it
+python make_toy_data.py --num-files 1 --filename-leaf 'meso' --size-per-file 2_GiB --gzip
 
 # Generate 1 group of files with sparse matrix files, dense matrix files, metadata and cluster files
-python make_toy_data.py --num-files=1 --filename-leaf="portal" --num-cells=1000 --num-genes=20 --sparse=True --dense=True --visualize=True
+python make_toy_data.py --num-files 1 --filename-leaf 'portal' --num-cells 1000 --num-genes 20 --matrix-types sparse dense --visualize
 
 # Generate 1 group of files with sparse matrix files, dense matrix files, metadata and cluster files using preloaded barcodes and gene names
-python make_toy_data.py --num-files=1 --filename-leaf="portal" --num-cells=1000 --num-genes=20 --sparse=True --dense=True --visualize=True --preloaded-genes=path_to_preloaded_genes --preloaded-barcodes=path_to_preloaded_barcoded
+python make_toy_data.py --num-files 1 --filename-leaf 'portal' --num-cells 1000 --num-genes 20 --matrix-types sparse dense --visualize --preloaded-genes path_to_preloaded_genes --preloaded-barcodes path_to_preloaded_barcoded
 """
 
 from random import randrange, uniform, randint
