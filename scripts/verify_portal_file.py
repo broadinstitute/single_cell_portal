@@ -53,7 +53,7 @@ prsr_arguments = argparse.ArgumentParser(
     conflict_handler="resolve",
     formatter_class=argparse.HelpFormatter)
 
-prsr_arguments.add_argument("--coordinates-file",
+prsr_arguments.add_argument("--cluster-file",
                             default=None,
                             dest="coordinates_file_group",
                             type=str,
@@ -83,15 +83,6 @@ prsr_arguments.add_argument("--deid-cells",
                             help="".join(["Change cell ids in file to a ",
                                           "random name, keeping cell names ",
                                           "consistent between files"]))
-
-prsr_arguments.add_argument("--coordinates-file",
-                            default=None,
-                            dest="coordinates_file_group",
-                            type=str,
-                            nargs="*",
-                            help="".join(["The file that holds the ",
-                                          "coordinates for the main ",
-                                          "visualization."]))
 
 prsr_arguments.add_argument("--gene-list",
                             default=None,
