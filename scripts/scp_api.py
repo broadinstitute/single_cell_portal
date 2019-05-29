@@ -530,7 +530,7 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        # python manage_study.py upload-cluster --file ../demo_data/coordinates_example.txt --study apitest --cluster_name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
+        # python manage_study.py upload-cluster --file ../demo_data/cluster_example.txt --study apitest --cluster_name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
         # sutdy id 5c0aaa5e328cee0a3b19c4a9
         studyId = self.study_name_to_id(study_name, dry_run=dry_run)
         fileInfo = {"study_file":{"file_type":"Cluster",
