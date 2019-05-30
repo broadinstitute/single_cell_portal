@@ -36,7 +36,7 @@ c_VALID_TYPES = [c_TYPE_NUMERIC, c_TYPE_GROUP]
 
 # Demo links
 c_METADATA_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/metadata_example.txt"
-c_COORDINATES_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/coordinates_example.txt"
+c_COORDINATES_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/cluster_example.txt"
 c_EXPRESSION_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/expression_example.txt"
 c_GENELIST_DEMO_LINK = "https://github.com/broadinstitute/single_cell_portal/blob/master/demo_data/genelist_example.txt"
 

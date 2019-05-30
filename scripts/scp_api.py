@@ -551,7 +551,8 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        # python manage_study.py --env development --token=`gcloud auth print-access-token` upload-cluster --file ../demo_data/coordinates_example.txt --study apitest --cluster-name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
+
+        # python manage_study.py --env development --token=`gcloud auth print-access-token` upload-cluster --file ../demo_data/cluster_example.txt --study apitest --cluster-name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
         study_id = self.study_name_to_id(study_name, dry_run=dry_run)
 
         for s in self.study_objects:
