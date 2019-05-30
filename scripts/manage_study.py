@@ -53,7 +53,7 @@ def manage_call_return(call_return):
     if not call_return[scp_api.c_SUCCESS_RET_KEY]:
         exit(call_return[scp_api.c_CODE_RET_KEY])
 
-def login(manager=None, dry_run=False):
+def login(manager=None, dry_run=False, api_base=None):
     '''
     Login to authorize credentials.
 
@@ -64,9 +64,9 @@ def login(manager=None, dry_run=False):
     if manager is None:
         manager=scp_api.SCPAPIManager()
         manager.login(token=parsed_args.token,
-                      dry_run=dry_run)
+                      dry_run=dry_run,
+                      api_base=api_base)
     return(manager)
-
 
 args = argparse.ArgumentParser(
     prog='manage_study.py',
@@ -85,6 +85,12 @@ args.add_argument(
     '--no-validate', dest='validate',
     action='store_false',
     help='Do not check file locally before uploading.'
+)
+
+args.add_argument(
+    '--environment', default='production',
+    choices=['development', 'production'],
+    help='API environment to use'
 )
 
 # Create tools (subparser)
@@ -136,7 +142,6 @@ parser_permissions.add_argument(
     help='Access to give the user.  Must be one of the following values: '+" ".join(scp_api.c_PERMISSIONS)
 )
 
-'''
 ## Create cluster file upload subparser
 parser_upload_cluster = subargs.add_parser(c_TOOL_CLUSTER,
     help="Upload a cluster file. \""+args.prog+" "+c_TOOL_CLUSTER+" -h\" for more details")
@@ -149,21 +154,13 @@ parser_upload_cluster.add_argument(
     help='Name of the study to add the file.'
 )
 parser_upload_cluster.add_argument(
-    '--cluster-name', dest='cluster_name', required=True,
-    help='Name of the clustering that will be used to refer to the plot.'
-)
-parser_upload_cluster.add_argument(
-    '--species', dest='species', required=True,
-    help='Species from which the data is generated.'
-)
-parser_upload_cluster.add_argument(
-    '--genome', dest='genome', required=True,
-    help='Genome assembly used to generate the data.'
-)
-parser_upload_cluster.add_argument(
-    '--description', dest='cluster_description',
+    '--description', dest='description',
     default="Coordinates and optional metadata to visualize clusters.",
     help='Text describing the cluster file.'
+)
+parser_upload_cluster.add_argument(
+    '--cluster-name', dest='cluster_name', required=True,
+    help='Name of the clustering that will be used to refer to the plot.'
 )
 parser_upload_cluster.add_argument(
     '--x', dest='x_label',
@@ -188,6 +185,29 @@ parser_upload_expression.add_argument(
     '--file', dest='expression_file', required=True,
     help='Expression file to load.'
 )
+parser_upload_expression.add_argument(
+    '--study-name', dest='study_name', required=True,
+    help='Name of the study to add the file.'
+)
+parser_upload_expression.add_argument(
+    '--description', dest='description',
+    default='Gene expression in cells',
+    help='Text describing the gene expression matrix file.'
+)
+parser_upload_expression.add_argument(
+    '--species', dest='species', required=True,
+    help='Species from which the data is generated.'
+)
+parser_upload_expression.add_argument(
+    '--genome', dest='genome', required=True,
+    help='Genome assembly used to generate the data.'
+)
+# TODO: Add upstream support for this in SCP RESI API
+# parser_upload_expression.add_argument(
+#     '--axis_label', dest='axis_label',
+#     default='',
+#     help=''
+# )
 
 ## Create metadata file upload subparser
 parser_upload_metadata = subargs.add_parser(c_TOOL_METADATA,
@@ -196,20 +216,34 @@ parser_upload_metadata.add_argument(
     '--file', dest='metadata_file', required=True,
     help='Metadata file to load.'
 )
-'''
+parser_upload_metadata.add_argument(
+    '--study-name', dest='study_name', required=True,
+    help='Name of the study to add the file.'
+)
+parser_upload_metadata.add_argument(
+    '--description', dest='description',
+    default='',
+    help='Text describing the metadata file.'
+)
 
 parsed_args = args.parse_args()
 print("Args----")
 print(vars(parsed_args))
 print("-----Args")
 
+env_origin_map = {
+    'development': 'https://localhost',
+    'production': 'https://portals.broadinstitute.org'
+}
+origin = env_origin_map[parsed_args.environment]
+api_base = origin + '/single_cell/api/v1/'
+
 # Login connection
-connection = None
+connection = login(manager=None, dry_run=parsed_args.dry_run, api_base=api_base)
 
 ## Handle list studies
 if hasattr(parsed_args, "summarize_list"):
     print("LIST STUDIES")
-    connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.get_studies(dry_run=parsed_args.dry_run)
     manage_call_return(ret)
     print("You have access to "+str(len(ret[scp_api.c_STUDIES_RET_KEY]))+" studies.")
@@ -219,7 +253,6 @@ if hasattr(parsed_args, "summarize_list"):
 ## Create new study
 if hasattr(parsed_args, "study_description") and not parsed_args.study_name is None:
     print("CREATE STUDY")
-    connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.create_study(study_name=parsed_args.study_name,
                                   study_description=parsed_args.study_description,
                                   branding=parsed_args.branding,
@@ -230,17 +263,16 @@ if hasattr(parsed_args, "study_description") and not parsed_args.study_name is N
 ## Share with user
 if hasattr(parsed_args, "permission"):
     print("SET PERMISSION")
-    connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.set_permission(study_name=parsed_args.study_name,
                                     email=parsed_args.email,
                                     access=parsed_args.permission,
                                     dry_run=parsed_args.dry_run)
     manage_call_return(ret)
-'''
+
 ## Validate files
 if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
     print("VALIDATE FILES")
-    command = ["verify_portal_file.py"]
+    command = ["python3 verify_portal_file.py"]
 
     if hasattr(parsed_args, "cluster_file"):
         command.extend(["--coordinates-file", parsed_args.cluster_file])
@@ -266,19 +298,31 @@ if hasattr(parsed_args, "cluster_file"):
                                     study_name=parsed_args.study_name,
                                     cluster_name=parsed_args.cluster_name,
                                     description=parsed_args.cluster_description,
-                                    species=parsed_args.species,
-                                    genome=parsed_args.genome,
                                     x=parsed_args.x_label,
                                     y=parsed_args.y_label,
                                     z=parsed_args.z_label,
                                     dry_run=parsed_args.dry_run)
     manage_call_return(ret)
-'''
+
 ## Upload metadata file
-### TODO
+if hasattr(parsed_args, "metadata_file"):
+    print("UPLOAD METADATA FILE")
+    connection = login(manager=connection, dry_run=parsed_args.dry_run)
+    ret = connection.upload_metadata(file=parsed_args.metadata_file,
+                                    study_name=parsed_args.study_name,
+                                    dry_run=parsed_args.dry_run)
+    manage_call_return(ret)
 
 ## Upload expression file
-### TODO
+if hasattr(parsed_args, "expression_file"):
+    print("UPLOAD EXPRESSION FILE")
+    connection = login(manager=connection, dry_run=parsed_args.dry_run)
+    ret = connection.upload_expression_matrix(file=parsed_args.expression_file,
+                                    study_name=parsed_args.study_name,
+                                    species=parsed_args.species,
+                                    genome=parsed_args.genome,
+                                    dry_run=parsed_args.dry_run)
+    manage_call_return(ret)
 
 ## Upload miscellaneous file
 ### TODO

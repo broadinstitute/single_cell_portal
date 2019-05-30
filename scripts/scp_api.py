@@ -14,6 +14,14 @@ import string
 import os
 import json
 
+import logging
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
+
 # Constants
 c_AUTH = 'Authorization'
 c_BOUNDARY_LENGTH = 20
@@ -73,6 +81,8 @@ c_MATRIX_REQUEST_API_OK = 202
 c_MATRIX_BAD_FORMAT = 102
 c_MATRIX_BAD_FORMAT_TEXT = "The requested format is not supported in the service."
 
+cmdline = Commandline.Commandline()
+
 
 class APIManager:
     '''
@@ -81,12 +91,14 @@ class APIManager:
     def __init__(self):
         return
 
-    def login(self, token=None, dry_run=False):
+    def login(self, token=None, dry_run=False,
+        api_base='https://portals.broadinstitute.org/single_cell/api/v1/'):
         """
         Authenticates as user and get's token to perform actions on the user's behalf.
 
         :param token: User token to use with API
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
+        :param api_base: Domain of desired API environment
         :return: Boolean indicating of success or failure
         """
 
@@ -95,6 +107,8 @@ class APIManager:
         if token is None:
             token = self.do_browser_login(dry_run=dry_run)
         self.token = token
+        self.api_base = api_base
+        self.verify_https = 'https://localhost' not in self.api_base
         self.studies = None
 
     def do_browser_login(self, dry_run=False):
@@ -109,7 +123,6 @@ class APIManager:
         if dry_run:
             print("DRY_RUN:: Did not login")
             return("DRY_RUN_TOKEN")
-        cmdline = Commandline.Commandline()
         cmdline.func_CMD(command="gcloud auth application-default login")
         cmd_ret = cmdline.func_CMD(command="gcloud auth application-default print-access-token",stdout=True)
         return(cmd_ret.decode("ASCII").strip(os.linesep))
@@ -129,9 +142,10 @@ class APIManager:
         if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {'Accept': 'application/json'}
-        if hasattr(self,"token"):
-            head[c_AUTH] = 'token {}'.format(self.token)
-        return(self.check_api_return(requests.get(command, headers=head)))
+        if hasattr(self, 'token'):
+            head[c_AUTH] = 'Bearer {}'.format(self.token)
+
+        return(self.check_api_return(requests.get(command, headers=head, verify=self.verify_https)))
 
     def do_post(self, command, values, files=None, dry_run=False):
         '''
@@ -146,7 +160,7 @@ class APIManager:
         '''
 
         ## TODO addtimeout and exception handling (Timeout exeception)
-        print("DO PUT")
+        print("DO POST")
         print(command)
         print(values)
         print(files)
@@ -159,12 +173,14 @@ class APIManager:
         if files is None:
             return(self.check_api_return(requests.post(command,
                                                              headers=head,
-                                                             json=values)))
+                                                             json=values,
+                                                             verify=self.verify_https)))
         else:
             return(self.check_api_return(requests.post(command,
                                                              headers=head,
                                                              files=files,
-                                                             json=values)))
+                                                             json=values,
+                                                             verify=self.verify_https)))
 
     def do_patch(self, command, values, dry_run=False):
         '''
@@ -183,7 +199,7 @@ class APIManager:
         if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
-        return(self.check_api_return(requests.patch(command, headers=head, json=values)))
+        return(self.check_api_return(requests.patch(command, headers=head, json=values, verify=self.verify_https)))
 
     def do_delete(self, command, dry_run=False):
         '''
@@ -200,7 +216,7 @@ class APIManager:
         if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_DELETE_OK})
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
-        return(self.check_api_return(requests.delete(command, headers=head)))
+        return(self.check_api_return(requests.delete(command, headers=head, verify=self.verify_https)))
 
     def check_api_return(self, ret):
         '''
@@ -241,10 +257,13 @@ class SCPAPIManager(APIManager):
 
         APIManager.__init__(self)
         print("INIT")
-        self.api = "https://portals.broadinstitute.org/single_cell/api/v1/"
+        self.api_base = None # set in APIManager.login()
         self.studies = None
         self.name_to_id = None
-        self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
+        self.bucket_id = None
+
+        # TODO: Hit the taxons API endpoint to get the list of available species.
+        # self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
 
     @staticmethod
     def describe_status_code(status_code):
@@ -274,20 +293,21 @@ class SCPAPIManager(APIManager):
         }
         return(ret_status_codes.get(status_code, "That status code is not in use."))
 
+    '''
     def check_species_genome(self, species, genome=None):
-        '''
-        The SCP only support certain species, this checks the submitted species to make sure it is supported.
+        """The SCP only support certain species, this checks the submitted species to make sure it is supported.
 
         :param species: String species to confirm is supported.
         :param genome: String, if provided optionally checks genome version.
         :return: Boolean, false indicates not supported.
-        '''
+        """
 
         print("CHECK SPECIES (GENOME)")
         if not species.lower() in self.species_genomes:
             print(species+" : this species is not registered with the portal please email the team to have it added.")
             return(False)
         return(genome in self.species_genomes[species])
+    '''
 
     def get_studies(self, dry_run=False):
         '''
@@ -298,14 +318,16 @@ class SCPAPIManager(APIManager):
         '''
 
         print("GET STUDIES")
-        resp = self.do_get(self.api + "studies", dry_run=dry_run)
+        resp = self.do_get(self.api_base + "studies", dry_run=dry_run)
         if dry_run:
             print("DRY_RUN:: Returned dummy names.")
             resp[c_STUDIES_RET_KEY] = ["DRY_RUN 1", "DRY_RUN 2"]
         else:
             if(resp[c_SUCCESS_RET_KEY]):
-                self.studies = [str(element['name']) for element in resp[c_RESPONSE].json()]
-                self.name_to_id = [[str(element['name']), str(element['_id']['$oid'])] for element in resp[c_RESPONSE].json()]
+                studies_json = resp[c_RESPONSE].json()
+                self.study_objects = studies_json
+                self.studies = [str(element['name']) for element in studies_json]
+                self.name_to_id = [[str(element['name']), str(element['_id']['$oid'])] for element in studies_json]
                 self.name_to_id = {key: value for (key,value) in self.name_to_id}
                 resp[c_STUDIES_RET_KEY] = self.studies
         return(resp)
@@ -388,7 +410,7 @@ class SCPAPIManager(APIManager):
             study_data["firecloud_project"] = billing
         if not branding is None:
             study_data["branding_group_id"] = branding
-        resp = self.do_post(command=self.api + "studies", values=study_data, dry_run=dry_run)
+        resp = self.do_post(command=self.api_base + "studies", values=study_data, dry_run=dry_run)
         # Update study list
         if resp[c_SUCCESS_RET_KEY] and not dry_run:
             self.get_studies()
@@ -490,38 +512,37 @@ class SCPAPIManager(APIManager):
         else:
             return(self.name_to_id.get(name, None))
 
-    def upload_cluster(self, file,
-                             study_name,
-                             cluster_name,
-                             description="Cluster file.",
-                             species=None,
-                             genome=None,
-                             x="X",
-                             y="Y",
-                             z="Z",
-                             dry_run=False):
-        '''
-        *** In development, not complete.***
-        :param file:
-        :param study_name:
-        :param cluster_name:
-        :param description:
-        :param species:
-        :param genome:
-        :param x:
-        :param y:
-        :param z:
-        :param dry_run: If true, will do a dry run with no actual execution of functionality.
-        :return:
-        '''
-        print("UPLOAD CLUSTER FILE")
+    @staticmethod
+    def upload_via_gsutil(bucket_id, file_path):
+        """Copy file to Google Cloud Storage bucket, return stats and filename
+        """
 
-        import logging
-        logging.basicConfig()
-        logging.getLogger().setLevel(logging.DEBUG)
-        requests_log = logging.getLogger("requests.packages.urllib3")
-        requests_log.setLevel(logging.DEBUG)
-        requests_log.propagate = True
+        gs_url = 'gs://' + bucket_id
+
+        # Upload to bucket via gsutil
+        command = 'gsutil cp ' + file_path + ' ' + gs_url
+        cmdline.func_CMD(command=command)
+        filename = file_path.split('/')[-1]
+
+        # Get GCS details for the file just uploaded
+        command = 'gsutil stat ' + gs_url + '/' + filename
+        stdout = cmdline.func_CMD(command=command, stdout=True)
+
+        # Split on newline, omit first and last lines, transform to dict
+        lines = [line.strip() for line in str(stdout).split('\\n')][1:-1]
+        gsutil_stat = {}
+        for line in lines:
+            [key, value] = line.split(':    ')
+            gsutil_stat[key] = value.strip()
+
+        return [gsutil_stat, filename]
+
+    def upload_study_file(self, file, file_type, study_name, name=None,
+                    description="", dry_run=False, **kwargs):
+        """Wrapper for study file upload.
+
+        Upload via gsutil, then point SCP to resulting object in bucket.
+        """
 
         # Error if the study does not exist
         if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
@@ -530,80 +551,57 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        # python manage_study.py upload-cluster --file ../demo_data/cluster_example.txt --study apitest --cluster_name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
-        # sutdy id 5c0aaa5e328cee0a3b19c4a9
-        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
-        fileInfo = {"study_file":{"file_type":"Cluster",
-                    "species":"Felis catus",
-                    "name":"cluster"}}
-        files = {"study_file":{"file_type":"Cluster",
-                               "species":"Felis catus",
-                               "name":"cluster",
-                               "upload":open(file,'rb')}}
-        ret = self.do_post(command=self.api + "studies/" + str(studyId) + "/study_files",
-                           values={},
-                           files=files,
-                           dry_run=dry_run)
-        print("HHH")
+
+        # python manage_study.py --env development --token=`gcloud auth print-access-token` upload-cluster --file ../demo_data/cluster_example.txt --study apitest --cluster-name test-cluster --species "Felis catus" --genome "Felis_catus_9.0"
+        study_id = self.study_name_to_id(study_name, dry_run=dry_run)
+
+        for s in self.study_objects:
+            if s['_id']['$oid'] == study_id:
+                study = s
+                break
+
+        bucket_id = study['bucket_id']
+
+        [gsutil_stat, filename] = self.upload_via_gsutil(bucket_id, file)
+
+        file_fields = {
+            'study_file': {
+                'file_type': file_type,
+                'name': name,
+                'remote_location': filename,
+                'upload_file_name': filename,
+                'upload_content_type': gsutil_stat['Content-Type'],
+                'upload_file_size': int(gsutil_stat['Content-Length']),
+                'generation': gsutil_stat['Generation']
+            }
+        }
+
+        ret = self.do_post(command=self.api_base + 'studies/' + study_id + '/study_files',
+                           values=file_fields, dry_run=dry_run)
+
         print(ret["response"].text)
         dir(ret["response"])
-        print("HHH@")
         return(ret)
-        '''
-        import urllib
-        boundary = APIManager.get_boundary()
-        content_type = 'multipart/form-data; boundary=%s' %  boundary
-        boundary = boundary.encode('utf-8')
 
-        body = b'--'+boundary+b'\r\n'
-        body += b'Content-Disposition: form-data; name="study_file[file_type]"\r\n'
-        body += b'\r\n'
-        body += b'Cluster'
-        body += b'--'+boundary+b'\r\n'
-        body += b'Content-Disposition: form-data; name="study_file[upload]"; filename="'+os.path.basename(file).encode('utf-8')+b'"\r\n'
-        body += b'Content-Type: text/plain\r\n'
-        #body += b'\r\n'
-        #body += open(file,'rb').read() + b'\r\n'
-        body += b'--'+boundary+b'--\r\n'
+    def upload_metadata(self, file, study_name, description="", dry_run=False):
+        print("UPLOAD METADATA FILE")
+        return self.upload_study_file(file, 'Metadata', study_name,
+            description=description, dry_run=dry_run)
 
-        curReq = urllib.request.Request(self.api + "studies/" + str(studyId) + "/study_files")
-        curReq.add_header('User-agent','Single Cell Portal User Scripts (https://portals.broadinstitute.org/single_cell)')
-        curReq.add_header('Content-Type', content_type)
-        curReq.add_header('Authorization',self.token)
-        curReq.add_header('Accept', 'application/json')
-        curReq.add_header('Content-Length',len(body))
+    def upload_expression_matrix(self, file, study_name, species=None,
+                            genome=None, description="", dry_run=False):
+        print("UPLOAD EXPRESSION MATRIX FILE")
+        return self.upload_study_file(file, 'Expression Matrix', study_name,
+                                description=description, species=species,
+                                genome=genome, dry_run=dry_run)
 
-        curReq.data = body
-        [print(i) for i in curReq.header_items()]
-        print("BODY")
-        print(curReq.data)
-        ret = None
-        try:
-            ret = urllib.request.urlopen(curReq)
-            print("-----")
-            print(dir(ret))
-            print(ret.getcode())
-            print("-----")
-            return(ret)
-        except urllib.error.HTTPError as e:
-            print(e.code)
-            print(e.reason)
-            print(e.headers)
-            return(ret)
+    def upload_cluster(self, file, study_name, cluster_name, description="",
+                    x="X", y="Y", z="Z", dry_run=False):
+        print("UPLOAD CLUSTER FILE")
 
-        #print("-----")
-        #print(dir(ret[c_RESPONSE]))
-        #print("-----")
-        #print(ret[c_RESPONSE].json())
-        #print(ret[c_RESPONSE].headers)
-        #print("------url")
-        #print(ret[c_RESPONSE].url)
-        #print("-----url")
-        #print(ret[c_RESPONSE].history)
-        #print(ret[c_RESPONSE].content)
-        #print(ret[c_RESPONSE].raw)
-        '''
-
+        return self.upload_study_file(file, 'Cluster', study_name,
+            cluster_name=cluster_name, description=description,
+            x=x, y=x, z=x, dry_run=dry_run)
 
 class DSSAPIManager(APIManager):
     '''

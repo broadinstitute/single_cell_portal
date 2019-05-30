@@ -5,3 +5,4 @@ __pycache__/
 scripts/genomes/output/
 .vscode
 scripts/__pycache__
+*.log
