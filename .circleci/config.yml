@@ -54,5 +54,4 @@ jobs:
             coverage html --include *single_cell_portal/scripts*
 
       - store_artifacts:
-          path: test-reports
-          destination: test-reports
+          path: scripts/htmlcov
