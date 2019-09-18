@@ -50,8 +50,8 @@ jobs:
             . venv/bin/activate
             cd scripts
             coverage run -m pytest
-            coverage report --include *single_cell_portal/scripts*
-            coverage html --include *single_cell_portal/scripts*
+            coverage report
+            coverage html
 
       - store_artifacts:
           path: scripts/htmlcov
