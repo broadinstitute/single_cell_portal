@@ -43,6 +43,7 @@ class MatrixToIdeogramAnnotsTestCase(unittest.TestCase):
             end_output_dir + 'ideogram_exp_means__Observations--Sample--group--study.json',
             end_output_dir + 'ideogram_exp_means__Observations--Sample--group--cluster.json'
         ]
+        self.maxDiff = None
         self.assertEqual(files, expected_files)
 
         cluster_annots_file = end_output_dir + 'ideogram_exp_means__Observations--Sample--group--cluster.json'
