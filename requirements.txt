@@ -1,5 +1,7 @@
 pandas>=0.16.2
 requests>=2.21.0
-google-cloud-firestore==0.32.1
-loompy==2.0.15
-zarr==2.2.0
+
+# Dev dependencies
+pytest==5.0.1
+coverage==4.5.3
+pytest-xdist==1.29.0

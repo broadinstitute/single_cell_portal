@@ -2,8 +2,8 @@
 
 To run, set up scripts per README, then:
 
-cd scripts/tests
-python3 test_scp_to_infercnv.py
+cd scripts
+python3 tests/test_scp_to_infercnv.py
 
 """
 
@@ -12,7 +12,7 @@ from glob import glob
 import json
 
 import sys
-sys.path.append('..')
+sys.path.append('.')
 
 from scp_to_infercnv import *
 
@@ -24,9 +24,9 @@ class ScpToInfercnvTestCase(unittest.TestCase):
         output_dir = 'test_output/'
 
         args = [
-            '--reference-cluster-path', 'data/toy_cluster.txt',
+            '--reference-cluster-path', 'tests/data/toy_cluster.txt',
             '--reference-group-name', 'toy-cell-types', 
-            '--metadata-path', 'data/toy_metadata.txt',
+            '--metadata-path', 'tests/data/toy_metadata.txt',
             '--observation-group-name', 'samples',
             '--output-dir', output_dir
         ]

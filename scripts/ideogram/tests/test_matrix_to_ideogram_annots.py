@@ -2,8 +2,8 @@
 
 To run, set up scripts per README, then:
 
-cd scripts/ideogram/tests
-python3 test_matrix_to_ideogram_annots.py
+cd scripts
+python3 ideogram/tests/test_matrix_to_ideogram_annots.py
 
 """
 
@@ -12,7 +12,7 @@ from glob import glob
 import json
 
 import sys
-sys.path.append('..')
+sys.path.append('ideogram')
 
 from matrix_to_ideogram_annots import create_parser, convert_matrix_and_write
 
@@ -23,12 +23,12 @@ class MatrixToIdeogramAnnotsTestCase(unittest.TestCase):
         """
         output_dir = 'output_infercnv_example/'
         args = [
-            '--matrix-path', 'data/oligodendroglioma_expression_truncated.counts.matrix.txt',
-            '--gen-pos-file', 'data/gencode_v19_gene_pos_truncated_sorted.txt',
+            '--matrix-path', 'ideogram/tests/data/oligodendroglioma_expression_truncated.counts.matrix.txt',
+            '--gen-pos-file', 'ideogram/tests/data/gencode_v19_gene_pos_truncated_sorted.txt',
             '--cluster-names', 'Observations',
             '--ref-cluster-names', 'Microglia/Macrophage', 'Oligodendrocytes (non-malignant)',
-            '--cluster-paths', 'data/oligodendroglioma_annotations_downsampled.cluster.txt',
-            '--metadata-path', 'data/oligodendroglioma_annotations_downsampled.cluster.txt',
+            '--cluster-paths', 'ideogram/tests/data/oligodendroglioma_annotations_downsampled.cluster.txt',
+            '--metadata-path', 'ideogram/tests/data/oligodendroglioma_annotations_downsampled.cluster.txt',
             '--output-dir', output_dir
         ]
 
@@ -69,11 +69,11 @@ class MatrixToIdeogramAnnotsTestCase(unittest.TestCase):
         """
         output_dir = 'output_infercnv_example/'
         args = [
-            '--matrix-path', 'data/oligodendroglioma_expression_truncated.counts.matrix.txt',
-            '--gen-pos-file', 'data/gencode_v19_gene_pos_truncated_sorted.txt',
+            '--matrix-path', 'ideogram/tests/data/oligodendroglioma_expression_truncated.counts.matrix.txt',
+            '--gen-pos-file', 'ideogram/tests/data/gencode_v19_gene_pos_truncated_sorted.txt',
             '--cluster-names', 'Observations',
-            '--cluster-paths', 'data/oligodendroglioma_annotations_downsampled.cluster.txt',
-            '--metadata-path', 'data/oligodendroglioma_annotations_downsampled.cluster.txt',
+            '--cluster-paths', 'ideogram/tests/data/oligodendroglioma_annotations_downsampled.cluster.txt',
+            '--metadata-path', 'ideogram/tests/data/oligodendroglioma_annotations_downsampled.cluster.txt',
             '--output-dir', output_dir
         ]
 
