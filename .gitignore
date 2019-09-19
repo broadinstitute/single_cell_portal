@@ -6,3 +6,7 @@ scripts/genomes/output/
 .vscode
 scripts/__pycache__
 *.log
+test_output/
+.coverage
+output_infercnv_example/
+venv/
