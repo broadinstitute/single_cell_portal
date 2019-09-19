@@ -38,11 +38,11 @@ class MatrixToIdeogramAnnotsTestCase(unittest.TestCase):
         end_output_dir = output_dir + 'ideogram_exp_means/'
 
         # Verify output file names
-        files = glob(end_output_dir + '*')
-        expected_files = [
+        files = sorted(glob(end_output_dir + '*'))
+        expected_files = sorted([
             end_output_dir + 'ideogram_exp_means__Observations--Sample--group--study.json',
             end_output_dir + 'ideogram_exp_means__Observations--Sample--group--cluster.json'
-        ]
+        ])
         self.maxDiff = None
         print('files')
         print(files)
