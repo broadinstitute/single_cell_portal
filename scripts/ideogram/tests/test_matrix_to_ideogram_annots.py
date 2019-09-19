@@ -37,17 +37,13 @@ class MatrixToIdeogramAnnotsTestCase(unittest.TestCase):
 
         end_output_dir = output_dir + 'ideogram_exp_means/'
 
-        # Verify output file names
+        # Verify output file names.
+        # `glob` results are unordered, so sort them to make tests deterministic.
         files = sorted(glob(end_output_dir + '*'))
         expected_files = sorted([
             end_output_dir + 'ideogram_exp_means__Observations--Sample--group--study.json',
             end_output_dir + 'ideogram_exp_means__Observations--Sample--group--cluster.json'
         ])
-        self.maxDiff = None
-        print('files')
-        print(files)
-        print('expected_files')
-        print(expected_files)
         self.assertEqual(files, expected_files)
 
         cluster_annots_file = end_output_dir + 'ideogram_exp_means__Observations--Sample--group--cluster.json'

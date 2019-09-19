@@ -1,4 +1,5 @@
 # Single-Cell Portal
+[![Build status](https://img.shields.io/circleci/build/github/broadinstitute/single_cell_portal.svg)](https://circleci.com/gh/broadinstitute/single_cell_portal)
 
 Hello and thank you for using the Single-Cell Portal. We hope the portal will contribute to open science by enabling visualizing and sharing scientific insight and data surrounding single-cell RNA-Seq.
 
