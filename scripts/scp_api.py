@@ -538,7 +538,7 @@ class SCPAPIManager(APIManager):
         return [gsutil_stat, filename]
 
     def upload_study_file(self, file, file_type, study_name, name=None,
-                    description="", dry_run=False, **kwargs):
+                    description="", parse=False, dry_run=False, **kwargs):
         """Wrapper for study file upload.
 
         Upload via gsutil, then point SCP to resulting object in bucket.
@@ -559,7 +559,6 @@ class SCPAPIManager(APIManager):
             if s['_id']['$oid'] == study_id:
                 study = s
                 break
-
         bucket_id = study['bucket_id']
 
         [gsutil_stat, filename] = self.upload_via_gsutil(bucket_id, file)
@@ -575,33 +574,43 @@ class SCPAPIManager(APIManager):
                 'generation': gsutil_stat['Generation']
             }
         }
+        for kwarg in kwargs:
+            # Handles file-type specific fields, e.g. "species" and "genome"
+            # for expression matrix files
+            file_fields['study_file'][kwarg] = kwargs[kwarg]
 
         ret = self.do_post(command=self.api_base + 'studies/' + study_id + '/study_files',
                            values=file_fields, dry_run=dry_run)
+        # print(f'/study_files response: {ret["response"].text}')
 
-        print(ret["response"].text)
-        dir(ret["response"])
+        if parse:
+            print(f'before /parse')
+            study_files_response = ret['response'].json()
+            study_file_id = study_files_response['_id']['$oid']
+            parse = f'{self.api_base}studies/{study_id}/study_files/{study_file_id}/parse'
+            ret = self.do_post(command=parse, values=None, dry_run=dry_run)
+            # print(f'/parse response: {ret["response"].text}')
+
         return(ret)
 
     def upload_metadata(self, file, study_name, description="", dry_run=False):
         print("UPLOAD METADATA FILE")
         return self.upload_study_file(file, 'Metadata', study_name,
-            description=description, dry_run=dry_run)
+            description=description, parse=True, dry_run=dry_run)
 
     def upload_expression_matrix(self, file, study_name, species=None,
                             genome=None, description="", dry_run=False):
         print("UPLOAD EXPRESSION MATRIX FILE")
         return self.upload_study_file(file, 'Expression Matrix', study_name,
                                 description=description, species=species,
-                                genome=genome, dry_run=dry_run)
+                                genome=genome, parse=True, dry_run=dry_run)
 
     def upload_cluster(self, file, study_name, cluster_name, description="",
                     x="X", y="Y", z="Z", dry_run=False):
         print("UPLOAD CLUSTER FILE")
-
         return self.upload_study_file(file, 'Cluster', study_name,
             cluster_name=cluster_name, description=description,
-            x=x, y=x, z=x, dry_run=dry_run)
+            x=x, y=x, z=x, parse=True, dry_run=dry_run)
 
 class DSSAPIManager(APIManager):
     '''
