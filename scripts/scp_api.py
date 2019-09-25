@@ -559,7 +559,6 @@ class SCPAPIManager(APIManager):
             if s['_id']['$oid'] == study_id:
                 study = s
                 break
-
         bucket_id = study['bucket_id']
 
         [gsutil_stat, filename] = self.upload_via_gsutil(bucket_id, file)
@@ -582,18 +581,21 @@ class SCPAPIManager(APIManager):
 
         ret = self.do_post(command=self.api_base + 'studies/' + study_id + '/study_files',
                            values=file_fields, dry_run=dry_run)
+        # print(f'/study_files response: {ret["response"].text}')
 
         if parse:
+            print(f'before /parse')
             study_files_response = ret['response'].json()
             study_file_id = study_files_response['_id']['$oid']
             parse = f'{self.api_base}studies/{study_id}/study_files/{study_file_id}/parse'
             ret = self.do_post(command=parse, values=None, dry_run=dry_run)
+            # print(f'/parse response: {ret["response"].text}')
 
         return(ret)
 
     def upload_metadata(self, file, study_name, description="", dry_run=False):
         print("UPLOAD METADATA FILE")
-        response = self.upload_study_file(file, 'Metadata', study_name,
+        return self.upload_study_file(file, 'Metadata', study_name,
             description=description, parse=True, dry_run=dry_run)
 
     def upload_expression_matrix(self, file, study_name, species=None,
@@ -606,11 +608,9 @@ class SCPAPIManager(APIManager):
     def upload_cluster(self, file, study_name, cluster_name, description="",
                     x="X", y="Y", z="Z", dry_run=False):
         print("UPLOAD CLUSTER FILE")
-
-        response = self.upload_study_file(file, 'Cluster', study_name,
+        return self.upload_study_file(file, 'Cluster', study_name,
             cluster_name=cluster_name, description=description,
             x=x, y=x, z=x, parse=True, dry_run=dry_run)
-        return response
 
 class DSSAPIManager(APIManager):
     '''
