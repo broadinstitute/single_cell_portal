@@ -4,7 +4,7 @@
 
 This library is used in client code like manage_study.py.  You can find
 documentation on the upstream REST API that this module wraps at:
-https://portals.broadinstitute.org/single_cell/api/swagger_docs/v1
+https://singlecell.broadinstitute.org/single_cell/api/swagger_docs/v1
 """
 
 import requests
@@ -87,7 +87,7 @@ class APIManager:
         return
 
     def login(self, token=None, dry_run=False, 
-        api_base='https://portals.broadinstitute.org/single_cell/api/v1/'):
+        api_base='https://singlecell.broadinstitute.org/single_cell/api/v1/'):
         """
         Authenticates as user and get's token to perform actions on the user's behalf.
 
@@ -225,9 +225,22 @@ class APIManager:
         :return: Dict of response, status code, and status.
         '''
 
-        if self.verbose: print(ret)
+        if self.verbose:
+            print(f'HTTP response status {ret.status_code}: {ret.reason}')
         api_return = {}
         api_return[c_SUCCESS_RET_KEY] = ret.status_code in [c_API_OK, c_DELETE_OK]
+        if ret.status_code not in [c_API_OK, c_DELETE_OK]:
+            print(f'Error {ret.status_code}: {ret.reason}')
+            if ret.status_code == 401:
+                print('')
+                print('Are you still signed in?  SCP automatically logs you out after a period of inactivity.')
+                print('Try logging in and re-assigning your access token like so:')
+                print('')
+                print('\tgcloud auth login')
+                print('\tACCESS_TOKEN=`gcloud auth print-access-token`')
+                print('')
+                print('If you are still signed in, then you do not have authorization for the requested resource.')
+                print('')
         api_return[c_CODE_RET_KEY] = ret.status_code
         api_return[c_RESPONSE] = ret
         return(api_return)
@@ -374,10 +387,10 @@ class SCPAPIManager(APIManager):
         return no_error
 
     def create_study(self, study_name,
-                     study_description="Single Cell Genomics study",
+                     study_description='Single Cell Genomics Study',
                      branding=None,
                      billing=None,
-                     is_public=False,
+                     is_public=True,
                      dry_run=False):
         '''
         Create a study name using the REST API.
@@ -388,7 +401,7 @@ class SCPAPIManager(APIManager):
         :param study_description: String study description
         :param branding: String branding
         :param billing: String FireCloud Billing object
-        :param is_public: Boolean indicator if the sudy should be public (True)
+        :param is_public: Boolean indicator if the study should be public
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
         '''

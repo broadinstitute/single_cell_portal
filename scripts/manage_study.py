@@ -16,20 +16,23 @@ See https://github.com/broadinstitute/single_cell_portal#convenience-scripts
 for other requirements.
 
 EXAMPLES
-# First, sign in
+# First, sign in and assign access token
 gcloud auth login
+ACCESS_TOKEN=`gcloud auth print-access-token`
 
 # List studies in SCP
-$ python manage_study.py list-studies
+python manage_study.py list-studies
 
 # Get number of studies in SCP, using token to bypass browser log-in
-$ python manage_study.py --token=`gcloud auth print-access-token` list-studies --summary
+python manage_study.py --token=$ACCESS_TOKEN list-studies --summary
 
 # Get help for "create-study"
-$ python manage_study.py create-study --help
+python manage_study.py create-study --help
 
 # Create a study named "CLI test"
-$ python3 manage_study.py --token=`gcloud auth print-access-token` create-study --study-name "CLI test"
+python3 manage_study.py --token=$ACCESS_TOKEN create-study --study-name "CLI test"
+
+
 
 """
 
@@ -59,6 +62,12 @@ def manage_call_return(call_return, verbose=False):
         print(scp_api.SCPAPIManager.describe_status_code(call_return[scp_api.c_CODE_RET_KEY]))
     if not call_return[scp_api.c_SUCCESS_RET_KEY]:
         exit(call_return[scp_api.c_CODE_RET_KEY])
+
+def succeeded(ret):
+    """Whether response succeeded
+    """
+    # 2xx, e.g. 200 or 204, means success
+    return str(ret['response'].status_code)[0] == '2'
 
 def login(manager=None, dry_run=False, api_base=None, verbose=False):
     '''
@@ -122,19 +131,23 @@ parser_create_studies = subargs.add_parser(c_TOOL_STUDY,
 parser_create_studies.add_argument(
     '--description', dest='study_description',
     default="Single Cell Genomics Study",
-    help='Short description of the study.'
+    help='Short description of the study'
 )
 parser_create_studies.add_argument(
     '--study-name', dest='study_name', required=True,
-    help='Short name of the study.'
+    help='Short name of the study'
 )
 parser_create_studies.add_argument(
     '--branding', dest='branding', default=None,
-    help='Portal branding to associate with the study.'
+    help='Portal branding to associate with the study'
 )
 parser_create_studies.add_argument(
-    '--billing', dest='billing', default=None,
-    help='Portal billing project to associate with the study.'
+    '--billing', default=None,
+    help='Portal billing project to associate with the study'
+)
+parser_create_studies.add_argument(
+    '--is-private', action='store_true',
+    help='Whether the study is private'
 )
 
 ## Permissions subparser
@@ -248,7 +261,7 @@ verbose = parsed_args.verbose
 
 env_origin_map = {
     'development': 'https://localhost',
-    'production': 'https://portals.broadinstitute.org'
+    'production': 'https://singlecell.broadinstitute.org'
 }
 origin = env_origin_map[parsed_args.environment]
 api_base = origin + '/single_cell/api/v1/'
@@ -258,8 +271,8 @@ connection = login(manager=None, dry_run=parsed_args.dry_run, api_base=api_base,
 
 ## Handle list studies
 if hasattr(parsed_args, "summarize_list"):
-    if verbose: print("LIST STUDIES")
-    ret = connection.get_studies(dry_run=parsed_args.dry_run, verbose=verbose)
+    if verbose: print("START LIST STUDIES")
+    ret = connection.get_studies(dry_run=parsed_args.dry_run)
     manage_call_return(ret)
     print("You have access to "+str(len(ret[scp_api.c_STUDIES_RET_KEY]))+" studies.")
     if not parsed_args.summarize_list:
@@ -267,26 +280,32 @@ if hasattr(parsed_args, "summarize_list"):
 
 ## Create new study
 if hasattr(parsed_args, "study_description") and not parsed_args.study_name is None:
-    if verbose: print("CREATE STUDY")
+    if verbose: print("START CREATE STUDY")
+    is_public = not parsed_args.is_private
     ret = connection.create_study(study_name=parsed_args.study_name,
                                   study_description=parsed_args.study_description,
                                   branding=parsed_args.branding,
                                   billing=parsed_args.billing,
+                                  is_public=is_public,
                                   dry_run=parsed_args.dry_run)
     manage_call_return(ret)
+    if succeeded(ret):
+        print('Created study')
 
 ## Share with user
 if hasattr(parsed_args, "permission"):
-    if verbose: print("SET PERMISSION")
+    if verbose: print("START SET PERMISSION")
     ret = connection.set_permission(study_name=parsed_args.study_name,
                                     email=parsed_args.email,
                                     access=parsed_args.permission,
                                     dry_run=parsed_args.dry_run)
     manage_call_return(ret)
+    if succeeded(ret):
+        print('Set permission')
 
 ## Validate files
 if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
-    if verbose: print("VALIDATE FILES")
+    if verbose: print("START VALIDATE FILES")
     command = ["python3 verify_portal_file.py"]
 
     if hasattr(parsed_args, "cluster_file"):
@@ -307,7 +326,7 @@ if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
 
 ## Upload cluster file
 if hasattr(parsed_args, "cluster_file"):
-    if verbose: print("UPLOAD CLUSTER FILE")
+    if verbose: print("START UPLOAD CLUSTER FILE")
     connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.upload_cluster(file=parsed_args.cluster_file,
                                     study_name=parsed_args.study_name,
@@ -318,19 +337,23 @@ if hasattr(parsed_args, "cluster_file"):
                                     z=parsed_args.z_label,
                                     dry_run=parsed_args.dry_run)
     manage_call_return(ret)
+    if succeeded(ret):
+        print('Uploaded and began parse of cluster file')
 
 ## Upload metadata file
 if hasattr(parsed_args, "metadata_file"):
-    if verbose: print("UPLOAD METADATA FILE")
+    if verbose: print("START UPLOAD METADATA FILE")
     connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.upload_metadata(file=parsed_args.metadata_file,
                                     study_name=parsed_args.study_name,
                                     dry_run=parsed_args.dry_run)
     manage_call_return(ret)
+    if succeeded(ret):
+        print('Uploaded and began parse of metadata file')
 
 ## Upload expression file
 if hasattr(parsed_args, "expression_file"):
-    if verbose: print("UPLOAD EXPRESSION FILE")
+    if verbose: print("START UPLOAD EXPRESSION FILE")
     connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.upload_expression_matrix(file=parsed_args.expression_file,
                                     study_name=parsed_args.study_name,
@@ -338,6 +361,8 @@ if hasattr(parsed_args, "expression_file"):
                                     genome=parsed_args.genome,
                                     dry_run=parsed_args.dry_run)
     manage_call_return(ret)
+    if succeeded(ret):
+        print('Uploaded and began parse of expression file')
 
 ## Upload miscellaneous file
 ### TODO
