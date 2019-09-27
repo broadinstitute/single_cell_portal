@@ -64,7 +64,7 @@ def manage_call_return(call_return, verbose=False):
         exit(call_return[scp_api.c_CODE_RET_KEY])
 
 def succeeded(ret):
-    """Whether response succeeded
+    """Whether request succeeded
     """
     # 2xx, e.g. 200 or 204, means success
     return str(ret['response'].status_code)[0] == '2'
