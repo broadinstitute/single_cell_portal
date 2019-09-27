@@ -312,7 +312,7 @@ if hasattr(parsed_args, "cluster_file"):
     ret = connection.upload_cluster(file=parsed_args.cluster_file,
                                     study_name=parsed_args.study_name,
                                     cluster_name=parsed_args.cluster_name,
-                                    description=parsed_args.cluster_description,
+                                    description=parsed_args.description,
                                     x=parsed_args.x_label,
                                     y=parsed_args.y_label,
                                     z=parsed_args.z_label,
