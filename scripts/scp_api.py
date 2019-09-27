@@ -239,8 +239,6 @@ class APIManager:
                 print('\tgcloud auth login')
                 print('\tACCESS_TOKEN=`gcloud auth print-access-token`')
                 print('')
-                print('If you are still signed in, then you do not have authorization for the requested resource.')
-                print('')
         api_return[c_CODE_RET_KEY] = ret.status_code
         api_return[c_RESPONSE] = ret
         return(api_return)
