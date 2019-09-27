@@ -16,14 +16,20 @@ See https://github.com/broadinstitute/single_cell_portal#convenience-scripts
 for other requirements.
 
 EXAMPLES
+# First, sign in
+gcloud auth login
+
 # List studies in SCP
 $ python manage_study.py list-studies
 
 # Get number of studies in SCP, using token to bypass browser log-in
 $ python manage_study.py --token=`gcloud auth print-access-token` list-studies --summary
 
-# Get help for "create-study" subparser
+# Get help for "create-study"
 $ python manage_study.py create-study --help
+
+# Create a study named "CLI test"
+$ python3 manage_study.py --token=`gcloud auth print-access-token` create-study --study-name "CLI test"
 
 """
 
@@ -40,20 +46,21 @@ c_TOOL_METADATA = "upload-metadata"
 c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
 
-def manage_call_return(call_return):
+def manage_call_return(call_return, verbose=False):
     '''
     Accesses the error codes in the underlying library and check the return code.
 
     :param call_return: Dict returned from scp_api call with REST call return info
     :return: No return will exit on error
     '''
-    # Print error code and describe code then exit if not sucess
-    print("Error Code = " + str(call_return[scp_api.c_CODE_RET_KEY]))
-    print(scp_api.SCPAPIManager.describe_status_code(call_return[scp_api.c_CODE_RET_KEY]))
+    # Print error code and describe code then exit if not success
+    if verbose:
+        print("HTTP status code = " + str(call_return[scp_api.c_CODE_RET_KEY]))
+        print(scp_api.SCPAPIManager.describe_status_code(call_return[scp_api.c_CODE_RET_KEY]))
     if not call_return[scp_api.c_SUCCESS_RET_KEY]:
         exit(call_return[scp_api.c_CODE_RET_KEY])
 
-def login(manager=None, dry_run=False, api_base=None):
+def login(manager=None, dry_run=False, api_base=None, verbose=False):
     '''
     Login to authorize credentials.
 
@@ -62,7 +69,7 @@ def login(manager=None, dry_run=False, api_base=None):
     :return:
     '''
     if manager is None:
-        manager=scp_api.SCPAPIManager()
+        manager=scp_api.SCPAPIManager(verbose=verbose)
         manager.login(token=parsed_args.token,
                       dry_run=dry_run,
                       api_base=api_base)
@@ -75,7 +82,7 @@ args = argparse.ArgumentParser(
 )
 args.add_argument(
     '--token', dest='token', default=None,
-    help='Personal token after logging into Google (Oauth2).  This token is not persisted after the finish of the script.'
+    help='Personal token after logging into Google (OAuth2).  This token is not persisted after the finish of the script.'
 )
 args.add_argument(
     '--dry_run', dest='dry_run', action='store_true',
@@ -85,6 +92,11 @@ args.add_argument(
     '--no-validate', dest='validate',
     action='store_false',
     help='Do not check file locally before uploading.'
+)
+args.add_argument(
+    '--verbose',
+    action='store_true',
+    help='Whether to print debugging information'
 )
 
 args.add_argument(
@@ -227,9 +239,12 @@ parser_upload_metadata.add_argument(
 )
 
 parsed_args = args.parse_args()
-print("Args----")
-print(vars(parsed_args))
-print("-----Args")
+if parsed_args.verbose:
+    print("Args----")
+    print(vars(parsed_args))
+    print("-----Args")
+
+verbose = parsed_args.verbose
 
 env_origin_map = {
     'development': 'https://localhost',
@@ -239,12 +254,12 @@ origin = env_origin_map[parsed_args.environment]
 api_base = origin + '/single_cell/api/v1/'
 
 # Login connection
-connection = login(manager=None, dry_run=parsed_args.dry_run, api_base=api_base)
+connection = login(manager=None, dry_run=parsed_args.dry_run, api_base=api_base, verbose=verbose)
 
 ## Handle list studies
 if hasattr(parsed_args, "summarize_list"):
-    print("LIST STUDIES")
-    ret = connection.get_studies(dry_run=parsed_args.dry_run)
+    if verbose: print("LIST STUDIES")
+    ret = connection.get_studies(dry_run=parsed_args.dry_run, verbose=verbose)
     manage_call_return(ret)
     print("You have access to "+str(len(ret[scp_api.c_STUDIES_RET_KEY]))+" studies.")
     if not parsed_args.summarize_list:
@@ -252,7 +267,7 @@ if hasattr(parsed_args, "summarize_list"):
 
 ## Create new study
 if hasattr(parsed_args, "study_description") and not parsed_args.study_name is None:
-    print("CREATE STUDY")
+    if verbose: print("CREATE STUDY")
     ret = connection.create_study(study_name=parsed_args.study_name,
                                   study_description=parsed_args.study_description,
                                   branding=parsed_args.branding,
@@ -262,7 +277,7 @@ if hasattr(parsed_args, "study_description") and not parsed_args.study_name is N
 
 ## Share with user
 if hasattr(parsed_args, "permission"):
-    print("SET PERMISSION")
+    if verbose: print("SET PERMISSION")
     ret = connection.set_permission(study_name=parsed_args.study_name,
                                     email=parsed_args.email,
                                     access=parsed_args.permission,
@@ -271,7 +286,7 @@ if hasattr(parsed_args, "permission"):
 
 ## Validate files
 if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
-    print("VALIDATE FILES")
+    if verbose: print("VALIDATE FILES")
     command = ["python3 verify_portal_file.py"]
 
     if hasattr(parsed_args, "cluster_file"):
@@ -285,14 +300,14 @@ if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
         print("TESTING:: no command executed."+os.linesep+"Would have executed: " + os.linesep + " ".join(command))
     else:
         valid_code = Commandline.Commandline().func_CMD(" ".join(command))
-        print(valid_code)
+        if verbose: print(valid_code)
         if not valid_code:
             print("There was an error validating the files, did not upload. Code=" + str(valid_code))
             exit(valid_code)
 
 ## Upload cluster file
 if hasattr(parsed_args, "cluster_file"):
-    print("UPLOAD CLUSTER FILE")
+    if verbose: print("UPLOAD CLUSTER FILE")
     connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.upload_cluster(file=parsed_args.cluster_file,
                                     study_name=parsed_args.study_name,
@@ -306,7 +321,7 @@ if hasattr(parsed_args, "cluster_file"):
 
 ## Upload metadata file
 if hasattr(parsed_args, "metadata_file"):
-    print("UPLOAD METADATA FILE")
+    if verbose: print("UPLOAD METADATA FILE")
     connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.upload_metadata(file=parsed_args.metadata_file,
                                     study_name=parsed_args.study_name,
@@ -315,7 +330,7 @@ if hasattr(parsed_args, "metadata_file"):
 
 ## Upload expression file
 if hasattr(parsed_args, "expression_file"):
-    print("UPLOAD EXPRESSION FILE")
+    if verbose: print("UPLOAD EXPRESSION FILE")
     connection = login(manager=connection, dry_run=parsed_args.dry_run)
     ret = connection.upload_expression_matrix(file=parsed_args.expression_file,
                                     study_name=parsed_args.study_name,
