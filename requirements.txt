@@ -1,7 +1,8 @@
 pandas>=0.16.2
 requests>=2.21.0
+
+# TODO: Add `scp-ingest-pipeline` to PyPI (https://pypi.org).  Like NPM or RubyGems, but for Python.
 git+git://github.com/broadinstitute/scp-ingest-pipeline@92b8773#egg=scp-ingest-pipeline
-# /Users/eweitz/scp-ingest-pipeline
 
 # Dev dependencies
 pytest==5.0.1
