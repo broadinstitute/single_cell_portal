@@ -1,7 +1,7 @@
 pandas>=0.16.2
 requests>=2.21.0
-# git+git://github.com/broadinstitute/scp-ingest-pipeline@e3160aa#egg=scp-ingest-pipeline
-/Users/eweitz/scp-ingest-pipeline
+git+git://github.com/broadinstitute/scp-ingest-pipeline@92b8773#egg=scp-ingest-pipeline
+# /Users/eweitz/scp-ingest-pipeline
 
 # Dev dependencies
 pytest==5.0.1
