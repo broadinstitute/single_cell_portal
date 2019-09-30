@@ -9,6 +9,11 @@ from manage_study import validate_metadata_file
 class ManageStudyTestCase(unittest.TestCase):
 
     def test_validate_metadata_file_invalid_ontology(self):
+        """Unconventional metadata file should fail validation
+
+        This basic test ensures that the external dependency
+        `scp-ingest-pipeline` in our public CLI works as expected.
+        """
         convention_path = '../demo_data/AMC_v1.1.0.json'
         invalid_metadata_path = 'tests/data/metadata_invalid_ontology.tsv'
         with self.assertRaises(SystemExit) as cm:
@@ -17,8 +22,8 @@ class ManageStudyTestCase(unittest.TestCase):
         
 
     def test_validate_metadata_file_valid_ontology(self):
-        '''
-        '''
+        """Conventional metadata file should pass validation
+        """
         convention_path = '../demo_data/AMC_v1.1.0.json'
         valid_metadata_path = 'tests/data/metadata_valid_ontology.tsv'
         validate_metadata_file(convention_path, valid_metadata_path)
