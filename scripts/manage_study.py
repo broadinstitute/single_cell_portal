@@ -37,9 +37,21 @@ python3 manage_study.py --token=$ACCESS_TOKEN create-study --study-name "CLI tes
 """
 
 import argparse
-import Commandline
+import json
 import os
+
+import Commandline
 import scp_api
+
+import ingest
+from ingest.cell_metadata import CellMetadata
+from ingest.validation.validate_metadata import (
+    collect_jsonschema_errors,
+    validate_collected_ontology_data,
+    report_issues,
+    serialize_issues,
+    exit_if_errors
+)
 
 # Subparser tool names
 c_TOOL_LIST_STUDY = "list-studies"
@@ -83,6 +95,18 @@ def login(manager=None, dry_run=False, api_base=None, verbose=False):
                       dry_run=dry_run,
                       api_base=api_base)
     return(manager)
+
+def validate_metadata_file(convention_path, metadata_path):
+    with open(convention_path) as f:
+        convention = json.load(f)
+    metadata = CellMetadata(metadata_path, '', '')
+    print(f'Validating {metadata_path}')
+    format_valid = metadata.validate_format()
+    collect_jsonschema_errors(metadata, convention)
+    validate_collected_ontology_data(metadata, convention)
+    serialize_issues(metadata)
+    report_issues(metadata)
+    exit_if_errors(metadata)
 
 args = argparse.ArgumentParser(
     prog='manage_study.py',
@@ -242,6 +266,10 @@ parser_upload_metadata.add_argument(
     help='Metadata file to load.'
 )
 parser_upload_metadata.add_argument(
+    '--convention',
+    help='Metadata convention JSON file '
+)
+parser_upload_metadata.add_argument(
     '--study-name', dest='study_name', required=True,
     help='Name of the study to add the file.'
 )
@@ -305,24 +333,30 @@ if hasattr(parsed_args, "permission"):
 
 ## Validate files
 if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
+
     if verbose: print("START VALIDATE FILES")
-    command = ["python3 verify_portal_file.py"]
 
-    if hasattr(parsed_args, "cluster_file"):
-        command.extend(["--coordinates-file", parsed_args.cluster_file])
-    if hasattr(parsed_args, "expression_file"):
-        command.extend(["--expression-files", parsed_args.expression_file])
     if hasattr(parsed_args, "metadata_file"):
-        command.extend(["--metadata-file", parsed_args.metadata_file])
+        convention_path = parsed_args.convention
+        validate_metadata_file(convention_path, parsed_args.metadata_file)
 
-    if parsed_args.dry_run:
-        print("TESTING:: no command executed."+os.linesep+"Would have executed: " + os.linesep + " ".join(command))
-    else:
-        valid_code = Commandline.Commandline().func_CMD(" ".join(command))
-        if verbose: print(valid_code)
-        if not valid_code:
-            print("There was an error validating the files, did not upload. Code=" + str(valid_code))
-            exit(valid_code)
+    # command = ["python3 verify_portal_file.py"]
+
+    # if hasattr(parsed_args, "cluster_file"):
+    #     command.extend(["--coordinates-file", parsed_args.cluster_file])
+    # if hasattr(parsed_args, "expression_file"):
+    #     command.extend(["--expression-files", parsed_args.expression_file])
+    # if hasattr(parsed_args, "metadata_file"):
+    #     command.extend(["--metadata-file", parsed_args.metadata_file])
+
+    # if parsed_args.dry_run:
+    #     print("TESTING:: no command executed."+os.linesep+"Would have executed: " + os.linesep + " ".join(command))
+    # else:
+    #     valid_code = Commandline.Commandline().func_CMD(" ".join(command))
+    #     if verbose: print(valid_code)
+    #     if not valid_code:
+    #         print("There was an error validating the files, did not upload. Code=" + str(valid_code))
+    #         exit(valid_code)
 
 ## Upload cluster file
 if hasattr(parsed_args, "cluster_file"):
