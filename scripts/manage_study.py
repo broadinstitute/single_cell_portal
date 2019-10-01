@@ -31,15 +31,24 @@ python manage_study.py create-study --help
 
 # Create a study named "CLI test"
 python3 manage_study.py --token=$ACCESS_TOKEN create-study --study-name "CLI test"
-
-
-
 """
 
 import argparse
-import Commandline
+import json
 import os
+
+import Commandline
 import scp_api
+
+import ingest
+from ingest.cell_metadata import CellMetadata
+from ingest.validation.validate_metadata import (
+    collect_jsonschema_errors,
+    validate_collected_ontology_data,
+    report_issues,
+    serialize_issues,
+    exit_if_errors
+)
 
 # Subparser tool names
 c_TOOL_LIST_STUDY = "list-studies"
@@ -83,6 +92,17 @@ def login(manager=None, dry_run=False, api_base=None, verbose=False):
                       dry_run=dry_run,
                       api_base=api_base)
     return(manager)
+
+def validate_metadata_file(convention_path, metadata_path):
+    with open(convention_path) as f:
+        convention = json.load(f)
+    metadata = CellMetadata(metadata_path, '', '')
+    print(f'Validating {metadata_path}')
+    collect_jsonschema_errors(metadata, convention)
+    validate_collected_ontology_data(metadata, convention)
+    serialize_issues(metadata)
+    report_issues(metadata)
+    exit_if_errors(metadata)
 
 args = argparse.ArgumentParser(
     prog='manage_study.py',
@@ -242,6 +262,10 @@ parser_upload_metadata.add_argument(
     help='Metadata file to load.'
 )
 parser_upload_metadata.add_argument(
+    '--convention',
+    help='Metadata convention JSON file '
+)
+parser_upload_metadata.add_argument(
     '--study-name', dest='study_name', required=True,
     help='Name of the study to add the file.'
 )
@@ -266,116 +290,123 @@ env_origin_map = {
 origin = env_origin_map[parsed_args.environment]
 api_base = origin + '/single_cell/api/v1/'
 
-# Login connection
-connection = login(manager=None, dry_run=parsed_args.dry_run, api_base=api_base, verbose=verbose)
+if __name__ == '__main__':
+    # Login connection
+    connection = login(manager=None, dry_run=parsed_args.dry_run, api_base=api_base, verbose=verbose)
 
-## Handle list studies
-if hasattr(parsed_args, "summarize_list"):
-    if verbose: print("START LIST STUDIES")
-    ret = connection.get_studies(dry_run=parsed_args.dry_run)
-    manage_call_return(ret)
-    print("You have access to "+str(len(ret[scp_api.c_STUDIES_RET_KEY]))+" studies.")
-    if not parsed_args.summarize_list:
-        print(os.linesep.join(ret[scp_api.c_STUDIES_RET_KEY]))
+    ## Handle list studies
+    if hasattr(parsed_args, "summarize_list"):
+        if verbose: print("START LIST STUDIES")
+        ret = connection.get_studies(dry_run=parsed_args.dry_run)
+        manage_call_return(ret)
+        print("You have access to "+str(len(ret[scp_api.c_STUDIES_RET_KEY]))+" studies.")
+        if not parsed_args.summarize_list:
+            print(os.linesep.join(ret[scp_api.c_STUDIES_RET_KEY]))
 
-## Create new study
-if hasattr(parsed_args, "study_description") and not parsed_args.study_name is None:
-    if verbose: print("START CREATE STUDY")
-    is_public = not parsed_args.is_private
-    ret = connection.create_study(study_name=parsed_args.study_name,
-                                  study_description=parsed_args.study_description,
-                                  branding=parsed_args.branding,
-                                  billing=parsed_args.billing,
-                                  is_public=is_public,
-                                  dry_run=parsed_args.dry_run)
-    manage_call_return(ret)
-    if succeeded(ret):
-        print('Created study')
-
-## Share with user
-if hasattr(parsed_args, "permission"):
-    if verbose: print("START SET PERMISSION")
-    ret = connection.set_permission(study_name=parsed_args.study_name,
-                                    email=parsed_args.email,
-                                    access=parsed_args.permission,
+    ## Create new study
+    if hasattr(parsed_args, "study_description") and not parsed_args.study_name is None:
+        if verbose: print("START CREATE STUDY")
+        is_public = not parsed_args.is_private
+        ret = connection.create_study(study_name=parsed_args.study_name,
+                                    study_description=parsed_args.study_description,
+                                    branding=parsed_args.branding,
+                                    billing=parsed_args.billing,
+                                    is_public=is_public,
                                     dry_run=parsed_args.dry_run)
-    manage_call_return(ret)
-    if succeeded(ret):
-        print('Set permission')
+        manage_call_return(ret)
+        if succeeded(ret):
+            print('Created study')
 
-## Validate files
-if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
-    if verbose: print("START VALIDATE FILES")
-    command = ["python3 verify_portal_file.py"]
+    ## Share with user
+    if hasattr(parsed_args, "permission"):
+        if verbose: print("START SET PERMISSION")
+        ret = connection.set_permission(study_name=parsed_args.study_name,
+                                        email=parsed_args.email,
+                                        access=parsed_args.permission,
+                                        dry_run=parsed_args.dry_run)
+        manage_call_return(ret)
+        if succeeded(ret):
+            print('Set permission')
 
+    ## Validate files
+    if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
+
+        if verbose: print("START VALIDATE FILES")
+
+        if hasattr(parsed_args, "metadata_file"):
+            convention_path = parsed_args.convention
+            validate_metadata_file(convention_path, parsed_args.metadata_file)
+
+        # command = ["python3 verify_portal_file.py"]
+
+        # if hasattr(parsed_args, "cluster_file"):
+        #     command.extend(["--coordinates-file", parsed_args.cluster_file])
+        # if hasattr(parsed_args, "expression_file"):
+        #     command.extend(["--expression-files", parsed_args.expression_file])
+        # if hasattr(parsed_args, "metadata_file"):
+        #     command.extend(["--metadata-file", parsed_args.metadata_file])
+
+        # if parsed_args.dry_run:
+        #     print("TESTING:: no command executed."+os.linesep+"Would have executed: " + os.linesep + " ".join(command))
+        # else:
+        #     valid_code = Commandline.Commandline().func_CMD(" ".join(command))
+        #     if verbose: print(valid_code)
+        #     if not valid_code:
+        #         print("There was an error validating the files, did not upload. Code=" + str(valid_code))
+        #         exit(valid_code)
+
+    ## Upload cluster file
     if hasattr(parsed_args, "cluster_file"):
-        command.extend(["--coordinates-file", parsed_args.cluster_file])
-    if hasattr(parsed_args, "expression_file"):
-        command.extend(["--expression-files", parsed_args.expression_file])
+        if verbose: print("START UPLOAD CLUSTER FILE")
+        connection = login(manager=connection, dry_run=parsed_args.dry_run)
+        ret = connection.upload_cluster(file=parsed_args.cluster_file,
+                                        study_name=parsed_args.study_name,
+                                        cluster_name=parsed_args.cluster_name,
+                                        description=parsed_args.description,
+                                        x=parsed_args.x_label,
+                                        y=parsed_args.y_label,
+                                        z=parsed_args.z_label,
+                                        dry_run=parsed_args.dry_run)
+        manage_call_return(ret)
+        if succeeded(ret):
+            print('Uploaded and began parse of cluster file')
+
+    ## Upload metadata file
     if hasattr(parsed_args, "metadata_file"):
-        command.extend(["--metadata-file", parsed_args.metadata_file])
+        if verbose: print("START UPLOAD METADATA FILE")
+        connection = login(manager=connection, dry_run=parsed_args.dry_run)
+        ret = connection.upload_metadata(file=parsed_args.metadata_file,
+                                        study_name=parsed_args.study_name,
+                                        dry_run=parsed_args.dry_run)
+        manage_call_return(ret)
+        if succeeded(ret):
+            print('Uploaded and began parse of metadata file')
 
-    if parsed_args.dry_run:
-        print("TESTING:: no command executed."+os.linesep+"Would have executed: " + os.linesep + " ".join(command))
-    else:
-        valid_code = Commandline.Commandline().func_CMD(" ".join(command))
-        if verbose: print(valid_code)
-        if not valid_code:
-            print("There was an error validating the files, did not upload. Code=" + str(valid_code))
-            exit(valid_code)
+    ## Upload expression file
+    if hasattr(parsed_args, "expression_file"):
+        if verbose: print("START UPLOAD EXPRESSION FILE")
+        connection = login(manager=connection, dry_run=parsed_args.dry_run)
+        ret = connection.upload_expression_matrix(file=parsed_args.expression_file,
+                                        study_name=parsed_args.study_name,
+                                        species=parsed_args.species,
+                                        genome=parsed_args.genome,
+                                        dry_run=parsed_args.dry_run)
+        manage_call_return(ret)
+        if succeeded(ret):
+            print('Uploaded and began parse of expression file')
 
-## Upload cluster file
-if hasattr(parsed_args, "cluster_file"):
-    if verbose: print("START UPLOAD CLUSTER FILE")
-    connection = login(manager=connection, dry_run=parsed_args.dry_run)
-    ret = connection.upload_cluster(file=parsed_args.cluster_file,
-                                    study_name=parsed_args.study_name,
-                                    cluster_name=parsed_args.cluster_name,
-                                    description=parsed_args.description,
-                                    x=parsed_args.x_label,
-                                    y=parsed_args.y_label,
-                                    z=parsed_args.z_label,
-                                    dry_run=parsed_args.dry_run)
-    manage_call_return(ret)
-    if succeeded(ret):
-        print('Uploaded and began parse of cluster file')
+    ## Upload miscellaneous file
+    ### TODO
 
-## Upload metadata file
-if hasattr(parsed_args, "metadata_file"):
-    if verbose: print("START UPLOAD METADATA FILE")
-    connection = login(manager=connection, dry_run=parsed_args.dry_run)
-    ret = connection.upload_metadata(file=parsed_args.metadata_file,
-                                    study_name=parsed_args.study_name,
-                                    dry_run=parsed_args.dry_run)
-    manage_call_return(ret)
-    if succeeded(ret):
-        print('Uploaded and began parse of metadata file')
+    ## Validate and Upload and Sort 10X files
+    ### TODO
 
-## Upload expression file
-if hasattr(parsed_args, "expression_file"):
-    if verbose: print("START UPLOAD EXPRESSION FILE")
-    connection = login(manager=connection, dry_run=parsed_args.dry_run)
-    ret = connection.upload_expression_matrix(file=parsed_args.expression_file,
-                                    study_name=parsed_args.study_name,
-                                    species=parsed_args.species,
-                                    genome=parsed_args.genome,
-                                    dry_run=parsed_args.dry_run)
-    manage_call_return(ret)
-    if succeeded(ret):
-        print('Uploaded and began parse of expression file')
+    ## Validate and Upload 10X directory
+    ### TODO
 
-## Upload miscellaneous file
-### TODO
+    ## Validate and Upload fastqs
+    ### TODO
 
-## Validate and Upload and Sort 10X files
-### TODO
-
-## Validate and Upload 10X directory
-### TODO
-
-## Validate and Upload fastqs
-### TODO
-
-## Validate and Upload bams
-### TODO
+    ## Validate and Upload bams
+    ### TODO
 
