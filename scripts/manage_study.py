@@ -98,7 +98,6 @@ def validate_metadata_file(convention_path, metadata_path):
         convention = json.load(f)
     metadata = CellMetadata(metadata_path, '', '')
     print(f'Validating {metadata_path}')
-    format_valid = metadata.validate_format()
     collect_jsonschema_errors(metadata, convention)
     validate_collected_ontology_data(metadata, convention)
     serialize_issues(metadata)
