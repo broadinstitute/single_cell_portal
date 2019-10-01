@@ -4,10 +4,11 @@
 
 This library is used in client code like manage_study.py.  You can find
 documentation on the upstream REST API that this module wraps at:
-https://portals.broadinstitute.org/single_cell/api/swagger_docs/v1
+https://singlecell.broadinstitute.org/single_cell/api/swagger_docs/v1
 """
 
 import requests
+import urllib3
 import Commandline
 import random
 import string
@@ -15,12 +16,6 @@ import os
 import json
 
 import logging
-
-logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
-requests_log = logging.getLogger("requests.packages.urllib3")
-requests_log.setLevel(logging.DEBUG)
-requests_log.propagate = True
 
 # Constants
 c_AUTH = 'Authorization'
@@ -91,8 +86,8 @@ class APIManager:
     def __init__(self):
         return
 
-    def login(self, token=None, dry_run=False,
-        api_base='https://portals.broadinstitute.org/single_cell/api/v1/'):
+    def login(self, token=None, dry_run=False, 
+        api_base='https://singlecell.broadinstitute.org/single_cell/api/v1/'):
         """
         Authenticates as user and get's token to perform actions on the user's behalf.
 
@@ -103,7 +98,7 @@ class APIManager:
         """
 
         ## TODO add in auth from a file.
-        print("LOGIN")
+        if self.verbose: print("LOGIN")
         if token is None:
             token = self.do_browser_login(dry_run=dry_run)
         self.token = token
@@ -119,7 +114,7 @@ class APIManager:
         :return: Authentication token
         '''
 
-        print("BROWSER LOGIN")
+        if self.verbose: print("BROWSER LOGIN")
         if dry_run:
             print("DRY_RUN:: Did not login")
             return("DRY_RUN_TOKEN")
@@ -137,8 +132,9 @@ class APIManager:
         '''
 
         ## TODO add timeout and exception handling (Timeout exeception)
-        print("DO GET")
-        print(command)
+        if self.verbose:
+            print("DO GET")
+            print(command)
         if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {'Accept': 'application/json'}
@@ -160,16 +156,17 @@ class APIManager:
         '''
 
         ## TODO addtimeout and exception handling (Timeout exeception)
-        print("DO POST")
-        print(command)
-        print(values)
-        print(files)
+        if self.verbose:
+            print("DO POST")
+            print(command)
+            print(values)
+            print(files)
         if dry_run:
             print("DRY_RUN:: Returning success.")
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {c_AUTH: 'token {}'.format(self.token),
                 'Accept': 'application/json'}
-        print(head)
+        if self.verbose: print(head)
         if files is None:
             return(self.check_api_return(requests.post(command,
                                                              headers=head,
@@ -193,9 +190,10 @@ class APIManager:
         '''
 
         ## TODO add timeout and exception handling (Timeout exeception)
-        print("DO PATCH")
-        print(command)
-        print(values)
+        if self.verbose:
+            print("DO PATCH")
+            print(command)
+            print(values)
         if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_API_OK})
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
@@ -211,8 +209,9 @@ class APIManager:
         '''
 
         ## TODO add timeout and exception handling (Timeout exeception)
-        print("DO DELETE")
-        print(command)
+        if self.verbose:
+            print("DO DELETE")
+            print(command)
         if dry_run:
             return({c_SUCCESS_RET_KEY: True,c_CODE_RET_KEY: c_DELETE_OK})
         head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
@@ -226,9 +225,20 @@ class APIManager:
         :return: Dict of response, status code, and status.
         '''
 
-        print(ret)
+        if self.verbose:
+            print(f'HTTP response status {ret.status_code}: {ret.reason}')
         api_return = {}
         api_return[c_SUCCESS_RET_KEY] = ret.status_code in [c_API_OK, c_DELETE_OK]
+        if ret.status_code not in [c_API_OK, c_DELETE_OK]:
+            print(f'Error {ret.status_code}: {ret.reason}')
+            if ret.status_code == 401:
+                print('')
+                print('Are you still signed in?  SCP automatically logs you out after a period of inactivity.')
+                print('Try logging in and re-assigning your access token like so:')
+                print('')
+                print('\tgcloud auth login')
+                print('\tACCESS_TOKEN=`gcloud auth print-access-token`')
+                print('')
         api_return[c_CODE_RET_KEY] = ret.status_code
         api_return[c_RESPONSE] = ret
         return(api_return)
@@ -247,20 +257,32 @@ class APIManager:
 # The expected header
 class SCPAPIManager(APIManager):
     '''
-    API manager for the Single Cell Portal Endpoint.
+    API manager for the Single Cell Portal REST API
     '''
 
-    def __init__(self):
+    def __init__(self, verbose=False):
         '''
         Initialize for the SCP endpoint.
         '''
 
         APIManager.__init__(self)
-        print("INIT")
+        self.verbose = verbose
         self.api_base = None # set in APIManager.login()
         self.studies = None
         self.name_to_id = None
         self.bucket_id = None
+
+        if self.verbose:
+            print("INIT")
+
+            logging.basicConfig()
+            logging.getLogger().setLevel(logging.DEBUG)
+            requests_log = logging.getLogger("requests.packages.urllib3")
+            requests_log.setLevel(logging.DEBUG)
+            requests_log.propagate = True
+        else:
+            # Disable warning seen on localhost due to self-signed SSL certificate
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         # TODO: Hit the taxons API endpoint to get the list of available species.
         # self.species_genomes = {"cat":["felis_catus_9.0","felis_catus_8.0","felis_catus-6.2"]}
@@ -317,7 +339,7 @@ class SCPAPIManager(APIManager):
         :return: Response
         '''
 
-        print("GET STUDIES")
+        if self.verbose: print("GET STUDIES")
         resp = self.do_get(self.api_base + "studies", dry_run=dry_run)
         if dry_run:
             print("DRY_RUN:: Returned dummy names.")
@@ -363,10 +385,10 @@ class SCPAPIManager(APIManager):
         return no_error
 
     def create_study(self, study_name,
-                     study_description="Single Cell Genomics study",
+                     study_description='Single Cell Genomics Study',
                      branding=None,
                      billing=None,
-                     is_public=False,
+                     is_public=True,
                      dry_run=False):
         '''
         Create a study name using the REST API.
@@ -377,11 +399,11 @@ class SCPAPIManager(APIManager):
         :param study_description: String study description
         :param branding: String branding
         :param billing: String FireCloud Billing object
-        :param is_public: Boolean indicator if the sudy should be public (True)
+        :param is_public: Boolean indicator if the study should be public
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
         '''
-        print("CREATE STUDY:: " + study_name)
+        if self.verbose: print("CREATE STUDY:: " + study_name)
         # Study variable validation
         ## Study must not exist
         if self.study_exists(study_name=study_name, dry_run=dry_run):
@@ -427,7 +449,8 @@ class SCPAPIManager(APIManager):
         :param dry_run: If true, will do a dry run with no actual execution of functionality
         :return: Dict with response and additional information including status and errors
         '''
-        print("SET PERMISSION: "+" ".join(str(i) for i in [study_name, email, access]))
+        if self.verbose:
+            print("SET PERMISSION: ".join(str(i) for i in [study_name, email, access]))
         # Make sure the access value is valid
         if not access in c_PERMISSIONS:
             return {
@@ -487,7 +510,8 @@ class SCPAPIManager(APIManager):
         :param dry_run: If true, will do a dry run with no actual execution of functionality
         :return: Boolean, True indicates the study is known to the user and exists
         '''
-        print("STUDY EXISTS?")
+        if self.verbose:
+            print("STUDY EXISTS?")
         if self.studies is None:
             ret = self.get_studies(dry_run=dry_run)
             if not ret[c_SUCCESS_RET_KEY]:
@@ -505,7 +529,8 @@ class SCPAPIManager(APIManager):
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: String portal id
         '''
-        print("STUDY NAME TO ID")
+        if self.verbose:
+            print("STUDY NAME TO ID")
         if dry_run:
             print("DRY_RUN:: returning a dummy id")
             return("1")
@@ -584,7 +609,6 @@ class SCPAPIManager(APIManager):
         # print(f'/study_files response: {ret["response"].text}')
 
         if parse:
-            print(f'before /parse')
             study_files_response = ret['response'].json()
             study_file_id = study_files_response['_id']['$oid']
             parse = f'{self.api_base}studies/{study_id}/study_files/{study_file_id}/parse'
@@ -594,20 +618,20 @@ class SCPAPIManager(APIManager):
         return(ret)
 
     def upload_metadata(self, file, study_name, description="", dry_run=False):
-        print("UPLOAD METADATA FILE")
+        if self.verbose: print("UPLOAD METADATA FILE")
         return self.upload_study_file(file, 'Metadata', study_name,
             description=description, parse=True, dry_run=dry_run)
 
     def upload_expression_matrix(self, file, study_name, species=None,
                             genome=None, description="", dry_run=False):
-        print("UPLOAD EXPRESSION MATRIX FILE")
+        if self.verbose: print("UPLOAD EXPRESSION MATRIX FILE")
         return self.upload_study_file(file, 'Expression Matrix', study_name,
                                 description=description, species=species,
                                 genome=genome, parse=True, dry_run=dry_run)
 
     def upload_cluster(self, file, study_name, cluster_name, description="",
                     x="X", y="Y", z="Z", dry_run=False):
-        print("UPLOAD CLUSTER FILE")
+        if self.verbose: print("UPLOAD CLUSTER FILE")
         return self.upload_study_file(file, 'Cluster', study_name,
             cluster_name=cluster_name, description=description,
             x=x, y=x, z=x, parse=True, dry_run=dry_run)
@@ -623,7 +647,7 @@ class DSSAPIManager(APIManager):
         '''
 
         APIManager.__init__(self)
-        print("INIT")
+        if self.verbose: print("INIT")
         self.api = "https://dss.data.humancellatlas.org/v1/"
 
 

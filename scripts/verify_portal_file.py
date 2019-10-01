@@ -295,4 +295,4 @@ if prs_args.do_deidentify_cell:
         check_cell_names(expression_files=deid_expression_portal_files,
                          coordinates_file_group=deid_coordinates_files,
                          metadata_file=deid_metadata_portal_file)
-print("Completed.")
+
