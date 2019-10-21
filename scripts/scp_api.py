@@ -116,7 +116,7 @@ class APIManager:
 
         if self.verbose: print("BROWSER LOGIN")
         if dry_run:
-            print("DRY_RUN:: Did not login")
+            if self.verbose: print("DRY_RUN:: Did not login")
             return("DRY_RUN_TOKEN")
         cmdline.func_CMD(command="gcloud auth application-default login")
         cmd_ret = cmdline.func_CMD(command="gcloud auth application-default print-access-token",stdout=True)
