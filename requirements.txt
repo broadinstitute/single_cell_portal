@@ -12,3 +12,4 @@ git+git://github.com/broadinstitute/scp-ingest-pipeline@4178e1f#egg=scp-ingest-p
 pytest==5.0.1
 coverage==4.5.3
 pytest-xdist==1.29.0
+pytest-cov==2.8.1
