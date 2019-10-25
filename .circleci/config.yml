@@ -54,7 +54,4 @@ jobs:
             pytest --cov-report=xml
 
       - codecov/upload:
-          file: tests/coverage.xml
-
-      - store_artifacts:
-          path: scripts/htmlcov
+          file: scripts/coverage.xml
