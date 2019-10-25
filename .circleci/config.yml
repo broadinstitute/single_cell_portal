@@ -51,7 +51,7 @@ jobs:
           command: |
             . venv/bin/activate
             cd scripts
-            pytest --cov-report=xml
+            pytest --cov=./ --cov-report=xml
 
       - codecov/upload:
           file: scripts/coverage.xml
