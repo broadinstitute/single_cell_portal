@@ -3,7 +3,7 @@ requests>=2.21.0
 
 # TODO: Publish `scp-ingest-pipeline` to PyPI upon merging that repo to master.
 # PyPI (https://pypi.org) is like NPM or RubyGems, but for Python.
-git+git://github.com/broadinstitute/scp-ingest-pipeline@d809078#egg=scp-ingest-pipeline
+git+git://github.com/broadinstitute/scp-ingest-pipeline@894a962#egg=scp-ingest-pipeline
 
 # For faster development iterations.
 # ../scp-ingest-pipeline
