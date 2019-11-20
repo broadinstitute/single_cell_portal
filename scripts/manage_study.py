@@ -332,22 +332,22 @@ parser_upload_metadata.add_argument(
     help='Text describing the metadata file.',
 )
 
-parsed_args = args.parse_args()
-if parsed_args.verbose:
-    print("Args----")
-    print(vars(parsed_args))
-    print("-----Args")
-
-verbose = parsed_args.verbose
-
-env_origin_map = {
-    'development': 'https://localhost',
-    'production': 'https://singlecell.broadinstitute.org',
-}
-origin = env_origin_map[parsed_args.environment]
-api_base = origin + '/single_cell/api/v1/'
-
 if __name__ == '__main__':
+    parsed_args = args.parse_args()
+    if parsed_args.verbose:
+        print("Args----")
+        print(vars(parsed_args))
+        print("-----Args")
+
+    verbose = parsed_args.verbose
+
+    env_origin_map = {
+        'development': 'https://localhost',
+        'production': 'https://singlecell.broadinstitute.org',
+    }
+    origin = env_origin_map[parsed_args.environment]
+    api_base = origin + '/single_cell/api/v1/'
+
     # Login connection
     connection = login(
         manager=None, dry_run=parsed_args.dry_run, api_base=api_base, verbose=verbose
