@@ -101,7 +101,8 @@ def login(manager=None, dry_run=False, api_base=None, verbose=False):
 def validate_metadata_file(convention_path, metadata_path):
     with open(convention_path) as f:
         convention = json.load(f)
-    metadata = CellMetadata(metadata_path, '', '')
+    placeholder = 'SCP555' # TODO: Refactor CellMetadata to not require this
+    metadata = CellMetadata(metadata_path, '', '', study_accession=placeholder)
     print(f'Validating {metadata_path}')
     validate_input_metadata(metadata, convention)
     serialize_issues(metadata)
