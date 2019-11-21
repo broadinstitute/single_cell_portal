@@ -13,3 +13,6 @@ test_output/
 coverage.xml
 output_infercnv_example/
 venv/
+
+scp_validation_errors.txt
+scp_validation_warnings.txt
