@@ -3,7 +3,11 @@ requests>=2.21.0
 
 # TODO: Publish `scp-ingest-pipeline` to PyPI upon merging that repo to master.
 # PyPI (https://pypi.org) is like NPM or RubyGems, but for Python.
-git+git://github.com/broadinstitute/scp-ingest-pipeline@4178e1f#egg=scp-ingest-pipeline
+#
+# Also, if still using this kludge getting and you get failures in CircleCI,
+# then bump cache key in .circleci/config.yml (e.g. v2 -> v3).
+# That's a cost of tech debt until we push to PyPI as proposed above.
+git+git://github.com/broadinstitute/scp-ingest-pipeline@df1ed8e82f75e1b0492155d881e439c64cc79160#egg=scp-ingest-pipeline
 
 # For faster development iterations.
 # ../scp-ingest-pipeline
