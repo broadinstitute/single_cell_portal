@@ -40,7 +40,7 @@ import os
 import Commandline
 import scp_api
 
-import ingest
+from ingest.ingest_pipeline import IngestPipeline
 from ingest.cell_metadata import CellMetadata
 from ingest.validation.validate_metadata import (
     report_issues,
@@ -56,6 +56,9 @@ c_TOOL_EXPRESSION = "upload-expression"
 c_TOOL_METADATA = "upload-metadata"
 c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
+
+# GS URL to metadata convention
+convention = IngestPipeline.JSON_CONVENTION
 
 
 def manage_call_return(call_return, verbose=False):
@@ -98,9 +101,7 @@ def login(manager=None, dry_run=False, api_base=None, verbose=False):
     return manager
 
 
-def validate_metadata_file(convention_path, metadata_path):
-    with open(convention_path) as f:
-        convention = json.load(f)
+def validate_metadata_file(metadata_path):
     placeholder = 'SCP555' # TODO: Refactor CellMetadata to not require this
     metadata = CellMetadata(metadata_path, '', '', study_accession=placeholder)
     print(f'Validating {metadata_path}')
@@ -318,8 +319,10 @@ parser_upload_metadata.add_argument(
     '--file', dest='metadata_file', required=True, help='Metadata file to load.'
 )
 parser_upload_metadata.add_argument(
-    '--convention', help='Metadata convention JSON file '
+    '--use-convention', help='Whether to use metadata convention',
+    action='store_true'
 )
+
 parser_upload_metadata.add_argument(
     '--study-name',
     dest='study_name',
@@ -405,9 +408,8 @@ if __name__ == '__main__':
         if verbose:
             print("START VALIDATE FILES")
 
-        if hasattr(parsed_args, "metadata_file"):
-            convention_path = parsed_args.convention
-            validate_metadata_file(convention_path, parsed_args.metadata_file)
+        if hasattr(parsed_args, "metadata_file") and parsed_args.use_convention:
+            validate_metadata_file(parsed_args.metadata_file)
 
         # command = ["python3 verify_portal_file.py"]
 
