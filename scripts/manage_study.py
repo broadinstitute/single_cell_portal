@@ -338,7 +338,8 @@ parser_upload_metadata.add_argument(
     '--file', dest='metadata_file', required=True, help='Metadata file to load.'
 )
 parser_upload_metadata.add_argument(
-    '--use-convention', help='Whether to use metadata convention',
+    '--use-convention',
+    help='Whether to use metadata convention: validates against standard vocabularies, and will enable faceted search on this data',
     action='store_true'
 )
 
