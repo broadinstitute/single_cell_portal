@@ -617,10 +617,12 @@ class SCPAPIManager(APIManager):
 
         return(ret)
 
-    def upload_metadata(self, file, study_name, description="", dry_run=False):
+    def upload_metadata(self, file, study_name, description="",
+                        use_convention=False, dry_run=False):
         if self.verbose: print("UPLOAD METADATA FILE")
         return self.upload_study_file(file, 'Metadata', study_name,
-            description=description, parse=True, dry_run=dry_run)
+            description=description, parse=True, use_metadata_convention=use_convention,
+            dry_run=dry_run)
 
     def upload_expression_matrix(self, file, study_name, species=None,
                             genome=None, description="", dry_run=False):

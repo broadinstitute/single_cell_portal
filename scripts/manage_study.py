@@ -474,6 +474,7 @@ if __name__ == '__main__':
         connection = login(manager=connection, dry_run=parsed_args.dry_run)
         ret = connection.upload_metadata(
             file=parsed_args.metadata_file,
+            use_convention=parsed_args.use_convention,
             study_name=parsed_args.study_name,
             dry_run=parsed_args.dry_run,
         )
