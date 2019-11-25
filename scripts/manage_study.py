@@ -37,10 +37,8 @@ import argparse
 import json
 import os
 
-import Commandline
-import scp_api
-
-import ingest
+from google.cloud import storage
+from ingest.ingest_pipeline import IngestPipeline
 from ingest.cell_metadata import CellMetadata
 from ingest.validation.validate_metadata import (
     report_issues,
@@ -48,6 +46,9 @@ from ingest.validation.validate_metadata import (
     exit_if_errors,
     validate_input_metadata,
 )
+
+import Commandline
+import scp_api
 
 # Subparser tool names
 c_TOOL_LIST_STUDY = "list-studies"
@@ -97,13 +98,32 @@ def login(manager=None, dry_run=False, api_base=None, verbose=False):
         manager.login(token=parsed_args.token, dry_run=dry_run, api_base=api_base)
     return manager
 
+def download_from_bucket(file_path):
+    """Downloads file from Google Cloud Storage bucket"""
 
-def validate_metadata_file(convention_path, metadata_path):
-    with open(convention_path) as f:
-        convention = json.load(f)
+    path_segments = file_path[5:].split("/")
+
+    storage_client = storage.Client()
+    bucket_name = path_segments[0]
+    bucket = storage_client.get_bucket(bucket_name)
+    source = "/".join(path_segments[1:])
+
+    blob = bucket.blob(source)
+    destination = "/tmp/" + source.replace("/", "%2f")
+    blob.download_to_filename(destination)
+    print(f"{file_path} downloaded to {destination}.")
+
+    return destination
+
+def validate_metadata_file(metadata_path):
     placeholder = 'SCP555' # TODO: Refactor CellMetadata to not require this
     metadata = CellMetadata(metadata_path, '', '', study_accession=placeholder)
     print(f'Validating {metadata_path}')
+
+    convention_path = download_from_bucket(IngestPipeline.JSON_CONVENTION)
+    with open(convention_path) as file:
+        convention = json.load(file)
+
     validate_input_metadata(metadata, convention)
     serialize_issues(metadata)
     report_issues(metadata)
@@ -318,8 +338,11 @@ parser_upload_metadata.add_argument(
     '--file', dest='metadata_file', required=True, help='Metadata file to load.'
 )
 parser_upload_metadata.add_argument(
-    '--convention', help='Metadata convention JSON file '
+    '--use-convention',
+    help='Whether to use metadata convention: validates against standard vocabularies, and will enable faceted search on this data',
+    action='store_true'
 )
+
 parser_upload_metadata.add_argument(
     '--study-name',
     dest='study_name',
@@ -405,9 +428,8 @@ if __name__ == '__main__':
         if verbose:
             print("START VALIDATE FILES")
 
-        if hasattr(parsed_args, "metadata_file"):
-            convention_path = parsed_args.convention
-            validate_metadata_file(convention_path, parsed_args.metadata_file)
+        if hasattr(parsed_args, "metadata_file") and parsed_args.use_convention:
+            validate_metadata_file(parsed_args.metadata_file)
 
         # command = ["python3 verify_portal_file.py"]
 
@@ -453,6 +475,7 @@ if __name__ == '__main__':
         connection = login(manager=connection, dry_run=parsed_args.dry_run)
         ret = connection.upload_metadata(
             file=parsed_args.metadata_file,
+            use_convention=parsed_args.use_convention,
             study_name=parsed_args.study_name,
             dry_run=parsed_args.dry_run,
         )
