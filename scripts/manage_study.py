@@ -37,9 +37,7 @@ import argparse
 import json
 import os
 
-import Commandline
-import scp_api
-
+from google.cloud import storage
 from ingest.ingest_pipeline import IngestPipeline
 from ingest.cell_metadata import CellMetadata
 from ingest.validation.validate_metadata import (
@@ -49,6 +47,9 @@ from ingest.validation.validate_metadata import (
     validate_input_metadata,
 )
 
+import Commandline
+import scp_api
+
 # Subparser tool names
 c_TOOL_LIST_STUDY = "list-studies"
 c_TOOL_CLUSTER = "upload-cluster"
@@ -56,9 +57,6 @@ c_TOOL_EXPRESSION = "upload-expression"
 c_TOOL_METADATA = "upload-metadata"
 c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
-
-# GS URL to metadata convention
-convention = IngestPipeline.JSON_CONVENTION
 
 
 def manage_call_return(call_return, verbose=False):
@@ -100,11 +98,32 @@ def login(manager=None, dry_run=False, api_base=None, verbose=False):
         manager.login(token=parsed_args.token, dry_run=dry_run, api_base=api_base)
     return manager
 
+def download_from_bucket(file_path):
+    """Downloads file from Google Cloud Storage bucket"""
+
+    path_segments = file_path[5:].split("/")
+
+    storage_client = storage.Client()
+    bucket_name = path_segments[0]
+    bucket = storage_client.get_bucket(bucket_name)
+    source = "/".join(path_segments[1:])
+
+    blob = bucket.blob(source)
+    destination = "/tmp/" + source.replace("/", "%2f")
+    blob.download_to_filename(destination)
+    print(f"{file_path} downloaded to {destination}.")
+
+    return destination
 
 def validate_metadata_file(metadata_path):
     placeholder = 'SCP555' # TODO: Refactor CellMetadata to not require this
     metadata = CellMetadata(metadata_path, '', '', study_accession=placeholder)
     print(f'Validating {metadata_path}')
+
+    convention_path = download_from_bucket(IngestPipeline.JSON_CONVENTION)
+    with open(convention_path) as file:
+        convention = json.load(file)
+
     validate_input_metadata(metadata, convention)
     serialize_issues(metadata)
     report_issues(metadata)
