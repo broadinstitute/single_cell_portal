@@ -160,7 +160,7 @@ args.add_argument(
 args.add_argument(
     '--environment',
     default='production',
-    choices=['development', 'production'],
+    choices=['development', 'staging', 'production'],
     help='API environment to use',
 )
 
@@ -367,6 +367,7 @@ if __name__ == '__main__':
 
     env_origin_map = {
         'development': 'https://localhost',
+        'staging': 'https://single-cell-staging.broadinstitute.org',
         'production': 'https://singlecell.broadinstitute.org',
     }
     origin = env_origin_map[parsed_args.environment]

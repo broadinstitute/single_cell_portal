@@ -103,7 +103,7 @@ class APIManager:
             token = self.do_browser_login(dry_run=dry_run)
         self.token = token
         self.api_base = api_base
-        self.verify_https = 'https://localhost' not in self.api_base
+        self.verify_https = 'localhost' not in api_base and 'staging' not in api_base
         self.studies = None
 
     def do_browser_login(self, dry_run=False):
