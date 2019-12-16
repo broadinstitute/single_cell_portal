@@ -31,6 +31,15 @@ python manage_study.py create-study --help
 
 # Create a study named "CLI test"
 python3 manage_study.py --token=$ACCESS_TOKEN create-study --study-name "CLI test"
+
+# Upload an expression matrix
+python3 manage_study.py --token=$ACCESS_TOKEN upload-expression --file ../demo_data/expression_example.txt --study-name "CLI test" --species "human" --genome "GRCh38"
+
+# Upload a metadata file (without validating against the metadata convention)
+python3 manage_study.py --token=$ACCESS_TOKEN upload-metadata --study-name "CLI test"--file ../demo_data/metadata_example.txt
+
+# Upload a cluster file
+python3 manage_study.py --token=$ACCESS_TOKEN upload-cluster --study-name "${STUDY_NAME}" --file ../demo_data/cluster_example.txt  --cluster-name 'Test cluster' --description test
 """
 
 import argparse
@@ -160,7 +169,7 @@ args.add_argument(
 args.add_argument(
     '--environment',
     default='production',
-    choices=['development', 'production'],
+    choices=['development', 'staging', 'production'],
     help='API environment to use',
 )
 
@@ -214,33 +223,34 @@ parser_create_studies.add_argument(
     '--is-private', action='store_true', help='Whether the study is private'
 )
 
-## Permissions subparser
-parser_permissions = subargs.add_parser(
-    c_TOOL_PERMISSION,
-    help="Change user permissions in a study. \""
-    + args.prog
-    + " "
-    + c_TOOL_PERMISSION
-    + " -h\" for more details",
-)
-parser_permissions.add_argument(
-    '--email',
-    dest='email',
-    required=True,
-    default='Single Cell Genomics Study',
-    help='User email to update study permission.',
-)
-parser_permissions.add_argument(
-    '--study-name', dest='study_name', required=True, help='Short name of the study.'
-)
-parser_permissions.add_argument(
-    '--access',
-    dest='permission',
-    choices=scp_api.c_PERMISSIONS,
-    required=True,
-    help='Access to give the user.  Must be one of the following values: '
-    + " ".join(scp_api.c_PERMISSIONS),
-)
+# TODO: Fix permissions subparser (SCP-2024)
+# ## Permissions subparser
+# parser_permissions = subargs.add_parser(
+#     c_TOOL_PERMISSION,
+#     help="Change user permissions in a study. \""
+#     + args.prog
+#     + " "
+#     + c_TOOL_PERMISSION
+#     + " -h\" for more details",
+# )
+# parser_permissions.add_argument(
+#     '--email',
+#     dest='email',
+#     required=True,
+#     default='Single Cell Genomics Study',
+#     help='User email to update study permission.',
+# )
+# parser_permissions.add_argument(
+#     '--study-name', dest='study_name', required=True, help='Short name of the study.'
+# )
+# parser_permissions.add_argument(
+#     '--access',
+#     dest='permission',
+#     choices=scp_api.c_PERMISSIONS,
+#     required=True,
+#     help='Access to give the user.  Must be one of the following values: '
+#     + " ".join(scp_api.c_PERMISSIONS),
+# )
 
 ## Create cluster file upload subparser
 parser_upload_cluster = subargs.add_parser(
@@ -367,6 +377,7 @@ if __name__ == '__main__':
 
     env_origin_map = {
         'development': 'https://localhost',
+        'staging': 'https://single-cell-staging.broadinstitute.org',
         'production': 'https://singlecell.broadinstitute.org',
     }
     origin = env_origin_map[parsed_args.environment]
