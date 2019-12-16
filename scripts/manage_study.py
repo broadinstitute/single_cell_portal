@@ -31,6 +31,15 @@ python manage_study.py create-study --help
 
 # Create a study named "CLI test"
 python3 manage_study.py --token=$ACCESS_TOKEN create-study --study-name "CLI test"
+
+# Upload an expression matrix
+python3 manage_study.py --token=$ACCESS_TOKEN upload-expression --file ../demo_data/expression_example.txt --study-name "CLI test" --species "human" --genome "GRCh38"
+
+# Upload a metadata file (without validating against the metadata convention)
+python3 manage_study.py --token=$ACCESS_TOKEN upload-metadata --study-name "CLI test"--file ../demo_data/metadata_example.txt
+
+# Upload a cluster file
+python3 manage_study.py --token=$ACCESS_TOKEN upload-cluster --study-name "${STUDY_NAME}" --file ../demo_data/cluster_example.txt  --cluster-name 'Test cluster' --description test
 """
 
 import argparse
