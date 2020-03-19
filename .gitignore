@@ -1,3 +1,5 @@
+issues.json
+
 .idea/
 *.pyc
 __pycache__/
@@ -6,3 +8,11 @@ scripts/genomes/output/
 .vscode
 scripts/__pycache__
 *.log
+test_output/
+.coverage
+coverage.xml
+output_infercnv_example/
+venv/
+
+scp_validation_errors.txt
+scp_validation_warnings.txt

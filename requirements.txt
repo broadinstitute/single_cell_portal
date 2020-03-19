@@ -1,5 +1,19 @@
 pandas>=0.16.2
 requests>=2.21.0
-google-cloud-firestore==0.32.1
-loompy==2.0.15
-zarr==2.2.0
+
+# TODO: Publish `scp-ingest-pipeline` to PyPI upon merging that repo to master.
+# PyPI (https://pypi.org) is like NPM or RubyGems, but for Python.
+#
+# Also, if still using this kludge getting and you get failures in CircleCI,
+# then bump cache key in .circleci/config.yml (e.g. v2 -> v3).
+# That's a cost of tech debt until we push to PyPI as proposed above.
+git+git://github.com/broadinstitute/scp-ingest-pipeline@110b83182e9b1e33bd6fb4a0d6657d526b30da45#egg=scp-ingest-pipeline
+
+# For faster development iterations.
+# ../../scp-ingest-pipeline
+
+# Dev dependencies
+pytest==5.0.1
+coverage==4.5.3
+pytest-xdist==1.29.0
+pytest-cov==2.8.1
