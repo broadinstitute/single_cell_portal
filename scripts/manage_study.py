@@ -66,6 +66,8 @@ c_TOOL_EXPRESSION = "upload-expression"
 c_TOOL_METADATA = "upload-metadata"
 c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
+c_TOOL_STUDY_GET_DESC = "get-study-description"
+c_TOOL_STUDY_EDIT_DESC= "edit-study-description"
 
 
 def manage_call_return(call_return, verbose=False):
@@ -174,7 +176,7 @@ args.add_argument(
 )
 
 # Create tools (subparser)
-subargs = args.add_subparsers()
+subargs = args.add_subparsers(dest = 'command')
 
 ## List studies subparser
 parser_list_studies = subargs.add_parser(
@@ -222,6 +224,60 @@ parser_create_studies.add_argument(
 parser_create_studies.add_argument(
     '--is-private', action='store_true', help='Whether the study is private'
 )
+
+## Create study get description subparser
+parser_get_description = subargs.add_parser(
+    c_TOOL_STUDY_GET_DESC,
+    help="Get a study description. \""
+    + args.prog
+    + " "
+    + c_TOOL_STUDY_GET_DESC
+    + " -h\" for more details",
+)
+parser_get_description.add_argument(
+    '--study-name',
+    dest='study_name',
+    required=True,
+    help='Name of the study from which to get description.',
+)
+
+# Create edit description subparser
+parser_edit_description = subargs.add_parser(
+    c_TOOL_STUDY_EDIT_DESC,
+    help="Edit a study description. \""
+    + args.prog
+    + " "
+    + c_TOOL_STUDY_EDIT_DESC
+    + " -h\" for more details",
+)
+parser_edit_description.add_argument(
+    '--study-name',
+    dest='study_name',
+    required=True,
+    help='Name of the study for which to edit description.',
+)
+parser_edit_description.add_argument(
+    '--new_description',
+    dest='new_description',
+    required=True,
+    help='New description of the study to replace current one.',
+)
+
+parser_edit_description.add_argument(
+    '--from_file',
+    dest='from_file',
+    action='store_true',
+    help='If true, assumes new_description argument is name pointing to file containing new_description.',
+)
+
+parser_edit_description.add_argument(
+    '--accept_html',
+    dest='accept_html',
+    action='store_true',
+    help='If true, will allow html formatting in new description.',
+)
+
+
 
 # TODO: Fix permissions subparser (SCP-2024)
 # ## Permissions subparser
@@ -418,6 +474,41 @@ if __name__ == '__main__':
         manage_call_return(ret)
         if succeeded(ret):
             print('Created study')
+
+    ## Get a study description
+    # Check command explicitly instead of checking for attributes
+    if parsed_args.command == 'get-study-description':
+        if verbose:
+            print("STARTING GET DESCRIPTION")
+        ret = connection.get_study_description(
+            study_name=parsed_args.study_name,
+            dry_run=parsed_args.dry_run,
+        )
+        manage_call_return(ret)
+        print('Study description:\n')
+        print(ret[scp_api.c_DESC_RET_KEY])
+
+    ## Edit a study description
+    if parsed_args.command == 'edit-study-description':
+        if verbose:
+            print("STARTING EDIT DESCRIPTION")
+
+        if parsed_args.from_file:
+            with open(parsed_args.new_description, 'r') as d_file:
+                new_description = d_file.read()
+        else:
+            new_description = parsed_args.new_description
+
+
+        ret = connection.edit_study_description(
+            study_name=parsed_args.study_name,
+            new_description=new_description,
+            accept_html=parsed_args.accept_html,
+            dry_run=parsed_args.dry_run,
+        )
+        manage_call_return(ret)
+        if succeeded(ret):
+            print('Updated study description')
 
     ## Share with user
     if hasattr(parsed_args, "permission"):

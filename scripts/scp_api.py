@@ -24,6 +24,7 @@ c_CODE_RET_KEY = "code"
 c_RESPONSE = "response"
 c_STUDIES_RET_KEY = "studies"
 c_SUCCESS_RET_KEY = "success"
+c_DESC_RET_KEY = 'description'
 
 ## Standard status codes
 c_STUDY_EXISTS = 101
@@ -36,6 +37,8 @@ c_INVALID_SHARE_MODE = 104
 c_INVALID_SHARE_MODE_TEXT = "The access you want to give the user is not an access I understand. Please check."
 c_INVALID_SHARE_MISSING = 105
 c_INVALID_SHARE_MISSING_TEXT = "Can not remove the share, it does not exist."
+c_INVALID_STUDY_DESC = 106
+c_INVALID_STUDY_DESC_TEXT = "Invalid characters used in study description."
 c_NO_ERROR = 0
 c_NO_ERROR_TEXT = "No error occurred."
 
@@ -437,6 +440,83 @@ class SCPAPIManager(APIManager):
         if resp[c_SUCCESS_RET_KEY] and not dry_run:
             self.get_studies()
         return(resp)
+
+    def get_study_description(self, study_name,
+                              dry_run=False):
+        '''
+        Get a study description using the REST API.
+
+        :param study_name: String study name
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
+        :return: Response
+        '''
+        if self.verbose: print("LOOKING AT " + study_name)
+        # Error if the study does not exist
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
+            return {
+                c_SUCCESS_RET_KEY: False,
+                c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
+            }
+        # Convert study name to study id
+        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+
+        ret_study = self.do_get(command=self.api_base + "studies/"+str(studyId),
+                                dry_run=dry_run)
+        study = ret_study[c_RESPONSE].json()
+        ret_study[c_DESC_RET_KEY] = study['description']
+ 
+        return(ret_study)
+
+    def edit_study_description(self, study_name,
+                               new_description,
+                               accept_html=False,
+                               dry_run=False):
+        '''
+        Create a study name using the REST API.
+        Confirms the study does not exist before creating.
+        Confirms name and description are valid.
+
+        :param study_name: String study name
+        :param get_study_description: If true, will return the study description.
+        :param new_study_description: String new study description to update study with
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
+        :return: Response
+        '''
+        if self.verbose: print("EDITING DESCRIPTION FOR " + study_name)
+        # Error if the study does not exist
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
+            return {
+                c_SUCCESS_RET_KEY: False,
+                c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
+            }
+        # Convert study name to study id
+        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+   
+        # New study description should not have html and scripting
+        # except when it needs to...
+        if not accept_html and not self.is_valid_study_description(new_description):
+            return ({
+                c_SUCCESS_RET_KEY: False,
+                c_CODE_RET_KEY: c_INVALID_STUDY_DESC
+            })
+
+        description_info = {"study_id": studyId,
+                            "description": new_description}
+
+        update_ret = self.do_patch(command=self.api_base +"studies/"+str(studyId),
+                                   values=description_info,
+                                   dry_run=dry_run)
+        # Make payload and do patch
+        # study_data = {"name": study_name,
+        #              "description":study_description,
+        #              "public":is_public}
+        # if not branding is None:
+        #     study_data["firecloud_project"] = billing
+        # if not branding is None:
+        #     study_data["branding_group_id"] = branding
+        # resp = self.do_post(command=self.api_base + "studies", values=study_data, dry_run=dry_run)
+ 
+        return(update_ret)
 
     def set_permission(self, study_name, email, access, deliver_email=False, dry_run=False):
         '''
