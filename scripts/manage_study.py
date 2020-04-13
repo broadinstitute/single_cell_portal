@@ -68,6 +68,7 @@ c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
 c_TOOL_STUDY_GET_DESC = "get-study-description"
 c_TOOL_STUDY_EDIT_DESC= "edit-study-description"
+c_TOOL_STUDY_GET_ATT= "get-study-attribute"
 
 
 def manage_call_return(call_return, verbose=False):
@@ -277,6 +278,27 @@ parser_edit_description.add_argument(
     help='If true, will allow html formatting in new description.',
 )
 
+## Create study get attribute subparser
+parser_get_attribute = subargs.add_parser(
+    c_TOOL_STUDY_GET_ATT,
+    help="Get a study attribute (such as cell_count, etc). \""
+    + args.prog
+    + " "
+    + c_TOOL_STUDY_GET_ATT
+    + " -h\" for more details",
+)
+parser_get_attribute.add_argument(
+    '--study-name',
+    dest='study_name',
+    required=True,
+    help='Name of the study from which to get attribute.',
+)
+parser_get_attribute.add_argument(
+    '--attribute',
+    dest='attribute',
+    required=True,
+    help='Attribute to return (such as cell_count, etc).',
+)
 
 
 # TODO: Fix permissions subparser (SCP-2024)
@@ -487,6 +509,19 @@ if __name__ == '__main__':
         manage_call_return(ret)
         print('Study description:\n')
         print(ret[scp_api.c_DESC_RET_KEY])
+
+    ## Get a study attribute
+    if parsed_args.command == 'get-study-attribute':
+        if verbose:
+            print("STARTING GET ATTRIBUTE")
+        ret = connection.get_study_attribute(
+            study_name=parsed_args.study_name,
+            attribute=parsed_args.attribute,
+            dry_run=parsed_args.dry_run,
+        )
+        manage_call_return(ret)
+        print('Study {}:'.format(parsed_args.attribute))
+        print(ret[scp_api.c_ATT_RET_KEY])
 
     ## Edit a study description
     if parsed_args.command == 'edit-study-description':

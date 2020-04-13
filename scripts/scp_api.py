@@ -25,6 +25,7 @@ c_RESPONSE = "response"
 c_STUDIES_RET_KEY = "studies"
 c_SUCCESS_RET_KEY = "success"
 c_DESC_RET_KEY = 'description'
+c_ATT_RET_KEY = 'study_attribute'
 
 ## Standard status codes
 c_STUDY_EXISTS = 101
@@ -39,6 +40,8 @@ c_INVALID_SHARE_MISSING = 105
 c_INVALID_SHARE_MISSING_TEXT = "Can not remove the share, it does not exist."
 c_INVALID_STUDY_DESC = 106
 c_INVALID_STUDY_DESC_TEXT = "Invalid characters used in study description."
+c_ATTRIBUTE_DOES_NOT_EXIST = 107
+c_ATTRIBUTE_DOES_NOT_EXIST_TEXT = "Requested study attribute does not exist."
 c_NO_ERROR = 0
 c_NO_ERROR_TEXT = "No error occurred."
 
@@ -305,6 +308,8 @@ class SCPAPIManager(APIManager):
             c_INVALID_STUDY_NAME:c_INVALID_STUDY_NAME_TEXT,
             c_INVALID_SHARE_MODE:c_INVALID_SHARE_MODE_TEXT,
             c_INVALID_SHARE_MISSING:c_INVALID_SHARE_MISSING_TEXT,
+            c_INVALID_STUDY_DESC:c_INVALID_STUDY_DESC_TEXT,
+            c_ATTRIBUTE_DOES_NOT_EXIST:c_ATTRIBUTE_DOES_NOT_EXIST_TEXT,
             c_NO_ERROR:c_NO_ERROR_TEXT,
             c_API_OK:c_NO_ERROR_TEXT,
             c_DELETE_OK:c_NO_ERROR_TEXT,
@@ -464,6 +469,40 @@ class SCPAPIManager(APIManager):
                                 dry_run=dry_run)
         study = ret_study[c_RESPONSE].json()
         ret_study[c_DESC_RET_KEY] = study['description']
+ 
+        return(ret_study)
+
+    def get_study_attribute(self, study_name, 
+                            attribute,
+                            dry_run=False):
+        '''
+        Get a study attribute using the REST API.
+
+        :param study_name: String study name
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
+        :return: Response
+        '''
+        if self.verbose: print("LOOKING AT " + study_name)
+        # Error if the study does not exist
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
+            return {
+                c_SUCCESS_RET_KEY: False,
+                c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
+            }
+        # Convert study name to study id
+        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+
+        ret_study = self.do_get(command=self.api_base + "studies/"+str(studyId),
+                                dry_run=dry_run)
+        study = ret_study[c_RESPONSE].json()
+        # Error if attribute is not available
+        if attribute not in study:
+            print('The requested study attribute is not available.')
+            return {
+                c_SUCCESS_RET_KEY: False,
+                c_CODE_RET_KEY: c_ATTRIBUTE_DOES_NOT_EXIST
+            }
+        ret_study[c_ATT_RET_KEY] = study[attribute]
  
         return(ret_study)
 
