@@ -40,6 +40,16 @@ python3 manage_study.py --token=$ACCESS_TOKEN upload-metadata --study-name "CLI 
 
 # Upload a cluster file
 python3 manage_study.py --token=$ACCESS_TOKEN upload-cluster --study-name "${STUDY_NAME}" --file ../demo_data/cluster_example.txt  --cluster-name 'Test cluster' --description test
+
+# Edit study description
+python3 manage_study.py --token-$ACCESS_TOKEN edit-study-description --study-name "${STUDY_NAME}" --new_description "This is a test."
+
+# Create an external resource
+python3 manage_study.py --token-$ACCESS_TOKEN create-study-external-resource --study-name "${STUDY_NAME}" --title "External_Link" \
+--url "https://singlecell.broadinstitute.org/single_cell" --description "This sends you home."
+
+# Print a study attribute (eg. cell_count)
+python3 manage_study.py --token-$ACCESS_TOKEN get-study-attribute --study-name "${STUDY_NAME}" --attribute cell_count
 """
 
 import argparse
@@ -362,9 +372,6 @@ parser_create_ext_resource.add_argument(
     action='store_true',
     help='Whether resource is publication url.',
 )
-
-
-
 # TODO: Fix permissions subparser (SCP-2024)
 # ## Permissions subparser
 # parser_permissions = subargs.add_parser(
