@@ -66,7 +66,6 @@ c_TOOL_EXPRESSION = "upload-expression"
 c_TOOL_METADATA = "upload-metadata"
 c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
-c_TOOL_STUDY_GET_DESC = "get-study-description"
 c_TOOL_STUDY_EDIT_DESC= "edit-study-description"
 c_TOOL_STUDY_GET_ATT= "get-study-attribute"
 c_TOOL_STUDY_GET_EXT= 'get-study-external-resources'
@@ -232,22 +231,6 @@ parser_create_studies.add_argument(
 )
 parser_create_studies.add_argument(
     '--is-private', action='store_true', help='Whether the study is private'
-)
-
-## Create study get description subparser
-parser_get_description = subargs.add_parser(
-    c_TOOL_STUDY_GET_DESC,
-    help="Get a study description. \""
-    + args.prog
-    + " "
-    + c_TOOL_STUDY_GET_DESC
-    + " -h\" for more details",
-)
-parser_get_description.add_argument(
-    '--study-name',
-    dest='study_name',
-    required=True,
-    help='Name of the study from which to get description.',
 )
 
 # Create edit description subparser
@@ -577,19 +560,6 @@ if __name__ == '__main__':
         manage_call_return(ret)
         if succeeded(ret):
             print('Created study')
-
-    ## Get a study description
-    # Check command explicitly instead of checking for attributes
-    if parsed_args.command == c_TOOL_STUDY_GET_DESC:
-        if verbose:
-            print("STARTING GET DESCRIPTION")
-        ret = connection.get_study_description(
-            study_name=parsed_args.study_name,
-            dry_run=parsed_args.dry_run,
-        )
-        manage_call_return(ret)
-        print('Study description:\n')
-        print(ret[scp_api.c_DESC_RET_KEY])
 
     ## Get a study attribute
     if parsed_args.command == c_TOOL_STUDY_GET_ATT:

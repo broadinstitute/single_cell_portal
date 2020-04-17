@@ -24,7 +24,6 @@ c_CODE_RET_KEY = "code"
 c_RESPONSE = "response"
 c_STUDIES_RET_KEY = "studies"
 c_SUCCESS_RET_KEY = "success"
-c_DESC_RET_KEY = 'description'
 c_ATT_RET_KEY = 'study_attribute'
 c_EXT_RET_KEY = 'external_resources'
 
@@ -447,32 +446,6 @@ class SCPAPIManager(APIManager):
             self.get_studies()
         return(resp)
 
-    def get_study_description(self, study_name,
-                              dry_run=False):
-        '''
-        Get a study description using the REST API.
-
-        :param study_name: String study name
-        :param dry_run: If true, will do a dry run with no actual execution of functionality.
-        :return: Response
-        '''
-        if self.verbose: print("LOOKING AT " + study_name)
-        # Error if the study does not exist
-        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
-            return {
-                c_SUCCESS_RET_KEY: False,
-                c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
-            }
-        # Convert study name to study id
-        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
-
-        ret_study = self.do_get(command=self.api_base + "studies/"+str(studyId),
-                                dry_run=dry_run)
-        study = ret_study[c_RESPONSE].json()
-        ret_study[c_DESC_RET_KEY] = study['description']
- 
-        return(ret_study)
-
     def get_study_attribute(self, study_name, 
                             attribute,
                             dry_run=False):
@@ -480,6 +453,7 @@ class SCPAPIManager(APIManager):
         Get a study attribute using the REST API.
 
         :param study_name: String study name
+        :param attribute: String name of attribute to return
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
         '''
@@ -513,11 +487,11 @@ class SCPAPIManager(APIManager):
                                dry_run=False):
         '''
         Edit a study description using the REST API.
-        Confirms the study does not exist before creating.
-        Confirms name and description are valid.
+        Confirms the study exists.
 
         :param study_name: String study name
         :param new_description: String new study description to update study with
+        :param accept_html: Boolean Whether to allow HTML characters and formatting
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
         '''
@@ -582,7 +556,7 @@ class SCPAPIManager(APIManager):
         Delete a study's external resource using the REST API.
 
         :param study_name: String study name
-        :param resource_ids: Dict Id of external resource to delete
+        :param resource_ids: String Id of external resource to delete
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
         '''
