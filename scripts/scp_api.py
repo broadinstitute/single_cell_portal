@@ -26,6 +26,7 @@ c_STUDIES_RET_KEY = "studies"
 c_SUCCESS_RET_KEY = "success"
 c_DESC_RET_KEY = 'description'
 c_ATT_RET_KEY = 'study_attribute'
+c_EXT_RET_KEY = 'external_resources'
 
 ## Standard status codes
 c_STUDY_EXISTS = 101
@@ -511,13 +512,12 @@ class SCPAPIManager(APIManager):
                                accept_html=False,
                                dry_run=False):
         '''
-        Create a study name using the REST API.
+        Edit a study description using the REST API.
         Confirms the study does not exist before creating.
         Confirms name and description are valid.
 
         :param study_name: String study name
-        :param get_study_description: If true, will return the study description.
-        :param new_study_description: String new study description to update study with
+        :param new_description: String new study description to update study with
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
         '''
@@ -545,17 +545,100 @@ class SCPAPIManager(APIManager):
         update_ret = self.do_patch(command=self.api_base +"studies/"+str(studyId),
                                    values=description_info,
                                    dry_run=dry_run)
-        # Make payload and do patch
-        # study_data = {"name": study_name,
-        #              "description":study_description,
-        #              "public":is_public}
-        # if not branding is None:
-        #     study_data["firecloud_project"] = billing
-        # if not branding is None:
-        #     study_data["branding_group_id"] = branding
-        # resp = self.do_post(command=self.api_base + "studies", values=study_data, dry_run=dry_run)
  
         return(update_ret)
+
+    def get_study_external_resources(self, study_name,
+                                     dry_run=False):
+        '''
+        Get a study's external resources using the REST API.
+
+        :param study_name: String study name
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
+        :return: Response
+        '''
+        if self.verbose: print("LOOKING AT " + study_name)
+        # Error if the study does not exist
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
+            return {
+                c_SUCCESS_RET_KEY: False,
+                c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
+            }
+        # Convert study name to study id
+        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+
+        study_resources = self.do_get(command=self.api_base + "studies/"+str(studyId) + 
+                                "/external_resources",
+                                dry_run=dry_run)
+        resources = study_resources[c_RESPONSE].json()
+        study_resources[c_EXT_RET_KEY] = resources
+ 
+        return(study_resources)
+
+    def delete_study_external_resource(self, study_name,
+                                       resource_id,
+                                       dry_run=False):
+        '''
+        Delete a study's external resource using the REST API.
+
+        :param study_name: String study name
+        :param resource_ids: Dict Id of external resource to delete
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
+        :return: Response
+        '''
+        if self.verbose: print("LOOKING AT " + study_name)
+        # Error if the study does not exist
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
+            return {
+                c_SUCCESS_RET_KEY: False,
+                c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
+            }
+        # Convert study name to study id
+        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+        ret_delete = self.do_delete(command=self.api_base + "studies/"+str(studyId) + 
+                                    "/external_resources/" + resource_id,
+                                    dry_run=dry_run)
+
+        return(ret_delete)
+
+    def create_study_external_resource(self, study_name,
+                                       title, url, description,
+                                       publication_url = False,
+                                       dry_run=False):
+        '''
+        Create an external resource for a study using the REST API.
+
+        :param study_name: String study name
+        :param title String title for resource
+        :param url String URL for resource
+        :param description String Tooltip description for resource
+        :param publication_url Boolean Whether resource is publication
+        :param dry_run: If true, will do a dry run with no actual execution of functionality.
+        :return: Response
+        '''
+        if self.verbose: print("CREATING RESOURCE FOR " + study_name)
+        # Error if the study does not exist
+        if not self.study_exists(study_name=study_name, dry_run=dry_run) and not dry_run:
+            return {
+                c_SUCCESS_RET_KEY: False,
+                c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
+            }
+        # Convert study name to study id
+        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+
+        #TODO: check whether resource already exists in some form
+        #TODO: checks for formats of URL, description, etc 
+        # Make payload and do post
+        resource_data = {"title": title,
+                         "url":url,
+                         "description":description,
+                         "publication_url":publication_url}
+
+        resp = self.do_post(command=self.api_base + "studies/"+str(studyId) + "/external_resources",
+                            values=resource_data,
+                            dry_run=dry_run)
+
+        return(resp)
 
     def set_permission(self, study_name, email, access, deliver_email=False, dry_run=False):
         '''
