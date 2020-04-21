@@ -42,7 +42,7 @@ python3 manage_study.py --token=$ACCESS_TOKEN upload-metadata --study-name "CLI 
 python3 manage_study.py --token=$ACCESS_TOKEN upload-cluster --study-name "${STUDY_NAME}" --file ../demo_data/cluster_example.txt  --cluster-name 'Test cluster' --description test
 
 # Edit study description
-python3 manage_study.py --token-$ACCESS_TOKEN edit-study-description --study-name "${STUDY_NAME}" --new_description "This is a test."
+python3 manage_study.py --token-$ACCESS_TOKEN edit-study-description --study-name "${STUDY_NAME}" --new-description "This is a test."
 
 # Create an external resource
 python3 manage_study.py --token-$ACCESS_TOKEN create-study-external-resource --study-name "${STUDY_NAME}" --title "External_Link" \
@@ -77,7 +77,7 @@ c_TOOL_METADATA = "upload-metadata"
 c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
 c_TOOL_STUDY_EDIT_DESC= "edit-study-description"
-c_TOOL_STUDY_GET_ATT= "get-study-attribute"
+c_TOOL_STUDY_GET_ATTR= "get-study-attribute"
 c_TOOL_STUDY_GET_EXT= 'get-study-external-resources'
 c_TOOL_STUDY_DEL_EXT= 'delete-study-external-resources'
 c_TOOL_STUDY_CREATE_EXT = 'create-study-external-resource'
@@ -254,49 +254,43 @@ parser_edit_description = subargs.add_parser(
 )
 parser_edit_description.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study for which to edit description.',
 )
 parser_edit_description.add_argument(
-    '--new_description',
-    dest='new_description',
+    '--new-description',
     required=True,
     help='New description of the study to replace current one.',
 )
 
 parser_edit_description.add_argument(
-    '--from_file',
-    dest='from_file',
+    '--from-file',
     action='store_true',
     help='If true, assumes new_description argument is name pointing to file containing new_description.',
 )
 
 parser_edit_description.add_argument(
-    '--accept_html',
-    dest='accept_html',
+    '--accept-html',
     action='store_true',
-    help='If true, will allow html formatting in new description.',
+    help='If true, will allow HTML formatting in new description.',
 )
 
 ## Create study get attribute subparser
 parser_get_attribute = subargs.add_parser(
-    c_TOOL_STUDY_GET_ATT,
+    c_TOOL_STUDY_GET_ATTR,
     help="Get a study attribute (such as cell_count, etc). \""
     + args.prog
     + " "
-    + c_TOOL_STUDY_GET_ATT
+    + c_TOOL_STUDY_GET_ATTR
     + " -h\" for more details",
 )
 parser_get_attribute.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study from which to get attribute.',
 )
 parser_get_attribute.add_argument(
     '--attribute',
-    dest='attribute',
     required=True,
     help='Attribute to return (such as cell_count, etc).',
 )
@@ -312,7 +306,6 @@ parser_get_ext_resources = subargs.add_parser(
 )
 parser_get_ext_resources.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study from which to get resources.',
 )
@@ -328,7 +321,6 @@ parser_delete_ext_resources = subargs.add_parser(
 )
 parser_delete_ext_resources.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study from which to delete resources.',
 )
@@ -344,33 +336,28 @@ parser_create_ext_resource = subargs.add_parser(
 )
 parser_create_ext_resource.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study to which to add resource.',
 )
 parser_create_ext_resource.add_argument(
     '--title',
-    dest='title',
     required=True,
     help='Title of resource.',
 )
 parser_create_ext_resource.add_argument(
     '--url',
-    dest='url',
     required=True,
     help='URL of resource.',
 )
 parser_create_ext_resource.add_argument(
     '--description',
-    dest='description',
     required=True,
     help='Tooltip description of resource.',
 )
 parser_create_ext_resource.add_argument(
-    '--publication_url',
-    dest='publication_url',
+    '--publication-url',
     action='store_true',
-    help='Whether resource is publication url.',
+    help='Whether resource is publication URL.',
 )
 # TODO: Fix permissions subparser (SCP-2024)
 # ## Permissions subparser
@@ -569,7 +556,7 @@ if __name__ == '__main__':
             print('Created study')
 
     ## Get a study attribute
-    if parsed_args.command == c_TOOL_STUDY_GET_ATT:
+    if parsed_args.command == c_TOOL_STUDY_GET_ATTR:
         if verbose:
             print("STARTING GET ATTRIBUTE")
         ret = connection.get_study_attribute(

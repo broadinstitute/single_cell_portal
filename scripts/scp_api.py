@@ -425,7 +425,7 @@ class SCPAPIManager(APIManager):
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_INVALID_STUDY_NAME
             })
-        # Study description should not have html and scripting
+        # Study description should not have HTML
         if not self.is_valid_study_description(study_description):
             return ({
                 c_SUCCESS_RET_KEY: False,
@@ -465,9 +465,9 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+        study_id = self.study_name_to_id(study_name, dry_run=dry_run)
 
-        ret_study = self.do_get(command=self.api_base + "studies/"+str(studyId),
+        ret_study = self.do_get(command=self.api_base + "studies/"+str(study_id),
                                 dry_run=dry_run)
         study = ret_study[c_RESPONSE].json()
         # Error if attribute is not available
@@ -503,9 +503,9 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+        study_id = self.study_name_to_id(study_name, dry_run=dry_run)
    
-        # New study description should not have html and scripting
+        # New study description should not have HTML
         # except when it needs to...
         if not accept_html and not self.is_valid_study_description(new_description):
             return ({
@@ -513,10 +513,10 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_INVALID_STUDY_DESC
             })
 
-        description_info = {"study_id": studyId,
+        description_info = {"study_id": study_id,
                             "description": new_description}
 
-        update_ret = self.do_patch(command=self.api_base +"studies/"+str(studyId),
+        update_ret = self.do_patch(command=self.api_base +"studies/"+str(study_id),
                                    values=description_info,
                                    dry_run=dry_run)
  
@@ -539,9 +539,9 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+        study_id = self.study_name_to_id(study_name, dry_run=dry_run)
 
-        study_resources = self.do_get(command=self.api_base + "studies/"+str(studyId) + 
+        study_resources = self.do_get(command=self.api_base + "studies/"+str(study_id) + 
                                 "/external_resources",
                                 dry_run=dry_run)
         resources = study_resources[c_RESPONSE].json()
@@ -568,8 +568,8 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
-        ret_delete = self.do_delete(command=self.api_base + "studies/"+str(studyId) + 
+        study_id = self.study_name_to_id(study_name, dry_run=dry_run)
+        ret_delete = self.do_delete(command=self.api_base + "studies/"+str(study_id) + 
                                     "/external_resources/" + resource_id,
                                     dry_run=dry_run)
 
@@ -598,7 +598,7 @@ class SCPAPIManager(APIManager):
                 c_CODE_RET_KEY: c_STUDY_DOES_NOT_EXIST
             }
         # Convert study name to study id
-        studyId = self.study_name_to_id(study_name, dry_run=dry_run)
+        study_id = self.study_name_to_id(study_name, dry_run=dry_run)
 
         #TODO: check whether resource already exists in some form
         #TODO: checks for formats of URL, description, etc 
@@ -608,7 +608,7 @@ class SCPAPIManager(APIManager):
                          "description":description,
                          "publication_url":publication_url}
 
-        resp = self.do_post(command=self.api_base + "studies/"+str(studyId) + "/external_resources",
+        resp = self.do_post(command=self.api_base + "studies/"+str(study_id) + "/external_resources",
                             values=resource_data,
                             dry_run=dry_run)
 
