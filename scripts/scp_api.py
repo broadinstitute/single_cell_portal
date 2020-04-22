@@ -24,7 +24,7 @@ c_CODE_RET_KEY = "code"
 c_RESPONSE = "response"
 c_STUDIES_RET_KEY = "studies"
 c_SUCCESS_RET_KEY = "success"
-c_ATT_RET_KEY = 'study_attribute'
+c_ATTR_RET_KEY = 'study_attribute'
 c_EXT_RET_KEY = 'external_resources'
 
 ## Standard status codes
@@ -477,7 +477,7 @@ class SCPAPIManager(APIManager):
                 c_SUCCESS_RET_KEY: False,
                 c_CODE_RET_KEY: c_ATTRIBUTE_DOES_NOT_EXIST
             }
-        ret_study[c_ATT_RET_KEY] = study[attribute]
+        ret_study[c_ATTR_RET_KEY] = study[attribute]
  
         return(ret_study)
 

@@ -166,13 +166,11 @@ args = argparse.ArgumentParser(
 )
 args.add_argument(
     '--token',
-    dest='token',
     default=None,
     help='Personal token after logging into Google (OAuth2).  This token is not persisted after the finish of the script.',
 )
 args.add_argument(
-    '--dry_run',
-    dest='dry_run',
+    '--dry-run',
     action='store_true',
     help='Walk through and log what would occur, without performing the actions.',
 )
@@ -228,11 +226,10 @@ parser_create_studies.add_argument(
     help='Short description of the study',
 )
 parser_create_studies.add_argument(
-    '--study-name', dest='study_name', required=True, help='Short name of the study'
+    '--study-name', required=True, help='Short name of the study'
 )
 parser_create_studies.add_argument(
     '--branding',
-    dest='branding',
     default=None,
     help='Portal branding to associate with the study',
 )
@@ -402,19 +399,16 @@ parser_upload_cluster.add_argument(
 )
 parser_upload_cluster.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study to add the file.',
 )
 parser_upload_cluster.add_argument(
     '--description',
-    dest='description',
     default="Coordinates and optional metadata to visualize clusters.",
     help='Text describing the cluster file.',
 )
 parser_upload_cluster.add_argument(
     '--cluster-name',
-    dest='cluster_name',
     required=True,
     help='Name of the clustering that will be used to refer to the plot.',
 )
@@ -442,25 +436,21 @@ parser_upload_expression.add_argument(
 )
 parser_upload_expression.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study to add the file.',
 )
 parser_upload_expression.add_argument(
     '--description',
-    dest='description',
     default='Gene expression in cells',
     help='Text describing the gene expression matrix file.',
 )
 parser_upload_expression.add_argument(
     '--species',
-    dest='species',
     required=True,
     help='Species from which the data is generated.',
 )
 parser_upload_expression.add_argument(
     '--genome',
-    dest='genome',
     required=True,
     help='Genome assembly used to generate the data.',
 )
@@ -491,13 +481,11 @@ parser_upload_metadata.add_argument(
 
 parser_upload_metadata.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study to add the file.',
 )
 parser_upload_metadata.add_argument(
     '--description',
-    dest='description',
     default='',
     help='Text describing the metadata file.',
 )
@@ -566,7 +554,7 @@ if __name__ == '__main__':
         )
         manage_call_return(ret)
         print('Study {}:'.format(parsed_args.attribute))
-        print(ret[scp_api.c_ATT_RET_KEY])
+        print(ret[scp_api.c_ATTR_RET_KEY])
 
     ## Edit a study description
     if parsed_args.command == c_TOOL_STUDY_EDIT_DESC:
