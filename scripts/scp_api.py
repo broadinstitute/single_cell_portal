@@ -469,15 +469,19 @@ class SCPAPIManager(APIManager):
 
         ret_study = self.do_get(command=self.api_base + "studies/"+str(study_id),
                                 dry_run=dry_run)
-        study = ret_study[c_RESPONSE].json()
-        # Error if attribute is not available
-        if attribute not in study:
-            print('The requested study attribute is not available.')
-            return {
-                c_SUCCESS_RET_KEY: False,
-                c_CODE_RET_KEY: c_ATTRIBUTE_DOES_NOT_EXIST
-            }
-        ret_study[c_ATTR_RET_KEY] = study[attribute]
+        if dry_run:
+            print("DRY_RUN:: Returned dummy attribute.")
+            ret_study[c_ATTR_RET_KEY] = "DUMMY ATTRIBUTE"
+        else:
+            study = ret_study[c_RESPONSE].json()
+            # Error if attribute is not available
+            if attribute not in study:
+                print('The requested study attribute is not available.')
+                return {
+                    c_SUCCESS_RET_KEY: False,
+                    c_CODE_RET_KEY: c_ATTRIBUTE_DOES_NOT_EXIST
+                }
+            ret_study[c_ATTR_RET_KEY] = study[attribute]
  
         return(ret_study)
 
@@ -544,8 +548,13 @@ class SCPAPIManager(APIManager):
         study_resources = self.do_get(command=self.api_base + "studies/"+str(study_id) + 
                                 "/external_resources",
                                 dry_run=dry_run)
-        resources = study_resources[c_RESPONSE].json()
-        study_resources[c_EXT_RET_KEY] = resources
+        if dry_run:
+            print("DRY_RUN:: Returned dummy external resources.")
+            study_resources[c_EXT_RET_KEY] = [{'_id': 'EXT_REC_DUMMY_1'}, 
+                                              {'_id': 'EXT_REC_DUMMY_2'}]
+        else:
+            resources = study_resources[c_RESPONSE].json()
+            study_resources[c_EXT_RET_KEY] = resources
  
         return(study_resources)
 
