@@ -6,6 +6,13 @@ import pandas as pd
 import os
 import sys
 import argparse
+import gzip
+import shutil
+
+def gunzip_shutil(source_filepath, dest_filepath, block_size=65536):
+    with gzip.open(source_filepath, 'rb') as s_file, \
+            open(dest_filepath, 'wb') as d_file:
+        shutil.copyfileobj(s_file, d_file, block_size)
 
 
 def sort_sparse_matrix(matrix_file, sorted_matrix_file=None):
@@ -16,6 +23,12 @@ def sort_sparse_matrix(matrix_file, sorted_matrix_file=None):
         Outputs-
         output_name- gene, barcode sorted sparse matrix file, name is either sorted_matrix_file if provided, or "gene_sorted-" + matrix_file
     """
+    if ('.mtx.gz' in matrix_file):
+        unzipped_file = matrix_file.split('.gz')[0]
+        print('Unzipping matrix file')
+        gunzip_shutil(matrix_file, unzipped_file)
+        matrix_file = unzipped_file
+
     if sorted_matrix_file:
         # if the sorted path name is provided, use it as the output name
         output_name = sorted_matrix_file

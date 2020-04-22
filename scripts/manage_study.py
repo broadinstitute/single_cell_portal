@@ -40,6 +40,16 @@ python3 manage_study.py --token=$ACCESS_TOKEN upload-metadata --study-name "CLI 
 
 # Upload a cluster file
 python3 manage_study.py --token=$ACCESS_TOKEN upload-cluster --study-name "${STUDY_NAME}" --file ../demo_data/cluster_example.txt  --cluster-name 'Test cluster' --description test
+
+# Edit study description
+python3 manage_study.py --token-$ACCESS_TOKEN edit-study-description --study-name "${STUDY_NAME}" --new-description "This is a test."
+
+# Create an external resource
+python3 manage_study.py --token-$ACCESS_TOKEN create-study-external-resource --study-name "${STUDY_NAME}" --title "External_Link" \
+--url "https://singlecell.broadinstitute.org/single_cell" --description "This sends you home."
+
+# Print a study attribute (eg. cell_count)
+python3 manage_study.py --token-$ACCESS_TOKEN get-study-attribute --study-name "${STUDY_NAME}" --attribute cell_count
 """
 
 import argparse
@@ -66,6 +76,11 @@ c_TOOL_EXPRESSION = "upload-expression"
 c_TOOL_METADATA = "upload-metadata"
 c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
+c_TOOL_STUDY_EDIT_DESC= "edit-study-description"
+c_TOOL_STUDY_GET_ATTR= "get-study-attribute"
+c_TOOL_STUDY_GET_EXT= 'get-study-external-resources'
+c_TOOL_STUDY_DEL_EXT= 'delete-study-external-resources'
+c_TOOL_STUDY_CREATE_EXT = 'create-study-external-resource'
 
 
 def manage_call_return(call_return, verbose=False):
@@ -138,6 +153,11 @@ def validate_metadata_file(metadata_path):
     report_issues(metadata)
     exit_if_errors(metadata)
 
+def confirm(question):
+    while True:
+        answer = input(question + ' (y/n): ').lower().strip()
+        if answer in ('y', 'yes', 'n', 'no'):
+            return answer in ('y', 'yes')
 
 args = argparse.ArgumentParser(
     prog='manage_study.py',
@@ -146,13 +166,11 @@ args = argparse.ArgumentParser(
 )
 args.add_argument(
     '--token',
-    dest='token',
     default=None,
     help='Personal token after logging into Google (OAuth2).  This token is not persisted after the finish of the script.',
 )
 args.add_argument(
-    '--dry_run',
-    dest='dry_run',
+    '--dry-run',
     action='store_true',
     help='Walk through and log what would occur, without performing the actions.',
 )
@@ -174,7 +192,7 @@ args.add_argument(
 )
 
 # Create tools (subparser)
-subargs = args.add_subparsers()
+subargs = args.add_subparsers(dest = 'command')
 
 ## List studies subparser
 parser_list_studies = subargs.add_parser(
@@ -208,11 +226,10 @@ parser_create_studies.add_argument(
     help='Short description of the study',
 )
 parser_create_studies.add_argument(
-    '--study-name', dest='study_name', required=True, help='Short name of the study'
+    '--study-name', required=True, help='Short name of the study'
 )
 parser_create_studies.add_argument(
     '--branding',
-    dest='branding',
     default=None,
     help='Portal branding to associate with the study',
 )
@@ -223,6 +240,122 @@ parser_create_studies.add_argument(
     '--is-private', action='store_true', help='Whether the study is private'
 )
 
+# Create edit description subparser
+parser_edit_description = subargs.add_parser(
+    c_TOOL_STUDY_EDIT_DESC,
+    help="Edit a study description. \""
+    + args.prog
+    + " "
+    + c_TOOL_STUDY_EDIT_DESC
+    + " -h\" for more details",
+)
+parser_edit_description.add_argument(
+    '--study-name',
+    required=True,
+    help='Name of the study for which to edit description.',
+)
+parser_edit_description.add_argument(
+    '--new-description',
+    required=True,
+    help='New description of the study to replace current one.',
+)
+
+parser_edit_description.add_argument(
+    '--from-file',
+    action='store_true',
+    help='If true, assumes new_description argument is name pointing to file containing new_description.',
+)
+
+parser_edit_description.add_argument(
+    '--accept-html',
+    action='store_true',
+    help='If true, will allow HTML formatting in new description.',
+)
+
+## Create study get attribute subparser
+parser_get_attribute = subargs.add_parser(
+    c_TOOL_STUDY_GET_ATTR,
+    help="Get a study attribute (such as cell_count, etc). \""
+    + args.prog
+    + " "
+    + c_TOOL_STUDY_GET_ATTR
+    + " -h\" for more details",
+)
+parser_get_attribute.add_argument(
+    '--study-name',
+    required=True,
+    help='Name of the study from which to get attribute.',
+)
+parser_get_attribute.add_argument(
+    '--attribute',
+    required=True,
+    help='Attribute to return (such as cell_count, etc).',
+)
+
+## Create study get external resources subparser
+parser_get_ext_resources = subargs.add_parser(
+    c_TOOL_STUDY_GET_EXT,
+    help="Get study external resources for a study. \""
+    + args.prog
+    + " "
+    + c_TOOL_STUDY_GET_EXT
+    + " -h\" for more details",
+)
+parser_get_ext_resources.add_argument(
+    '--study-name',
+    required=True,
+    help='Name of the study from which to get resources.',
+)
+
+## Create study delete external resources subparser
+parser_delete_ext_resources = subargs.add_parser(
+    c_TOOL_STUDY_DEL_EXT,
+    help="Delete all study external resources for a study. \""
+    + args.prog
+    + " "
+    + c_TOOL_STUDY_DEL_EXT
+    + " -h\" for more details",
+)
+parser_delete_ext_resources.add_argument(
+    '--study-name',
+    required=True,
+    help='Name of the study from which to delete resources.',
+)
+
+## Create study new external resource subparser
+parser_create_ext_resource = subargs.add_parser(
+    c_TOOL_STUDY_CREATE_EXT,
+    help="Create a new external resource for a study. \""
+    + args.prog
+    + " "
+    + c_TOOL_STUDY_CREATE_EXT
+    + " -h\" for more details",
+)
+parser_create_ext_resource.add_argument(
+    '--study-name',
+    required=True,
+    help='Name of the study to which to add resource.',
+)
+parser_create_ext_resource.add_argument(
+    '--title',
+    required=True,
+    help='Title of resource.',
+)
+parser_create_ext_resource.add_argument(
+    '--url',
+    required=True,
+    help='URL of resource.',
+)
+parser_create_ext_resource.add_argument(
+    '--description',
+    required=True,
+    help='Tooltip description of resource.',
+)
+parser_create_ext_resource.add_argument(
+    '--publication-url',
+    action='store_true',
+    help='Whether resource is publication URL.',
+)
 # TODO: Fix permissions subparser (SCP-2024)
 # ## Permissions subparser
 # parser_permissions = subargs.add_parser(
@@ -266,19 +399,16 @@ parser_upload_cluster.add_argument(
 )
 parser_upload_cluster.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study to add the file.',
 )
 parser_upload_cluster.add_argument(
     '--description',
-    dest='description',
     default="Coordinates and optional metadata to visualize clusters.",
     help='Text describing the cluster file.',
 )
 parser_upload_cluster.add_argument(
     '--cluster-name',
-    dest='cluster_name',
     required=True,
     help='Name of the clustering that will be used to refer to the plot.',
 )
@@ -306,25 +436,21 @@ parser_upload_expression.add_argument(
 )
 parser_upload_expression.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study to add the file.',
 )
 parser_upload_expression.add_argument(
     '--description',
-    dest='description',
     default='Gene expression in cells',
     help='Text describing the gene expression matrix file.',
 )
 parser_upload_expression.add_argument(
     '--species',
-    dest='species',
     required=True,
     help='Species from which the data is generated.',
 )
 parser_upload_expression.add_argument(
     '--genome',
-    dest='genome',
     required=True,
     help='Genome assembly used to generate the data.',
 )
@@ -355,13 +481,11 @@ parser_upload_metadata.add_argument(
 
 parser_upload_metadata.add_argument(
     '--study-name',
-    dest='study_name',
     required=True,
     help='Name of the study to add the file.',
 )
 parser_upload_metadata.add_argument(
     '--description',
-    dest='description',
     default='',
     help='Text describing the metadata file.',
 )
@@ -418,6 +542,100 @@ if __name__ == '__main__':
         manage_call_return(ret)
         if succeeded(ret):
             print('Created study')
+
+    ## Get a study attribute
+    if parsed_args.command == c_TOOL_STUDY_GET_ATTR:
+        if verbose:
+            print("STARTING GET ATTRIBUTE")
+        ret = connection.get_study_attribute(
+            study_name=parsed_args.study_name,
+            attribute=parsed_args.attribute,
+            dry_run=parsed_args.dry_run,
+        )
+        manage_call_return(ret)
+        print('Study {}:'.format(parsed_args.attribute))
+        print(ret[scp_api.c_ATTR_RET_KEY])
+
+    ## Edit a study description
+    if parsed_args.command == c_TOOL_STUDY_EDIT_DESC:
+        if verbose:
+            print("STARTING EDIT DESCRIPTION")
+
+        if parsed_args.from_file:
+            with open(parsed_args.new_description, 'r') as d_file:
+                new_description = d_file.read()
+        else:
+            new_description = parsed_args.new_description
+
+
+        ret = connection.edit_study_description(
+            study_name=parsed_args.study_name,
+            new_description=new_description,
+            accept_html=parsed_args.accept_html,
+            dry_run=parsed_args.dry_run,
+        )
+        manage_call_return(ret)
+        if succeeded(ret):
+            print('Updated study description')
+
+    ## Get all external resources from a study
+    if parsed_args.command == c_TOOL_STUDY_GET_EXT:
+        if verbose:
+            print("STARTING GET EXTERNAL RESOURCES")
+        ret = connection.get_study_external_resources(
+            study_name=parsed_args.study_name,
+            dry_run=parsed_args.dry_run,
+        )
+        manage_call_return(ret, verbose)
+        print('Study external resources: \n')
+        # Returns in dict format -- table format might be better
+        print(ret[scp_api.c_EXT_RET_KEY])
+
+    ## Delete all external resources from a study
+    if parsed_args.command == c_TOOL_STUDY_DEL_EXT:
+        if verbose:
+            print("STARTING DELETE EXTERNAL RESOURCES")
+
+        # first get all external resource ids
+        ret = connection.get_study_external_resources(
+            study_name=parsed_args.study_name,
+            dry_run=parsed_args.dry_run,
+        )
+        manage_call_return(ret, verbose)
+        ext_ids = [res['_id']['$oid'] for res in ret['external_resources']]
+        if not ext_ids:
+            print('No external resources associated with study.')
+            exit()
+        # confirm deletion with user
+        confirmed = confirm("Delete {} external resources associated ".format(len(ext_ids)) +
+                            "with study {}?".format(parsed_args.study_name))
+        if confirmed:
+            if verbose:
+                print('Will continue deleting resources.')
+            for ext_id in ext_ids:
+                ret = connection.delete_study_external_resource(
+                    study_name=parsed_args.study_name,
+                    resource_id=ext_id,
+                    dry_run=parsed_args.dry_run,
+                )
+                manage_call_return(ret, verbose)
+            print('Deleted all external resources')
+
+    ## Create new external resource for a study
+    if parsed_args.command == c_TOOL_STUDY_CREATE_EXT:
+        if verbose:
+            print("STARTING CREATE EXTERNAL RESOURCE")
+        ret = connection.create_study_external_resource(
+            study_name=parsed_args.study_name,
+            title=parsed_args.title,
+            url=parsed_args.url,
+            description=parsed_args.description,
+            publication_url=parsed_args.publication_url,
+            dry_run=parsed_args.dry_run,
+        )
+        manage_call_return(ret, verbose)
+        if succeeded(ret):
+            print('Created external resource')
 
     ## Share with user
     if hasattr(parsed_args, "permission"):
