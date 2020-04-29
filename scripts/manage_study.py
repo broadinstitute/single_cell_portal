@@ -55,6 +55,7 @@ python3 manage_study.py --token-$ACCESS_TOKEN get-study-attribute --study-name "
 import argparse
 import json
 import os
+import certifi
 
 from google.cloud import storage
 from ingest.ingest_pipeline import IngestPipeline
@@ -68,6 +69,7 @@ from ingest.validation.validate_metadata import (
 
 import Commandline
 import scp_api
+import requests
 
 # Subparser tool names
 c_TOOL_LIST_STUDY = "list-studies"
@@ -141,17 +143,26 @@ def download_from_bucket(file_path):
 
 def validate_metadata_file(metadata_path):
     placeholder = 'SCP555' # TODO: Refactor CellMetadata to not require this
-    metadata = CellMetadata(metadata_path, '', '', study_accession=placeholder)
-    print(f'Validating {metadata_path}')
-
-    convention_path = download_from_bucket(IngestPipeline.JSON_CONVENTION)
-    with open(convention_path) as file:
-        convention = json.load(file)
-
-    validate_input_metadata(metadata, convention)
-    serialize_issues(metadata)
-    report_issues(metadata)
-    exit_if_errors(metadata)
+    certfile_file =certifi.where()
+    verify= 'localhost' not in api_base and 'staging' not in api_base
+    print(f"{certfile_file}")
+    study_details = requests.get('https://single-cell-staging.broadinstitute.org/single_cell/api/v1/studies', verify=verify)
+    print(f'{study_details}')
+    # metadata = CellMetadata(metadata_path, '', '', study_accession=placeholder)
+    # print(f'Validating {metadata_path}')
+    # certfile_file =certifi.where()
+    # print(f"{certfile_file}")
+    # convention_path = requests.get('https://single-cell-staging.broadinstitute.org/single_cell/api/v1/metadata_schemas/alexandria_convention/latest/json',
+    # verify=certfile_file)
+    # print(convention_path)
+    # convention_path = download_from_bucket(IngestPipeline.JSON_CONVENTION)
+    # with open(convention_path) as file:
+    #     convention = json.load(file)
+    #
+    # validate_input_metadata(metadata, convention)
+    # serialize_issues(metadata)
+    # report_issues(metadata)
+    # exit_if_errors(metadata)
 
 def confirm(question):
     while True:
@@ -190,6 +201,9 @@ args.add_argument(
     choices=['development', 'staging', 'production'],
     help='API environment to use',
 )
+args.add_argument(
+'--validate',
+help = 'Validate')
 
 # Create tools (subparser)
 subargs = args.add_subparsers(dest = 'command')
@@ -478,7 +492,11 @@ parser_upload_metadata.add_argument(
     help='Whether to use metadata convention: validates against standard vocabularies, and will enable faceted search on this data',
     action='store_true'
 )
-
+parser_upload_metadata.add_argument(
+    '--validate-against-convention',
+    help='Validates against standard vocabularies prior to upload',
+    action='store_true'
+)
 parser_upload_metadata.add_argument(
     '--study-name',
     required=True,
@@ -702,6 +720,7 @@ if __name__ == '__main__':
         if verbose:
             print("START UPLOAD METADATA FILE")
         connection = login(manager=connection, dry_run=parsed_args.dry_run)
+        print(f'connection is {connection}')
         ret = connection.upload_metadata(
             file=parsed_args.metadata_file,
             use_convention=parsed_args.use_convention,
@@ -742,4 +761,3 @@ if __name__ == '__main__':
 
     ## Validate and Upload bams
     ### TODO
-
