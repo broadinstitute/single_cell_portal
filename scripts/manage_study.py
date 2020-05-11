@@ -144,9 +144,9 @@ def validate_metadata_file(metadata_path):
         study_name=parsed_args.study_name,
         attribute='accession',
         dry_run=parsed_args.dry_run)
-    if verbose:
-        print(f'Study accession {study_accession_res} retrieved for {parsed_args.study_name}')
     if succeeded(study_accession_res):
+        if verbose:
+            print(f'Study accession {study_accession_res} retrieved for {parsed_args.study_name}')
         study_accession = study_accession_res.get('study_attribute')
         metadata = CellMetadata(metadata_path, '', '', study_accession=str(study_accession))
         convention_res = connection.do_get(command=api_base + 'metadata_schemas/alexandria_convention/latest/json',dry_run=parsed_args.dry_run)
