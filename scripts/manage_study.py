@@ -36,7 +36,7 @@ python3 manage_study.py --token=$ACCESS_TOKEN create-study --study-name "CLI tes
 python3 manage_study.py --token=$ACCESS_TOKEN upload-expression --file ../demo_data/expression_example.txt --study-name "CLI test" --species "human" --genome "GRCh38"
 
 # Upload a metadata file (without validating against the metadata convention)
-python3 manage_study.py --token=$ACCESS_TOKEN upload-metadata --study-name "CLI test"--file ../demo_data/metadata_example.txt
+python3 manage_study.py --token=$ACCESS_TOKEN upload-metadata --study-name "CLI test" --file ../demo_data/metadata_example.txt
 
 # Upload a cluster file
 python3 manage_study.py --token=$ACCESS_TOKEN upload-cluster --study-name "${STUDY_NAME}" --file ../demo_data/cluster_example.txt  --cluster-name 'Test cluster' --description test
@@ -56,6 +56,7 @@ import argparse
 import json
 import os
 import certifi
+import urllib3
 
 from google.cloud import storage
 from ingest.ingest_pipeline import IngestPipeline
@@ -143,22 +144,18 @@ def download_from_bucket(file_path):
 
 def validate_metadata_file(metadata_path):
     placeholder = 'SCP555' # TODO: Refactor CellMetadata to not require this
-    certfile_file =certifi.where()
-    verify= 'localhost' not in api_base and 'staging' not in api_base
-    print(f"{certfile_file}")
-    study_details = requests.get('https://single-cell-staging.broadinstitute.org/single_cell/api/v1/studies', verify=verify)
-    print(f'{study_details}')
-    # metadata = CellMetadata(metadata_path, '', '', study_accession=placeholder)
-    # print(f'Validating {metadata_path}')
-    # certfile_file =certifi.where()
-    # print(f"{certfile_file}")
-    # convention_path = requests.get('https://single-cell-staging.broadinstitute.org/single_cell/api/v1/metadata_schemas/alexandria_convention/latest/json',
-    # verify=certfile_file)
-    # print(convention_path)
-    # convention_path = download_from_bucket(IngestPipeline.JSON_CONVENTION)
-    # with open(convention_path) as file:
-    #     convention = json.load(file)
-    #
+    if verbose:
+        print('Starting validating metadata file process')
+    study_accession_res =connection.get_study_attribute(
+        study_name=parsed_args.study_name,
+        attribute='accession',
+        dry_run=parsed_args.dry_run)
+    if succeeded(study_accession_res):
+        study_accession = study_accession_res.get('study_attribute')
+        metadata = CellMetadata(metadata_path, '', '', study_accession=str(study_accession))
+    convention_dict = connection.do_get(command=api_base + 'metadata_schemas/alexandria_convention/latest/json',dry_run=parsed_args.dry_run)
+    print(convention_dict)
+    print(convention)
     # validate_input_metadata(metadata, convention)
     # serialize_issues(metadata)
     # report_issues(metadata)
@@ -201,9 +198,7 @@ args.add_argument(
     choices=['development', 'staging', 'production'],
     help='API environment to use',
 )
-args.add_argument(
-'--validate',
-help = 'Validate')
+
 
 # Create tools (subparser)
 subargs = args.add_subparsers(dest = 'command')
