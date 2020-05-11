@@ -143,23 +143,24 @@ def download_from_bucket(file_path):
     return destination
 
 def validate_metadata_file(metadata_path):
-    placeholder = 'SCP555' # TODO: Refactor CellMetadata to not require this
-    if verbose:
-        print('Starting validating metadata file process')
     study_accession_res =connection.get_study_attribute(
         study_name=parsed_args.study_name,
         attribute='accession',
         dry_run=parsed_args.dry_run)
+    if verbose:
+        print(f'Study accession {study_accession_res} retrieved for {parsed_args.study_name}')
     if succeeded(study_accession_res):
         study_accession = study_accession_res.get('study_attribute')
         metadata = CellMetadata(metadata_path, '', '', study_accession=str(study_accession))
-    convention_dict = connection.do_get(command=api_base + 'metadata_schemas/alexandria_convention/latest/json',dry_run=parsed_args.dry_run)
-    print(convention_dict)
-    # print(convention)
-    # validate_input_metadata(metadata, convention)
-    # serialize_issues(metadata)
-    # report_issues(metadata)
-    # exit_if_errors(metadata)
+        convention_res = connection.do_get(command=api_base + 'metadata_schemas/alexandria_convention/latest/json',dry_run=parsed_args.dry_run)
+        if succeeded(convention_res ):
+            if verbose:
+                print(f'Retreieved file for latest metdata convention')
+            convention = convention_res["response"].json()
+            validate_input_metadata(metadata, convention)
+            serialize_issues(metadata)
+            report_issues(metadata)
+            exit_if_errors(metadata)
 
 def confirm(question):
     while True:
@@ -674,14 +675,14 @@ if __name__ == '__main__':
             validate_metadata_file(parsed_args.metadata_file)
 
         # command = ["python3 verify_portal_file.py"]
-
+        #
         # if hasattr(parsed_args, "cluster_file"):
         #     command.extend(["--coordinates-file", parsed_args.cluster_file])
         # if hasattr(parsed_args, "expression_file"):
         #     command.extend(["--expression-files", parsed_args.expression_file])
         # if hasattr(parsed_args, "metadata_file"):
         #     command.extend(["--metadata-file", parsed_args.metadata_file])
-
+        #
         # if parsed_args.dry_run:
         #     print("TESTING:: no command executed."+os.linesep+"Would have executed: " + os.linesep + " ".join(command))
         # else:
