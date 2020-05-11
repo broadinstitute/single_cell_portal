@@ -155,7 +155,7 @@ def validate_metadata_file(metadata_path):
         metadata = CellMetadata(metadata_path, '', '', study_accession=str(study_accession))
     convention_dict = connection.do_get(command=api_base + 'metadata_schemas/alexandria_convention/latest/json',dry_run=parsed_args.dry_run)
     print(convention_dict)
-    print(convention)
+    # print(convention)
     # validate_input_metadata(metadata, convention)
     # serialize_issues(metadata)
     # report_issues(metadata)
