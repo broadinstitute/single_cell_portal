@@ -55,8 +55,6 @@ python3 manage_study.py --token-$ACCESS_TOKEN get-study-attribute --study-name "
 import argparse
 import json
 import os
-import certifi
-import urllib3
 
 from google.cloud import storage
 from ingest.ingest_pipeline import IngestPipeline
@@ -70,7 +68,6 @@ from ingest.validation.validate_metadata import (
 
 import Commandline
 import scp_api
-import requests
 
 # Subparser tool names
 c_TOOL_LIST_STUDY = "list-studies"
