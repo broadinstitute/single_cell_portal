@@ -791,7 +791,7 @@ class SCPAPIManager(APIManager):
 
         ret = self.do_post(command=self.api_base + 'studies/' + study_id + '/study_files',
                            values=file_fields, dry_run=dry_run)
-        print(f'/study_files response: {ret["response"].text}')
+        # print(f'/study_files response: {ret["response"].text}')
 
         if parse:
             study_files_response = ret['response'].json()
