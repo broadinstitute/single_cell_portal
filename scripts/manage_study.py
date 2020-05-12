@@ -144,6 +144,7 @@ def validate_metadata_file(metadata_path):
         study_name=parsed_args.study_name,
         attribute='accession',
         dry_run=parsed_args.dry_run)
+    print(study_accession_res)
     if succeeded(study_accession_res):
         if verbose:
             print(f'Study accession {study_accession_res} retrieved for {parsed_args.study_name}')

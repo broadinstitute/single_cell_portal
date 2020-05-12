@@ -7,11 +7,13 @@ sys.path.append('.')
 
 from manage_study import validate_metadata_file
 from gcp_mocks import mock_storage_client, mock_storage_blob
+from test_scp_api import mocked_requests_get
 
+def connection
 class ManageStudyTestCase(unittest.TestCase):
 
-    @patch('google.cloud.storage.Blob', side_effect=mock_storage_blob)
-    @patch('google.cloud.storage.Client', side_effect=mock_storage_client)
+
+    @patch('requests.get', side_effect=mocked_requests_get)
     def test_validate_metadata_file_invalid_ontology(self, mock_storage_client, mock_storage_blob):
         """Unconventional metadata file should fail validation
 
