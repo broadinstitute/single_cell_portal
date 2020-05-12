@@ -1,37 +1,99 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock, Mock
 import sys
 import pytest
+import requests
+
 
 sys.path.append('.')
 
 from manage_study import validate_metadata_file
 from gcp_mocks import mock_storage_client, mock_storage_blob
-from test_scp_api import mocked_requests_get
+from scp_api import SCPAPIManager
+from cli_parser import create_parser
 
-def connection
+# This method will be used by the mock to replace requests.post
+def mocked_requests_get(*args, **kwargs):
+    class MockResponse:
+        def __init__(self, json_data, status_code, reason=None):
+            self.json_data = json_data
+            self.status_code = status_code
+            self.reason = reason
+
+        def json(self):
+            return self.json_data
+
+    url = args[0]
+
+    study_files_url_re = 'tests/data/alexandria_convention_schema_2.1.0.json'
+    if url is study_files_url_re:
+        return MockResponse(study_files_url_re, 200, reason='OK')
+
+    # parse_url_re = '/v1/studies/.*/study_files/.*/parse$'
+    # if re.search(parse_url_re, url):
+    #     return MockResponse(None, 204)
+
+    return MockResponse(None, 404)
+
+def mock_get_connection(*args, **kwargs):
+    class MockResponse:
+        def get_study_attribute(study_name,attribute, dry_run):
+            return {'success': True, 'study_attribute': 'SCP599'}
+
+        def do_get(command=None,dry_run=None):
+            return {'response':mocked_requests_get(command)}
+
+    return MockResponse
+
+
+def mock_get_parsed_args():
+    return Mock()
+
+def mock_get_api_base():
+    return 'foo'
+
 class ManageStudyTestCase(unittest.TestCase):
+    def set_up_manage_study(self,*args):
+        return create_parser().parse_args(args)
 
 
-    @patch('requests.get', side_effect=mocked_requests_get)
-    def test_validate_metadata_file_invalid_ontology(self, mock_storage_client, mock_storage_blob):
+    @patch('manage_study.get_connection', side_effect=mock_get_connection)
+    @patch('manage_study.succeeded', return_value=True)
+    @patch('manage_study.get_parsed_args')
+    @patch('manage_study.get_api_base', side_effect = mock_get_api_base)
+    def test_validate_metadata_file_invalid_ontology(self,
+        mock_get_connection,
+        mock_succeeded,
+        mock_get_parsed_args,
+        mock_get_api_base):
         """Unconventional metadata file should fail validation
 
         This basic test ensures that the external dependency
         `scp-ingest-pipeline` in our public CLI works as expected.
         """
+        mock_get_parsed_args.return_value = self.set_up_manage_study(
+        'upload-metadata',
+        '--study-name',
+        'CLI test',
+        '--file',
+        'tests/data/invalid_array_v1.1.3.tsv',
+        '--use-convention'
+        )
+        SCPAPIManager= Mock()
+        SCPAPIManager.get_study_attribute('1234')
+
         invalid_metadata_path = 'tests/data/invalid_array_v1.1.3.tsv'
         with self.assertRaises(SystemExit) as cm:
             validate_metadata_file(invalid_metadata_path)
         self.assertEqual(cm.exception.code, 1)
 
-    @patch('google.cloud.storage.Blob', side_effect=mock_storage_blob)
-    @patch('google.cloud.storage.Client', side_effect=mock_storage_client)
-    def test_validate_metadata_file_valid_ontology(self, mock_storage_client, mock_storage_blob):
-        """Conventional metadata file should pass validation
-        """
-        valid_metadata_path = 'tests/data/valid_array_v1.1.3.tsv'
-        validate_metadata_file(valid_metadata_path)
+    # @patch('google.cloud.storage.Blob', side_effect=mock_storage_blob)
+    # @patch('google.cloud.storage.Client', side_effect=mock_storage_client)
+    # def test_validate_metadata_file_valid_ontology(self, mock_storage_client, mock_storage_blob):
+    #     """Conventional metadata file should pass validation
+    #     """
+    #     valid_metadata_path = 'tests/data/valid_array_v1.1.3.tsv'
+    #     validate_metadata_file(valid_metadata_path)
 
 if __name__ == "__main__":
     unittest.main()
