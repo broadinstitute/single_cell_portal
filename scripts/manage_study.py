@@ -152,10 +152,8 @@ def validate_metadata_file(metadata_path):
         study_name=study_name,
         attribute='accession',
         dry_run=dry_run)
-    print(study_accession_res)
     study_file = ObjectId('addedfeed000000000000000')
     study_file_id = ObjectId('addedfeed000000000000001')
-    print(f'This is the study response {study_accession_res}')
     if succeeded(study_accession_res):
         if verbose:
             print(f'Study accession {study_accession_res} retrieved for {study_name}')
@@ -166,13 +164,10 @@ def validate_metadata_file(metadata_path):
             if verbose:
                 print(f'Retreieved file for latest metdata convention')
             convention = convention_res["response"].json()
-            print(metadata)
-            print(convention)
             validate_input_metadata(metadata, convention)
             serialize_issues(metadata)
             report_issues(metadata)
             exit_if_errors(metadata)
-            print('no errors')
 
 def confirm(question):
     while True:

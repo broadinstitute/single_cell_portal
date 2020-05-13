@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock, Mock
 import sys
 import pytest
+import json
 import requests
 from ingest.cell_metadata import CellMetadata
 from ingest.validation.validate_metadata import (
@@ -32,7 +33,9 @@ def mocked_requests_get(*args, **kwargs):
     print(f'This is the {url}')
     convention_file_path= 'tests/data/alexandria_convention_schema_2.1.0.json'
     if url == 'metadata_schemas/alexandria_convention/latest/json':
-        return MockResponse(convention_file_path, 200, reason='OK')
+        # print(json.loads(open(convention_file_path))
+        with open(convention_file_path) as f:
+            return MockResponse(json.load(f), 200, reason='OK')
 
     # parse_url_re = '/v1/studies/.*/study_files/.*/parse$'
     # if re.search(parse_url_re, url):
@@ -102,12 +105,11 @@ class ManageStudyTestCase(unittest.TestCase):
         mock_succeeded,
         mock_get_parsed_args,
         mock_get_api_base):
-        """Unconventional metadata file should fail validation
+        """Conventional metadata file should pass validation
 
         This basic test ensures that the external dependency
         `scp-ingest-pipeline` in our public CLI works as expected.
         """
-        # validate_input_metadata = MagicMock(side_effect=validate_input_metadata)
         mock_get_parsed_args.return_value = self.set_up_manage_study(
         'upload-metadata',
         '--study-name',
@@ -120,7 +122,6 @@ class ManageStudyTestCase(unittest.TestCase):
         SCPAPIManager.get_study_attribute.return_value= 'SCP555'
 
         valid_metadata_path = '../../scp-ingest-pipeline/tests/data/valid_array_v2.0.0.tsv'
-        validate_metadata_file(valid_metadata_path)
-        self.assertEqual(cm.exception.code, 0)
+        not self.assertRaises(SystemExit, validate_metadata_file(valid_metadata_path))
 if __name__ == "__main__":
     unittest.main()
