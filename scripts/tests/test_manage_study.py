@@ -110,7 +110,6 @@ class ManageStudyTestCase(unittest.TestCase):
         )
         SCPAPIManager= Mock()
         SCPAPIManager.get_study_attribute.return_value= 'SCP555'
-
         valid_metadata_path = 'tests/data/valid_array_v20.0.0.tsv'
         not self.assertRaises(SystemExit, validate_metadata_file(valid_metadata_path))
 if __name__ == "__main__":
