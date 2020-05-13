@@ -38,6 +38,8 @@ python3 manage_study.py --token=$ACCESS_TOKEN upload-expression --file ../demo_d
 # Upload a metadata file (without validating against the metadata convention)
 python3 manage_study.py --token=$ACCESS_TOKEN upload-metadata --study-name "CLI test" --file ../demo_data/metadata_example.txt
 
+# Upload a metadata file with metadata convention validation
+python3 manage_study.py upload-metadata --study-name "CLI test" --file ../../scp-ingest-pipeline/tests/data/valid_no_array_v2.0.0.tsv --use-convention
 # Upload a cluster file
 python3 manage_study.py --token=$ACCESS_TOKEN upload-cluster --study-name "${STUDY_NAME}" --file ../demo_data/cluster_example.txt  --cluster-name 'Test cluster' --description test
 
@@ -55,6 +57,7 @@ python3 manage_study.py --token-$ACCESS_TOKEN get-study-attribute --study-name "
 import argparse
 import json
 import os
+from bson.objectid import ObjectId
 
 from google.cloud import storage
 from ingest.ingest_pipeline import IngestPipeline
@@ -149,21 +152,27 @@ def validate_metadata_file(metadata_path):
         study_name=study_name,
         attribute='accession',
         dry_run=dry_run)
+    print(study_accession_res)
+    study_file = ObjectId('addedfeed000000000000000')
+    study_file_id = ObjectId('addedfeed000000000000001')
     print(f'This is the study response {study_accession_res}')
     if succeeded(study_accession_res):
         if verbose:
             print(f'Study accession {study_accession_res} retrieved for {study_name}')
         study_accession = study_accession_res.get('study_attribute')
-        metadata = CellMetadata(metadata_path, '', '', study_accession=str(study_accession))
+        metadata = CellMetadata(metadata_path, study_file, study_file_id, study_accession=str(study_accession))
         convention_res = get_connection().do_get(command=get_api_base() + 'metadata_schemas/alexandria_convention/latest/json',dry_run=dry_run)
         if succeeded(convention_res ):
             if verbose:
                 print(f'Retreieved file for latest metdata convention')
             convention = convention_res["response"].json()
+            print(metadata)
+            print(convention)
             validate_input_metadata(metadata, convention)
             serialize_issues(metadata)
             report_issues(metadata)
             exit_if_errors(metadata)
+            print('no errors')
 
 def confirm(question):
     while True:
