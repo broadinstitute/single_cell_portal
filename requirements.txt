@@ -6,7 +6,7 @@ requests>=2.21.0
 # Also, if still using this kludge getting and you get failures in CircleCI,
 # then bump cache key in .circleci/config.yml (e.g. v2 -> v3).
 # That's a cost of tech debt until we push to PyPI as proposed above.
-git+git://github.com/broadinstitute/scp-ingest-pipeline@b1857a9f0a974123be0338616086bcb7907a3e41#egg=scp-ingest-pipeline
+git+git://github.com/broadinstitute/scp-ingest-pipeline@95043448003f37f3caef4209845f6b5c28c771e2#egg=scp-ingest-pipeline
 
 # For faster development iterations.
 # ../../scp-ingest-pipeline
