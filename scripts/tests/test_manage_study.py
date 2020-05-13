@@ -34,7 +34,6 @@ def mocked_requests_get(*args, **kwargs):
     if url == 'metadata_schemas/alexandria_convention/latest/json':
         with open(convention_file_path) as f:
             return MockResponse(json.load(f), 200, reason='OK')
-
     return MockResponse(None, 404)
 
 def mock_get_connection(*args, **kwargs):
@@ -47,7 +46,6 @@ def mock_get_connection(*args, **kwargs):
 
     return MockResponse
 
-
 def mock_get_parsed_args():
     return Mock()
 
@@ -57,7 +55,6 @@ def mock_get_api_base():
 class ManageStudyTestCase(unittest.TestCase):
     def set_up_manage_study(self,*args):
         return create_parser().parse_args(args)
-
 
     @patch('manage_study.get_connection', side_effect=mock_get_connection)
     @patch('manage_study.succeeded', return_value=True)
@@ -115,7 +112,7 @@ class ManageStudyTestCase(unittest.TestCase):
         SCPAPIManager= Mock()
         SCPAPIManager.get_study_attribute.return_value= 'SCP555'
 
-        valid_metadata_path = 'tests/data/valid_array_v2.0.0.tsv'
+        valid_metadata_path = 'tests/data/valid_array_v20.0.0.tsv'
         not self.assertRaises(SystemExit, validate_metadata_file(valid_metadata_path))
 if __name__ == "__main__":
     unittest.main()
