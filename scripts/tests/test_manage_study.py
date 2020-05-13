@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, Mock
 import sys
 import pytest
 import json
@@ -70,7 +70,6 @@ class ManageStudyTestCase(unittest.TestCase):
         This basic test ensures that the external dependency
         `scp-ingest-pipeline` in our public CLI works as expected.
         """
-        # validate_input_metadata = MagicMock(side_effect=validate_input_metadata)
         mock_get_parsed_args.return_value = self.set_up_manage_study(
         'upload-metadata',
         '--study-name',
