@@ -30,16 +30,10 @@ def mocked_requests_get(*args, **kwargs):
             return self.json_data
 
     url = args[0]
-    print(f'This is the {url}')
     convention_file_path= 'tests/data/alexandria_convention_schema_2.1.0.json'
     if url == 'metadata_schemas/alexandria_convention/latest/json':
-        # print(json.loads(open(convention_file_path))
         with open(convention_file_path) as f:
             return MockResponse(json.load(f), 200, reason='OK')
-
-    # parse_url_re = '/v1/studies/.*/study_files/.*/parse$'
-    # if re.search(parse_url_re, url):
-    #     return MockResponse(None, 204)
 
     return MockResponse(None, 404)
 
@@ -121,7 +115,7 @@ class ManageStudyTestCase(unittest.TestCase):
         SCPAPIManager= Mock()
         SCPAPIManager.get_study_attribute.return_value= 'SCP555'
 
-        valid_metadata_path = '../../scp-ingest-pipeline/tests/data/valid_array_v2.0.0.tsv'
+        valid_metadata_path = 'tests/data/valid_array_v2.0.0.tsv'
         not self.assertRaises(SystemExit, validate_metadata_file(valid_metadata_path))
 if __name__ == "__main__":
     unittest.main()

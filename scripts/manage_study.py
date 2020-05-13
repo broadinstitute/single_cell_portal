@@ -38,8 +38,9 @@ python3 manage_study.py --token=$ACCESS_TOKEN upload-expression --file ../demo_d
 # Upload a metadata file (without validating against the metadata convention)
 python3 manage_study.py --token=$ACCESS_TOKEN upload-metadata --study-name "CLI test" --file ../demo_data/metadata_example.txt
 
-# Upload a metadata file with metadata convention validation
+# Upload a metadata file with metadata convention validation prior to upload
 python3 manage_study.py upload-metadata --study-name "CLI test" --file ../../scp-ingest-pipeline/tests/data/valid_no_array_v2.0.0.tsv --use-convention
+
 # Upload a cluster file
 python3 manage_study.py --token=$ACCESS_TOKEN upload-cluster --study-name "${STUDY_NAME}" --file ../demo_data/cluster_example.txt  --cluster-name 'Test cluster' --description test
 
