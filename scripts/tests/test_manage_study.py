@@ -105,7 +105,7 @@ class ManageStudyTestCase(unittest.TestCase):
         '--study-name',
         'CLI test',
         '--file',
-        'tests/data/invalid_array_v1.1.3.tsv',
+        'tests/data/valid_array_v20.0.0.tsv',
         '--use-convention'
         )
         SCPAPIManager= Mock()
