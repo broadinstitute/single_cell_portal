@@ -1,3 +1,7 @@
+""""
+CLI for command line arguments for manage_study.py
+"""
+
 import argparse
 
 # Subparser tool names

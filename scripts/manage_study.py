@@ -153,6 +153,7 @@ def validate_metadata_file(metadata_path):
         study_name=study_name,
         attribute='accession',
         dry_run=dry_run)
+    # Needed dummy values for CellMetadata
     study_file = ObjectId('addedfeed000000000000000')
     study_file_id = ObjectId('addedfeed000000000000001')
     if succeeded(study_accession_res):
