@@ -92,7 +92,7 @@ class APIManager:
     def __init__(self):
         return
 
-    def login(self, token=None, dry_run=False, 
+    def login(self, token=None, dry_run=False,
         api_base='https://singlecell.broadinstitute.org/single_cell/api/v1/'):
         """
         Authenticates as user and get's token to perform actions on the user's behalf.
@@ -446,7 +446,7 @@ class SCPAPIManager(APIManager):
             self.get_studies()
         return(resp)
 
-    def get_study_attribute(self, study_name, 
+    def get_study_attribute(self, study_name,
                             attribute,
                             dry_run=False):
         '''
@@ -482,7 +482,7 @@ class SCPAPIManager(APIManager):
                     c_CODE_RET_KEY: c_ATTRIBUTE_DOES_NOT_EXIST
                 }
             ret_study[c_ATTR_RET_KEY] = study[attribute]
- 
+
         return(ret_study)
 
     def edit_study_description(self, study_name,
@@ -508,7 +508,7 @@ class SCPAPIManager(APIManager):
             }
         # Convert study name to study id
         study_id = self.study_name_to_id(study_name, dry_run=dry_run)
-   
+
         # New study description should not have HTML
         # except when it needs to...
         if not accept_html and not self.is_valid_study_description(new_description):
@@ -523,7 +523,7 @@ class SCPAPIManager(APIManager):
         update_ret = self.do_patch(command=self.api_base +"studies/"+str(study_id),
                                    values=description_info,
                                    dry_run=dry_run)
- 
+
         return(update_ret)
 
     def get_study_external_resources(self, study_name,
@@ -545,17 +545,17 @@ class SCPAPIManager(APIManager):
         # Convert study name to study id
         study_id = self.study_name_to_id(study_name, dry_run=dry_run)
 
-        study_resources = self.do_get(command=self.api_base + "studies/"+str(study_id) + 
+        study_resources = self.do_get(command=self.api_base + "studies/"+str(study_id) +
                                 "/external_resources",
                                 dry_run=dry_run)
         if dry_run:
             print("DRY_RUN:: Returned dummy external resources.")
-            study_resources[c_EXT_RET_KEY] = [{'_id': 'EXT_REC_DUMMY_1'}, 
+            study_resources[c_EXT_RET_KEY] = [{'_id': 'EXT_REC_DUMMY_1'},
                                               {'_id': 'EXT_REC_DUMMY_2'}]
         else:
             resources = study_resources[c_RESPONSE].json()
             study_resources[c_EXT_RET_KEY] = resources
- 
+
         return(study_resources)
 
     def delete_study_external_resource(self, study_name,
@@ -578,7 +578,7 @@ class SCPAPIManager(APIManager):
             }
         # Convert study name to study id
         study_id = self.study_name_to_id(study_name, dry_run=dry_run)
-        ret_delete = self.do_delete(command=self.api_base + "studies/"+str(study_id) + 
+        ret_delete = self.do_delete(command=self.api_base + "studies/"+str(study_id) +
                                     "/external_resources/" + resource_id,
                                     dry_run=dry_run)
 
@@ -610,7 +610,7 @@ class SCPAPIManager(APIManager):
         study_id = self.study_name_to_id(study_name, dry_run=dry_run)
 
         #TODO: check whether resource already exists in some form
-        #TODO: checks for formats of URL, description, etc 
+        #TODO: checks for formats of URL, description, etc
         # Make payload and do post
         resource_data = {"title": title,
                          "url":url,
@@ -905,4 +905,3 @@ class MatrixAPIManager(APIManager):
                             values=bundleInfo,
                             dry_run=dry_run)
         return(resp)
-
