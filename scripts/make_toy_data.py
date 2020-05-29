@@ -35,7 +35,8 @@ import sys
 import numpy as np
 
 sys.path.append('.')
-import genomes
+sys.path.append('genomes')
+import genomes.parse_genome_annotations
 
 args = argparse.ArgumentParser(
     prog='make_toy_data.py',
