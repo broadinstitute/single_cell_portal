@@ -30,8 +30,12 @@ import json
 from urllib import request, parse
 import shutil
 import os
+import sys
 
 import numpy as np
+
+sys.path.append('.')
+import genomes
 
 args = argparse.ArgumentParser(
     prog='make_toy_data.py',
