@@ -24,10 +24,10 @@ pip3 install -r requirements.txt
 EXAMPLES
 
 # Basic usage.  Upload GTF products to reference_dev in default SCP GCS bucket.
-$ python3 process_genome_references.py --vault_path=secrets/service_account.json --input_dir ../../../lib/assets/python/genomes/
+$ python3 process_genome_references.py --vault-path=secrets/service_account.json --input-dir ../../../lib/assets/python/genomes/
 
 # Upload GTF products to reference_data_staging folder, using cached data from previous run
-$ python3 process_genome_references.py --vault_path=secrets/service_account.json --input_dir ../../../lib/assets/python/genomes/ --remote_output_dir reference_data_staging/ --use_cache
+$ python3 process_genome_references.py --vault-path=secrets/service_account.json --input-dir ../../../lib/assets/python/genomes/ --remote-output-dir reference_data_staging/ --use-cache
 """
 
 # This script is basically a wrapper for:
@@ -40,29 +40,29 @@ import subprocess
 parser = argparse.ArgumentParser(
     description=__doc__, # Use docstring at top of file for --help summary
     formatter_class=argparse.RawDescriptionHelpFormatter)
-parser.add_argument('--vault_path',
+parser.add_argument('--vault-path',
                     help='Path in Vault for GCS service account credentials')
-parser.add_argument('--input_dir',
+parser.add_argument('--input-dir',
                     help='Input directory; where to find organisms.tsv.  Default: ./',
                     default='./')
-parser.add_argument('--remote_output_dir',
+parser.add_argument('--remote-output-dir',
                     help='Remote directory for output in GCS bucket.  ' +
                     'Default: reference_data_dev/',
                     default='reference_data_dev/')
-parser.add_argument('--local_output_dir',
+parser.add_argument('--local-output-dir',
                     help='Local directory for output.  Default: output/',
                     default='output/')
-parser.add_argument('--gcs_bucket',
+parser.add_argument('--gcs-bucket',
                     help='Name of GCS bucket for upload.  ' +
                     'Default: reference_data_dev/',
                     default='fc-bcc55e6c-bec3-4b2e-9fb2-5e1526ddfcd2')
-parser.add_argument('--copy_data_from_prod_dir',
+parser.add_argument('--copy-data-from-prod-dir',
                     help='Remote directory from which to copy data into ' +
                     'remote_output_dir.  Use to ensure test data ' +
                     'environment is equivalent to production data ' +
                     'environment.  Default: reference_data/',
                     default='reference_data/')
-parser.add_argument('--use_cache',
+parser.add_argument('--use-cache',
                     help='Whether to use cache',
                     action='store_true')
 args = parser.parse_args()

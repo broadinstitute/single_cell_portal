@@ -21,10 +21,10 @@ from utils import *
 parser = argparse.ArgumentParser(
     description=__doc__, # Use docstring at top of file for --help summary
     formatter_class=argparse.RawDescriptionHelpFormatter)
-parser.add_argument('--input_dir',
+parser.add_argument('--input-dir',
                     help='Input directory; where to find organisms.tsv.  Default: ./',
                     default='./')
-parser.add_argument('--output_dir',
+parser.add_argument('--output-dir',
                     help='Directory to send output data to.  Default: output/',
                     default='output/')
 args = parser.parse_args()
@@ -43,7 +43,7 @@ species_names = [species[0] for species in species_list]
 def get_assembly_report(use_historical=False):
     """ Fetch NCBI Assembly Report, or read it from disk if present
 
-    :param use_historical {Boolean} Whether to use NCBI's historical Assembly 
+    :param use_historical {Boolean} Whether to use NCBI's historical Assembly
       Report.  Needed to get major assembly versions when patches are available
       (e.g. human, mouse).
     """
