@@ -99,7 +99,7 @@ def transform_ensembl_gtf(gtf_path, ref_dir):
 
     return outputs
 
-def make_local_reference_dirs(ensembl_metadata):
+def make_local_reference_dirs(ensembl_metadata, scp_species):
     """Create a folder hierarchy on this machine to mirror that planned for GCS
     """
     print('Making local reference directories')
@@ -120,16 +120,24 @@ def make_local_reference_dirs(ensembl_metadata):
 
     return ensembl_metadata
 
-def transform_ensembl_gtfs(ensembl_metadata):
-    """Download raw Ensembl GTFs, write position-sorted GTF and index
+def fetch_gtfs(ensembl_metadata, scp_species):
+    """Request GTF files, return their contents and updated Ensembl metadata
     """
-    transformed_gtfs = []
-
     gtf_urls, ensembl_metadata = get_ensembl_gtf_urls(ensembl_metadata)
 
     print('Fetching GTFs')
     gtfs = batch_fetch(gtf_urls, output_dir)
     print('Got GTFs!  Number: ' + str(len(gtfs)))
+
+    return gtfs, ensembl_metadata
+
+
+def transform_ensembl_gtfs(ensembl_metadata, scp_species):
+    """Download raw Ensembl GTFs, write position-sorted GTF and index
+    """
+    transformed_gtfs = []
+
+    gtfs, ensembl_metadata = fetch_gtfs(ensembl_metadata, scp_species)
 
     ensembl_metadata = make_local_reference_dirs(ensembl_metadata)
 
@@ -185,12 +193,8 @@ def create_parser():
 
     return parser
 
-def main() -> None:
-    """Enables running Ingest Pipeline via CLI
-    Args:
-        None
-    Returns:
-        None
+def main():
+    """Enables running this module via CLI
     """
     args = create_parser().parse_args()
 
@@ -213,6 +217,6 @@ def main() -> None:
     }
 
     ensembl_metadata = get_ensembl_metadata()
-    ensembl_metadata = transform_ensembl_gtfs(ensembl_metadata)
+    ensembl_metadata = transform_ensembl_gtfs(ensembl_metadata, scp_species)
     ensembl_metadata = upload_ensembl_gtf_products(ensembl_metadata, scp_species, context)
     record_annotation_metadata(ensembl_metadata, scp_species)
