@@ -42,7 +42,7 @@ def get_ensembl_metadata():
 
     return ensembl_metadata
 
-def get_ensembl_gtf_urls(ensembl_metadata):
+def get_ensembl_gtf_urls(ensembl_metadata, scp_species, output_dir):
     """Construct the URL of an Ensembl genome annotation GTF file.
 
     Example URL:
@@ -52,6 +52,12 @@ def get_ensembl_gtf_urls(ensembl_metadata):
     gtf_urls = []
     for species in scp_species:
         taxid = species[2]
+        print('scp_species')
+        print(scp_species)
+        print('taxid')
+        print(taxid)
+        print('ensembl_metadata')
+        print(ensembl_metadata)
         organism_metadata = ensembl_metadata[taxid]
         release = organism_metadata['release']
         organism = organism_metadata['organism']
@@ -120,10 +126,13 @@ def make_local_reference_dirs(ensembl_metadata, scp_species):
 
     return ensembl_metadata
 
-def fetch_gtfs(ensembl_metadata, scp_species):
+def fetch_gtfs(scp_species, output_dir='.', ensembl_metadata=None):
     """Request GTF files, return their contents and updated Ensembl metadata
     """
-    gtf_urls, ensembl_metadata = get_ensembl_gtf_urls(ensembl_metadata)
+    if ensembl_metadata is None:
+        ensembl_metadata = get_ensembl_metadata()
+
+    gtf_urls, ensembl_metadata = get_ensembl_gtf_urls(ensembl_metadata, scp_species, output_dir)
 
     print('Fetching GTFs')
     gtfs = batch_fetch(gtf_urls, output_dir)
@@ -132,12 +141,12 @@ def fetch_gtfs(ensembl_metadata, scp_species):
     return gtfs, ensembl_metadata
 
 
-def transform_ensembl_gtfs(ensembl_metadata, scp_species):
+def transform_ensembl_gtfs(ensembl_metadata, scp_species, output_dir):
     """Download raw Ensembl GTFs, write position-sorted GTF and index
     """
     transformed_gtfs = []
 
-    gtfs, ensembl_metadata = fetch_gtfs(ensembl_metadata, scp_species)
+    gtfs, ensembl_metadata = fetch_gtfs(scp_species, output_dir=output_dir, ensembl_metadata=ensembl_metadata)
 
     ensembl_metadata = make_local_reference_dirs(ensembl_metadata)
 
@@ -217,6 +226,6 @@ def main():
     }
 
     ensembl_metadata = get_ensembl_metadata()
-    ensembl_metadata = transform_ensembl_gtfs(ensembl_metadata, scp_species)
+    ensembl_metadata = transform_ensembl_gtfs(ensembl_metadata, scp_species, output_dir)
     ensembl_metadata = upload_ensembl_gtf_products(ensembl_metadata, scp_species, context)
     record_annotation_metadata(ensembl_metadata, scp_species)

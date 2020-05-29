@@ -36,7 +36,10 @@ import numpy as np
 
 sys.path.append('.')
 sys.path.append('genomes')
-import genomes.parse_genome_annotations
+from genomes.parse_genome_annotations import fetch_gtfs
+
+scp_species = [['Homo sapiens', 'human', '9606']]
+fetch_gtfs(scp_species)
 
 args = argparse.ArgumentParser(
     prog='make_toy_data.py',
