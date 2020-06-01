@@ -286,27 +286,27 @@ def get_signature_content(prefix):
     :param prefix: String of two uppercase letters, e.g. "AB"
     :return: generator for rows of dense matrix and expression scores for sparse matrix, barcodes and num_chunks
     """
-    # get the header and barcodes for writing first row of dense matrix, writing barcodes.tsv file
+    # get the header and barcodes for writing first row of dense matrix,
+    # writing barcodes.tsv file
     header, barcodes = fetch_cells(prefix)
-    # num_chunks is how many rows of the dense matrix we write at a time (basically)
-    # depending on the max_write_size, +1 in case it is 0
+    # num_chunks is how many rows of the dense matrix we write at a time
+    # (basically) depending on the max_write_size, +1 in case it is 0
     num_chunks = round((num_rows * num_columns) // max_write_size) + 1
 
-    # we return a generator so we can use a somewhat constant amount of ram
+    # Return a generator so we can use a somewhat constant amount of RAM
     def row_generator():
         # expr possible values (log 2 values from 1->8)
         log_values = [0, 1.0, 1.58, 2.0, 2.32, 2.58, 2.81, 3.0]
-        # the probability that it is zero is whatever the user provided in the --crush param, everything else is equl
+        # the probability that it is zero is whatever the user provided in
+        # the --crush param, everything else is equal
         prob_not_zero = (1 - crush) / 7
         # probability list for np.random.choice
         expr_probs = [crush, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero]
         # Generate values below header
         values = header + '\n'
-        # make sure we don't have any duplicate gene names in the dense matrix-- attach the gene id which should always uniq
-        # combined_gene_names = [genes[i] + '_' + ids[i] for i in range(num_rows)]
-        combined_gene_names = genes
+
         # actual generator portion
-        for i, group_of_genes in enumerate(split_seq(combined_gene_names, num_chunks)):
+        for i, group_of_genes in enumerate(split_seq(genes, num_chunks)):
             expr = []
             gene_row = np.asarray([group_of_genes])
             # generate random scores with dimension (num_genes_in_chunk, num_cells)
@@ -317,7 +317,8 @@ def get_signature_content(prefix):
             # generate the raw expression scores for sparse matrix
             expr = np.append(expr, scores)
             values += '\n'.join(joined_row)
-            # yield the joined rows for dense matrix, and the raw expression scores for sparse matrix
+            # yield the joined rows for dense matrix, and the raw expression
+            # scores for sparse matrix
             yield values, np.asarray(expr).flatten()
             values = ''
 
@@ -351,7 +352,8 @@ def generate_metadata_and_cluster(barcodes):
     metadata_table = np.concatenate((barcodes_arr, cluster_groups, sub_cluster_groups), axis=1)
 
     print('Generating cluster coordinates')
-    # generate random coordinate values, but accurately, so P in a dimension has a positive value, while N has a negative value
+    # generate random coordinate values, but accurately, so P in a dimension
+    # has a positive value, while N has a negative value
     # round the random numbers to 4 digits
     cluster_coords = np.round(np.random.uniform(size=(bar_length, 3)), 4)
     x_mod = np.repeat([1, -1], cluster_length)
@@ -429,15 +431,17 @@ def pool_processing(prefix):
         # Generate sparse string header
         sparse_str = '%%MatrixMarket matrix coordinate integer general\n'
         sparse_str += ' '.join([str(num_rows), str(bar_len), str(round(num_rows*num_columns*(1-crush))), '\n'])
-        # the row generator returns content (string of joined dense matrix rows) and exprs (1d array of random expression scores that is gene, barcode sorted)
+        # the row generator returns content (string of joined dense matrix
+        # rows) and exprs (1d array of random expression scores that is gene,
+        # barcode sorted)
         for content, exprs in row_generator():
-            # write part of dense matrix if user said too
+            # write part of dense matrix if user said to
             if dense:
                 # append to content string to the dense matrix file
                 with open(dense_name, 'a+') as f:
                     print('Writing To dense matrix, @size:', '{:,}'.format(len(content)))
                     f.write(content)
-            # write part of sparse matrix if user said too
+            # write part of sparse matrix if user said to
             if sparse:
                 # append sparse matrix rows to the sparse matrix
                 with open(matrix_name, 'a+') as m:
