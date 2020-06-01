@@ -120,7 +120,7 @@ def make_local_reference_dirs(ensembl_metadata, scp_species):
 
     return ensembl_metadata
 
-def fetch_gtfs(scp_species, output_dir='.', ensembl_metadata=None):
+def fetch_gtfs(scp_species, output_dir='', ensembl_metadata=None):
     """Request GTF files, return their contents and updated Ensembl metadata
     """
     if ensembl_metadata is None:

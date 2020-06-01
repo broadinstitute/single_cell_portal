@@ -38,8 +38,7 @@ def fetch_gzipped_content(url, output_path):
             headers={"Accept-Encoding": "gzip"}
         )
         with request.urlopen(request_obj) as response:
-            remote_content = gzip.GzipFile(fileobj=response)
-            remote_content = response.read()
+            remote_content = gzip.decompress(response.read())
             with open(output_path, 'wb') as f:
                 f.write(remote_content)
 
