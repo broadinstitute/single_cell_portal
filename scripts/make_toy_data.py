@@ -39,7 +39,7 @@ sys.path.append('genomes')
 from genomes.parse_genome_annotations import fetch_gtfs
 
 scp_species = [['Homo sapiens', 'human', '9606']]
-fetch_gtfs(scp_species)
+gtfs, ensembl_metadata = fetch_gtfs(scp_species)
 
 args = argparse.ArgumentParser(
     prog='make_toy_data.py',
@@ -172,67 +172,49 @@ def split_seq(li, cols=5):
 
 def fetch_genes():
     """
-    Retrieve names (i.e. HUGO symbols) for all human genes from NCBI
+    Retrieve names (i.e. HUGO symbols) for all given for a species from Ensembl GTF
 
     :return: List of gene symbols
     """
-    print('Getting gene list')
-    # If preloaded genes file is passed load it, otherwise download from NCBI
     global num_rows
-    if preloaded_genes:
-        with open(preloaded_genes) as f:
-            # read the genes and gene ids
-            lines = f.readlines()
-            ids = [[l.strip() for l in line.split()][0] for line in lines if len(line) > 2]
-            genes = [[l.strip() for l in line.split()][1] for line in lines if len(line) > 2]
-            # if --num_genes param is higher than the number of genes you tried to preload, lower it
-            if num_rows > len(genes):
-                print('Not enough genes in preloaded file, reducing gene number to', len(genes))
-                num_rows = len(genes)
-            genes = genes[:num_rows]
-            ids = ids[:num_rows]
-            print('Preloaded', '{:,}'.format(len(genes)), 'genes')
-            return genes, ids
-    else:
-        # Load the genes from NCBI
-        genes = []
 
-        eutils = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
-        esearch = eutils + 'esearch.fcgi?retmode=json'
-        esummary = eutils + 'esummary.fcgi?retmode=json'
-        gene_search = esearch + '&db=gene&retmax=' + str(num_rows + 10) + '&term="Homo%20sapiens"%5BOrganism%5D%20AND%20alive%5Bprop%5D'
+    genes = []
 
-        response = request.urlopen(gene_search).read().decode()
-        gene_ids = json.loads(response)['esearchresult']['idlist']
+    print('Getting gene list')
+    gtf_filename = gtfs[0][0]
 
-        if len(gene_ids) > 100:
-            num_genes_received = 0
-            for i, gene_ids_group in enumerate(split_seq(gene_ids, len(gene_ids) // 100)):
-                gene_summary = esummary + '&db=gene&retmax='+str(num_rows + 10)+'&id=' + ','.join(gene_ids_group)
-                response = request.urlopen(gene_summary).read().decode()
-                results = json.loads(response)['result']
-                for gene_id in results:
-                    if gene_id == 'uids':
-                        continue
-                    result = results[gene_id]
-                    genes.append(result['name'])
-                num_genes_received += len(gene_ids_group)
-                if i > 0 and i % 10 == 0:
-                    print('Received', num_genes_received, 'genes')
-            print('Received', num_genes_received, 'genes')
-        else:
-            gene_summary = esummary + '&db=gene&retmax='+str(num_rows + 20)+'&id=' + ','.join(gene_ids)
-            response = request.urlopen(gene_summary).read().decode()
-            results = json.loads(response)['result']
-            for gene_id in results:
-                if gene_id == 'uids':
-                    continue
-                result = results[gene_id]
-                genes.append(result['name'])
-        print('Received gene list')
-        # return the genes and fake ids
-        return genes, ['FAKE00' + str(i) for i in range(num_rows)]
+    with gzip.open(gtf_filename, mode='rt') as f:
+        lines = f.readlines()
 
+    for line in lines:
+        if line[0] == '#': continue
+        columns = line.split('\t')
+        chr = columns[0] # chromosome or scaffold
+        feature_type = columns[2] # gene, transcript, exon, etc.
+
+        if feature_type != 'gene': continue
+
+        raw_attrs = [x.strip() for x in columns[8].split(';')]
+        raw_attrs[-1] = raw_attrs[-1].replace('";', '')
+
+        attrs = {}
+        for raw_attr in raw_attrs:
+            split_attr = raw_attr.split()
+            if len(split_attr) < 2: continue
+            attrs[split_attr[0]] = split_attr[1].strip('"')
+
+        chr = chr.replace('chr', '')
+        gene_id = attrs['gene_id']
+        gene_name = attrs['gene_name'] if 'gene_name' in attrs else gene_id
+
+        genes.append(gene_name)
+
+    # if --num_genes param is higher than the number of genes you tried to preload, lower it
+    if num_rows > len(genes):
+        print('Not enough genes in GTF, reducing gene number to', len(genes))
+        num_rows = len(genes)
+
+    return genes[:num_rows], ['FAKE00' + str(i) for i in range(num_rows)]
 
 def fetch_cells(prefix):
     """
@@ -306,7 +288,8 @@ def get_signature_content(prefix):
     """
     # get the header and barcodes for writing first row of dense matrix, writing barcodes.tsv file
     header, barcodes = fetch_cells(prefix)
-    # num_chunks is how many rows of the dense matrix we write at a time (basically) depending on the max_write_size, +1 in case it is 0
+    # num_chunks is how many rows of the dense matrix we write at a time (basically)
+    # depending on the max_write_size, +1 in case it is 0
     num_chunks = round((num_rows * num_columns) // max_write_size) + 1
 
     # we return a generator so we can use a somewhat constant amount of ram
@@ -320,7 +303,8 @@ def get_signature_content(prefix):
         # Generate values below header
         values = header + '\n'
         # make sure we don't have any duplicate gene names in the dense matrix-- attach the gene id which should always uniq
-        combined_gene_names = [genes[i] + '_' + ids[i] for i in range(num_rows)]
+        # combined_gene_names = [genes[i] + '_' + ids[i] for i in range(num_rows)]
+        combined_gene_names = genes
         # actual generator portion
         for i, group_of_genes in enumerate(split_seq(combined_gene_names, num_chunks)):
             expr = []
