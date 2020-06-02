@@ -10,6 +10,8 @@ Output file has one row per assembly, with columns for:
 EXAMPLES
 
 python3 fetch_upstream_assemblies.py
+
+TODO (SCP-2470): Move /scripts/genomes (including this module) to scp-ingest-pipeline
 '''
 
 import argparse

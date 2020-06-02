@@ -1,4 +1,6 @@
 """Common functions for genome assembly and annotation data processing.
+
+TODO (SCP-2470): Move /scripts/genomes (including this module) to scp-ingest-pipeline
 """
 
 import gzip

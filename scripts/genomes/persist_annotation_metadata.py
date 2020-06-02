@@ -1,4 +1,6 @@
 """Write genome annotation metadata locally, and upload transformed GTFs to GCS
+
+TODO (SCP-2470): Move /scripts/genomes (including this module) to scp-ingest-pipeline
 """
 
 from utils import *

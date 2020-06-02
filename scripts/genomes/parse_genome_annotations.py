@@ -1,4 +1,6 @@
 """Download genome annotations, transform for visualizations, upload to GCS
+
+TODO (SCP-2470): Move /scripts/genomes (including this module) to scp-ingest-pipeline
 """
 
 import argparse

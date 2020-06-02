@@ -9,6 +9,8 @@ Only assemblies that are chromosome-level or above are included.
 
 For definitions of assembly-related terms and other domain background, see:
 https://www.ncbi.nlm.nih.gov/assembly/help/#glossary
+
+TODO (SCP-2470): Move /scripts/genomes (including this module) to scp-ingest-pipeline
 """
 
 import argparse

@@ -28,6 +28,8 @@ $ python3 process_genome_references.py --vault-path=secrets/service_account.json
 
 # Upload GTF products to reference_data_staging folder, using cached data from previous run
 $ python3 process_genome_references.py --vault-path=secrets/service_account.json --input-dir ../../../lib/assets/python/genomes/ --remote-output-dir reference_data_staging/ --use-cache
+
+TODO (SCP-2470): Move /scripts/genomes (including this module) to scp-ingest-pipeline
 """
 
 # This script is basically a wrapper for:
