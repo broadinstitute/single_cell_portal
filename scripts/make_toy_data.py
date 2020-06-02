@@ -2,8 +2,8 @@
 Generate data to simulate a study, e.g. to test ingest or download features.
 
 DESCRIPTION
-This data is structurally similar to real data, but otherwise semantic and
-statistical noise.
+This data is similar to real data in structure and basic statistics (e.g.
+sparseness), but is biologically meaningless.
 
 EXAMPLES
 # Generate 3 dense matrix files, 25 MB each
@@ -61,7 +61,7 @@ args.add_argument(
     '--size-per-file', default="25_MiB",
     help=(
         '<filesize_value>_<filesize_unit_symbol>, ' +
-        'e.g. 300_MiB means 300 mebibytes per file.  '
+        'e.g. 300_MiB means 300 mebibytes per file.'
     )
 )
 args.add_argument(
@@ -90,19 +90,13 @@ args.add_argument(
 args.add_argument(
     '--num-genes', default=80, type=int,
     help=(
-        'Number of Genes'
+        'Number of genes (rows)'
     )
 )
 args.add_argument(
     '--num-cells', default=None, type=int,
     help=(
-        'Number of cells'
-    )
-)
-args.add_argument(
-    '--preloaded-genes', default=None,
-    help=(
-        'A preloaded file of gene names (e.g. gene TSV file from sparse matrix output)'
+        'Number of cells (columns)'
     )
 )
 args.add_argument(
@@ -126,7 +120,7 @@ args.add_argument(
 args.add_argument(
     '--visualize', action='store_true',
     help=(
-        'Generate cluster and metadata files.'
+        'Generate cluster and metadata files'
     )
 )
 
@@ -141,18 +135,18 @@ matrix_types = parsed_args.matrix_types
 crush = parsed_args.crush
 num_rows = parsed_args.num_genes
 num_columns = parsed_args.num_cells
-preloaded_genes = parsed_args.preloaded_genes
 preloaded_barcodes = parsed_args.preloaded_barcodes
 max_write_size = parsed_args.max_write_size
 random_seed = parsed_args.random_seed
 visualize = parsed_args.visualize
+
+is_explicit_num_columns = num_columns is not None
 
 dense = 'dense' in matrix_types
 sparse = 'sparse' in matrix_types
 
 # set the seed for number generation
 np.random.seed(random_seed)
-
 
 def split_seq(li, cols=5):
     """
@@ -189,7 +183,6 @@ def fetch_genes():
     for line in lines:
         if line[0] == '#': continue
         columns = line.split('\t')
-        chr = columns[0] # chromosome or scaffold
         feature_type = columns[2] # gene, transcript, exon, etc.
 
         if feature_type != 'gene': continue
@@ -203,13 +196,13 @@ def fetch_genes():
             if len(split_attr) < 2: continue
             attrs[split_attr[0]] = split_attr[1].strip('"')
 
-        chr = chr.replace('chr', '')
         gene_id = attrs['gene_id']
         gene_name = attrs['gene_name'] if 'gene_name' in attrs else gene_id
 
         genes.append(gene_name)
 
-    # if --num_genes param is higher than the number of genes you tried to preload, lower it
+    # if --num-genes param is greater than the number of genes you tried to
+    # load, then decrease it
     if num_rows > len(genes):
         print('Not enough genes in GTF, reducing gene number to', len(genes))
         num_rows = len(genes)
@@ -225,25 +218,30 @@ def fetch_cells(prefix):
     print('Generating matrix')
     letters = ['A', 'B', 'C', 'D']
 
-    bytes_per_column = 4.7 * num_rows  # ~1.65 KB (KiB) per 80 cells, uncompressed
+    # ~1.65 KB (KiB) per 80 cells, uncompressed
+    bytes_per_column = 4.7 * num_rows
+
     global num_columns
     if not num_columns:
         num_columns = int(bytes_per_file/bytes_per_column)
     # Generate header
     barcodes = []
     header = 'GENE\t'
-    # if we have a preloaded barcodes file, read it in, otherwise generate the random barcodes
+    # if we have a preloaded barcodes file, read it in, otherwise generate
+    # the random barcodes
     if preloaded_barcodes:
         with open(preloaded_barcodes) as f:
             # load preloaded barcodes/cell names
             lines = f.readlines()
             barcodes = [line.strip() for line in lines if len(line) > 2]
             if num_columns > len(barcodes):
-                # if user param --num_barcdes is higher than the number in the preloaded file, drop it down
+                # if user param --num-barcodes is higher than the number in the
+                # preloaded file, drop it down
                 print('Not enough barcodes in preloaded file, reducing gene number to', len(genes))
                 num_columns = len(barcodes)
             if visualize and num_columns % 8 != 0:
-                # if we want to create cluster files, we have 8 clusters, so drop down the number of barcodes to a multiple of 8
+                # if we want to create cluster files, we have 8 clusters, so
+                # drop down the number of barcodes to a multiple of 8
                 num_columns -= num_columns % 8
                 print('Visualization relies on having 8 subclusters, reducing number of cells/columns to', num_columns)
             barcodes = barcodes[:num_columns]
@@ -251,7 +249,7 @@ def fetch_cells(prefix):
             # make the header
             header += '\t'.join(barcodes)
     else:
-        # if no preloaded barcodes, randomly generate tem
+        # if no preloaded barcodes, randomly generate them
         if visualize and num_columns % 8 != 0:
                 num_columns -= num_columns % 8
                 print('Visualization relies on having 8 subclusters, reducing number of cells/columns to', num_columns)
@@ -295,13 +293,32 @@ def get_signature_content(prefix):
 
     # Return a generator so we can use a somewhat constant amount of RAM
     def row_generator():
-        # expr possible values (log 2 values from 1->8)
-        log_values = [0, 1.0, 1.58, 2.0, 2.32, 2.58, 2.81, 3.0]
+
+        if not is_explicit_num_columns:
+            # Values of log2 from 1 to 8.
+            # These 2- and 3-digit numbers also give predictable file-size
+            # outputs (see --size-per-file).
+            #
+            # To consider: enable deterministic file size via
+            # --size-per-file *and* high-precision expression values
+            exp_values = [0, 1.0, 1.58, 2.0, 2.32, 2.58, 2.81, 3.0]
+        else:
+            # Random values with 15-digit precision, from real data
+            exp_values = [
+                0, 0.319394022678176,
+                0.942319217427033, 1.51898924628139,
+                0.935021832385126, 1.1253079191313,
+                1.98297962349834, 2.65073109135182
+            ]
+
         # the probability that it is zero is whatever the user provided in
         # the --crush param, everything else is equal
         prob_not_zero = (1 - crush) / 7
         # probability list for np.random.choice
-        expr_probs = [crush, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero]
+        expr_probs = [
+            crush, prob_not_zero, prob_not_zero, prob_not_zero,
+            prob_not_zero, prob_not_zero, prob_not_zero, prob_not_zero
+        ]
         # Generate values below header
         values = header + '\n'
 
@@ -310,7 +327,7 @@ def get_signature_content(prefix):
             expr = []
             gene_row = np.asarray([group_of_genes])
             # generate random scores with dimension (num_genes_in_chunk, num_cells)
-            scores = np.random.choice(log_values, size=(len(group_of_genes), num_columns), p=expr_probs)
+            scores = np.random.choice(exp_values, size=(len(group_of_genes), num_columns), p=expr_probs)
             # generate the dense matrix rows
             rows = np.concatenate((gene_row.T, scores), axis=1)
             joined_row = ['\t'.join(row) for row in rows]
@@ -393,12 +410,14 @@ def pool_processing(prefix):
     if visualize:
         files_to_write = files_to_write + [metadata_name, cluster_name]
 
-    # delete existing files-- since we append files we don't want to append to existing ones
+    # delete existing files-- since we append files we don't want to append
+    # to existing ones
     print('Deleting existing files with same name')
     for file in files_to_write:
         if os.path.exists(file):
             os.remove(file)
-    # get the generator function and num chunks for the given barcodes/genes (if any preloaded, otherwise randomly generate/get from ncbi)
+    # get the generator function and num chunks for the given barcodes/genes
+    # (if any preloaded, otherwise randomly generate/get from ncbi)
     row_generator, barcodes, num_chunks = get_signature_content(prefix)
     # make a var for bar length for convenience
     bar_len = len(barcodes)
@@ -414,7 +433,9 @@ def pool_processing(prefix):
             print('Writing barcodes')
             # row format: barcode_name
             b.write('\n'.join(barcodes))
-    # We write the sparse matrix and dense matrix at the same time using the row generator (because we want to make sure our expression scores are the same for [cell, gene])
+    # We write the sparse matrix and dense matrix at the same time using the
+    # row generator (because we want to make sure our expression scores are
+    # the same for [cell, gene])
     if sparse:
         print('Writing sparse matrix')
     if dense:
@@ -439,7 +460,7 @@ def pool_processing(prefix):
             if dense:
                 # append to content string to the dense matrix file
                 with open(dense_name, 'a+') as f:
-                    print('Writing To dense matrix, @size:', '{:,}'.format(len(content)))
+                    print(f'Writing to dense matrix, @size: ${len(content)}')
                     f.write(content)
             # write part of sparse matrix if user said to
             if sparse:
@@ -480,7 +501,7 @@ def pool_processing(prefix):
     # cleanup step: inform user of what files we wrote
     [print('Wrote file:', file) for file in files_to_write]
 
-    # if user said too in --gzip param, gzip and overwrite file
+    # if user said to in --gzip param, gzip and overwrite file
     if gzip_files:
         for file in files_to_write:
             print('Gzipping:', file)
