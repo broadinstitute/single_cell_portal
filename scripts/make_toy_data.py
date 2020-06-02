@@ -460,7 +460,7 @@ def pool_processing(prefix):
             if dense:
                 # append to content string to the dense matrix file
                 with open(dense_name, 'a+') as f:
-                    print(f'Writing to dense matrix, @size: ${len(content)}')
+                    print(f'Writing to dense matrix, @size: {len(content)}')
                     f.write(content)
             # write part of sparse matrix if user said to
             if sparse:
