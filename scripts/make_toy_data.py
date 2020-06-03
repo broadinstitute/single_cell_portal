@@ -38,6 +38,7 @@ sys.path.append('.')
 sys.path.append('genomes')
 from genomes.parse_genome_annotations import fetch_gtfs
 
+# To consider: Add --species as a CLI argument
 scp_species = [['Homo sapiens', 'human', '9606']]
 
 args = argparse.ArgumentParser(
@@ -101,7 +102,18 @@ args.add_argument(
 args.add_argument(
     '--preloaded-genes', default=None,
     help=(
-        'A preloaded file of gene names (e.g. gene TSV file from sparse matrix output)'
+        'A preloaded file of gene names (e.g. gene TSV file from sparse ' +
+        'matrix output).  Two possible use cases:' +
+        '' +
+        'Use case 1: Generate a matrix that has more genes than the most ' +
+        'current human Ensembl annotation. (make_toy_data.py currently ' +
+        'limits the generated toy matrix to the number of genes in ' +
+        'the fetched human Ensembl annotation). ' +
+        '' +
+        'Use case 2: simulate/replicate visualization with a specific list ' +
+        'of gene names (e.g. non-human gene names or an expression matrix ' +
+        'for nonRNAseq data, scATAC-seq "gene names" would be genome ' +
+        'coordinate ranges) for troubleshooting.'
     )
 )
 args.add_argument(
