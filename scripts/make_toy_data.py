@@ -39,7 +39,6 @@ sys.path.append('genomes')
 from genomes.parse_genome_annotations import fetch_gtfs
 
 scp_species = [['Homo sapiens', 'human', '9606']]
-gtfs, ensembl_metadata = fetch_gtfs(scp_species)
 
 args = argparse.ArgumentParser(
     prog='make_toy_data.py',
@@ -100,6 +99,12 @@ args.add_argument(
     )
 )
 args.add_argument(
+    '--preloaded-genes', default=None,
+    help=(
+        'A preloaded file of gene names (e.g. gene TSV file from sparse matrix output)'
+    )
+)
+args.add_argument(
     '--preloaded-barcodes', default=None,
     help=(
         'A preloaded file of barcode names (e.g. barcodes TSV file from sparse matrix output)'
@@ -135,6 +140,7 @@ matrix_types = parsed_args.matrix_types
 crush = parsed_args.crush
 num_rows = parsed_args.num_genes
 num_columns = parsed_args.num_cells
+preloaded_genes = parsed_args.preloaded_genes
 preloaded_barcodes = parsed_args.preloaded_barcodes
 max_write_size = parsed_args.max_write_size
 random_seed = parsed_args.random_seed
@@ -163,7 +169,6 @@ def split_seq(li, cols=5):
         yield li[start:stop]
         start = stop
 
-
 def fetch_genes():
     """
     Retrieve names (i.e. HUGO symbols) for all given for a species from Ensembl GTF
@@ -175,37 +180,54 @@ def fetch_genes():
     genes = []
 
     print('Getting gene list')
-    gtf_filename = gtfs[0][0]
 
-    with gzip.open(gtf_filename, mode='rt') as f:
-        lines = f.readlines()
+    if preloaded_genes:
+        with open(preloaded_genes) as f:
+            # read the genes and gene ids
+            lines = f.readlines()
+            ids = [[l.strip() for l in line.split()][0] for line in lines if len(line) > 2]
+            genes = [[l.strip() for l in line.split()][1] for line in lines if len(line) > 2]
+            # if --num_genes param is higher than the number of genes you tried to preload, lower it
+            if num_rows > len(genes):
+                print('Not enough genes in preloaded file, reducing gene number to', len(genes))
+                num_rows = len(genes)
+            genes = genes[:num_rows]
+            ids = ids[:num_rows]
+            print('Preloaded', '{:,}'.format(len(genes)), 'genes')
+            return genes, ids
+    else:
+        gtfs, ensembl_metadata = fetch_gtfs(scp_species)
+        gtf_filename = gtfs[0][0]
 
-    for line in lines:
-        if line[0] == '#': continue
-        columns = line.split('\t')
-        feature_type = columns[2] # gene, transcript, exon, etc.
+        with gzip.open(gtf_filename, mode='rt') as f:
+            lines = f.readlines()
 
-        if feature_type != 'gene': continue
+        for line in lines:
+            if line[0] == '#': continue
+            columns = line.split('\t')
+            feature_type = columns[2] # gene, transcript, exon, etc.
 
-        raw_attrs = [x.strip() for x in columns[8].split(';')]
-        raw_attrs[-1] = raw_attrs[-1].replace('";', '')
+            if feature_type != 'gene': continue
 
-        attrs = {}
-        for raw_attr in raw_attrs:
-            split_attr = raw_attr.split()
-            if len(split_attr) < 2: continue
-            attrs[split_attr[0]] = split_attr[1].strip('"')
+            raw_attrs = [x.strip() for x in columns[8].split(';')]
+            raw_attrs[-1] = raw_attrs[-1].replace('";', '')
 
-        gene_id = attrs['gene_id']
-        gene_name = attrs['gene_name'] if 'gene_name' in attrs else gene_id
+            attrs = {}
+            for raw_attr in raw_attrs:
+                split_attr = raw_attr.split()
+                if len(split_attr) < 2: continue
+                attrs[split_attr[0]] = split_attr[1].strip('"')
 
-        genes.append(gene_name)
+            gene_id = attrs['gene_id']
+            gene_name = attrs['gene_name'] if 'gene_name' in attrs else gene_id
 
-    # if --num-genes param is greater than the number of genes you tried to
-    # load, then decrease it
-    if num_rows > len(genes):
-        print('Not enough genes in GTF, reducing gene number to', len(genes))
-        num_rows = len(genes)
+            genes.append(gene_name)
+
+        # if --num-genes param is greater than the number of genes you tried to
+        # load, then decrease it
+        if num_rows > len(genes):
+            print('Not enough genes in GTF, reducing gene number to', len(genes))
+            num_rows = len(genes)
 
     return genes[:num_rows], ['FAKE00' + str(i) for i in range(num_rows)]
 
@@ -237,7 +259,7 @@ def fetch_cells(prefix):
             if num_columns > len(barcodes):
                 # if user param --num-barcodes is higher than the number in the
                 # preloaded file, drop it down
-                print('Not enough barcodes in preloaded file, reducing gene number to', len(genes))
+                print('Not enough barcodes in preloaded file, reducing barcode number to', len(barcodes))
                 num_columns = len(barcodes)
             if visualize and num_columns % 8 != 0:
                 # if we want to create cluster files, we have 8 clusters, so
