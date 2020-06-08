@@ -33,7 +33,7 @@
 #'
 #' @param object Seurat object.
 #' @param matrix.dir Path to directory where files should be written. Must not already exist. 
-#' @param slot.use Data slot to use for expression data (supports "raw.data", "data", "counts"). (default "raw.data")
+#' @param slot.use Data slot to use for expression data (supports "counts", "data", "raw.data"). (default "counts")
 #' @param include.barcodes Write barcodes .tsv file in addition to .mtx file (default TRUE).
 #' @param include.genes Write genes .tsv file in addition to .mtx file (default TRUE).
 #' @param compress.files Whether to compress individual files (default FALSE). 
@@ -42,7 +42,7 @@
 #' \dontrun{
 #' generateExpressionMatrix(seurat_obj, "/path/to/directory", slot.use = "data", compress.files = T)
 #' }
-generateExpressionMatrix = function(object, matrix.dir, slot.use = "raw.data", 
+generateExpressionMatrix = function(object, matrix.dir, slot.use = "counts", 
                                     include.barcodes = T, include.genes = T,
                                     compress.files = F) {
   
@@ -58,7 +58,7 @@ generateExpressionMatrix = function(object, matrix.dir, slot.use = "raw.data",
   write_matrix = Seurat::GetAssayData(object, slot = slot.use)
   # set numeric types here 
   mtype = "real"
-  if (slot.use == "raw.data") {
+  if (slot.use %in% c("raw.data", "counts")) {
     mtype = "integer"
   }
   # convert to sparse matrix format if dense
@@ -67,7 +67,7 @@ generateExpressionMatrix = function(object, matrix.dir, slot.use = "raw.data",
   }
   # sort sparse matrix by gene
   # might need to make this more memory efficient 
-  summ = summary(write_matrix)
+  summ = Matrix::summary(write_matrix)
   summ = summ[with(summ, order(i)),]
   
   # set vars for compression
