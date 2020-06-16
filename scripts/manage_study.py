@@ -70,9 +70,16 @@ from ingest.validation.validate_metadata import (
     validate_input_metadata,
 )
 
-import Commandline
-import scp_api
-from cli_parser import *
+try:
+    # Used when importing internally and in tests
+    import Commandline
+    import scp_api
+    from cli_parser import *
+except ImportError:
+    # Used when importing as external package
+    from . import Commandline
+    from . import scp_api
+    from .cli_parser import *
 
 env_origin_map = {
     'development': 'https://localhost',
@@ -80,14 +87,18 @@ env_origin_map = {
     'production': 'https://singlecell.broadinstitute.org',
 }
 
+
 def get_connection():
     return connection
+
 
 def get_parsed_args():
     return parsed_args
 
+
 def get_api_base():
     return env_origin_map[get_parsed_args().environment] + '/single_cell/api/v1/'
+
 
 def manage_call_return(call_return, verbose=False):
     '''
@@ -128,6 +139,7 @@ def login(manager=None, dry_run=False, api_base=None, verbose=False):
         manager.login(token=parsed_args.token, dry_run=dry_run, api_base=api_base)
     return manager
 
+
 def download_from_bucket(file_path):
     """Downloads file from Google Cloud Storage bucket"""
 
@@ -145,14 +157,14 @@ def download_from_bucket(file_path):
 
     return destination
 
+
 def validate_metadata_file(metadata_path):
     study_name = get_parsed_args().study_name
     dry_run = get_parsed_args().dry_run
     verbose = get_parsed_args().verbose
-    study_accession_res =get_connection().get_study_attribute(
-        study_name=study_name,
-        attribute='accession',
-        dry_run=dry_run)
+    study_accession_res = get_connection().get_study_attribute(
+        study_name=study_name, attribute='accession', dry_run=dry_run
+    )
     # Needed dummy values for CellMetadata
     study_file = ObjectId('addedfeed000000000000000')
     study_file_id = ObjectId('addedfeed000000000000001')
@@ -160,9 +172,18 @@ def validate_metadata_file(metadata_path):
         if verbose:
             print(f'Study accession {study_accession_res} retrieved for {study_name}')
         study_accession = study_accession_res.get('study_attribute')
-        metadata = CellMetadata(metadata_path, study_file, study_file_id, study_accession=str(study_accession))
-        convention_res = get_connection().do_get(command=get_api_base() + 'metadata_schemas/alexandria_convention/latest/json',dry_run=dry_run)
-        if succeeded(convention_res ):
+        metadata = CellMetadata(
+            metadata_path,
+            study_file,
+            study_file_id,
+            study_accession=str(study_accession),
+        )
+        convention_res = get_connection().do_get(
+            command=get_api_base()
+            + 'metadata_schemas/alexandria_convention/latest/json',
+            dry_run=dry_run,
+        )
+        if succeeded(convention_res):
             if verbose:
                 print(f'Retreieved file for latest metdata convention')
             convention = convention_res["response"].json()
@@ -171,6 +192,7 @@ def validate_metadata_file(metadata_path):
             report_issues(metadata)
             exit_if_errors(metadata)
 
+
 def confirm(question):
     while True:
         answer = input(question + ' (y/n): ').lower().strip()
@@ -178,8 +200,8 @@ def confirm(question):
             return answer in ('y', 'yes')
 
 
-
-if __name__ == '__main__':
+def main():
+    global parsed_args
     parsed_args = create_parser().parse_args()
     if parsed_args.verbose:
         print("Args----")
@@ -251,7 +273,6 @@ if __name__ == '__main__':
         else:
             new_description = parsed_args.new_description
 
-
         ret = connection.edit_study_description(
             study_name=parsed_args.study_name,
             new_description=new_description,
@@ -267,8 +288,7 @@ if __name__ == '__main__':
         if verbose:
             print("STARTING GET EXTERNAL RESOURCES")
         ret = connection.get_study_external_resources(
-            study_name=parsed_args.study_name,
-            dry_run=parsed_args.dry_run,
+            study_name=parsed_args.study_name, dry_run=parsed_args.dry_run,
         )
         manage_call_return(ret, verbose)
         print('Study external resources: \n')
@@ -282,8 +302,7 @@ if __name__ == '__main__':
 
         # first get all external resource ids
         ret = connection.get_study_external_resources(
-            study_name=parsed_args.study_name,
-            dry_run=parsed_args.dry_run,
+            study_name=parsed_args.study_name, dry_run=parsed_args.dry_run,
         )
         manage_call_return(ret, verbose)
         ext_ids = [res['_id']['$oid'] for res in ret['external_resources']]
@@ -291,8 +310,10 @@ if __name__ == '__main__':
             print('No external resources associated with study.')
             exit()
         # confirm deletion with user
-        confirmed = confirm("Delete {} external resources associated ".format(len(ext_ids)) +
-                            "with study {}?".format(parsed_args.study_name))
+        confirmed = confirm(
+            "Delete {} external resources associated ".format(len(ext_ids))
+            + "with study {}?".format(parsed_args.study_name)
+        )
         if confirmed:
             if verbose:
                 print('Will continue deleting resources.')
@@ -427,3 +448,7 @@ if __name__ == '__main__':
 
     ## Validate and Upload bams
     ### TODO
+
+
+if __name__ == '__main__':
+    main()
