@@ -1,5 +1,5 @@
 """"
-CLI for command line arguments for manage_study.py
+CLI for command line arguments for manage-study
 """
 
 import argparse
@@ -11,15 +11,16 @@ c_TOOL_EXPRESSION = "upload-expression"
 c_TOOL_METADATA = "upload-metadata"
 c_TOOL_PERMISSION = "permission"
 c_TOOL_STUDY = "create-study"
-c_TOOL_STUDY_EDIT_DESC= "edit-study-description"
-c_TOOL_STUDY_GET_ATTR= "get-study-attribute"
-c_TOOL_STUDY_GET_EXT= 'get-study-external-resources'
-c_TOOL_STUDY_DEL_EXT= 'delete-study-external-resources'
+c_TOOL_STUDY_EDIT_DESC = "edit-study-description"
+c_TOOL_STUDY_GET_ATTR = "get-study-attribute"
+c_TOOL_STUDY_GET_EXT = 'get-study-external-resources'
+c_TOOL_STUDY_DEL_EXT = 'delete-study-external-resources'
 c_TOOL_STUDY_CREATE_EXT = 'create-study-external-resource'
+
 
 def create_parser():
     args = argparse.ArgumentParser(
-        prog='manage_study.py',
+        prog='manage-study',
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -50,9 +51,8 @@ def create_parser():
         help='API environment to use',
     )
 
-
     # Create tools (subparser)
-    subargs = args.add_subparsers(dest = 'command')
+    subargs = args.add_subparsers(dest='command')
 
     ## List studies subparser
     parser_list_studies = subargs.add_parser(
@@ -89,12 +89,12 @@ def create_parser():
         '--study-name', required=True, help='Short name of the study'
     )
     parser_create_studies.add_argument(
-        '--branding',
-        default=None,
-        help='Portal branding to associate with the study',
+        '--branding', default=None, help='Portal branding to associate with the study',
     )
     parser_create_studies.add_argument(
-        '--billing', default=None, help='Portal billing project to associate with the study'
+        '--billing',
+        default=None,
+        help='Portal billing project to associate with the study',
     )
     parser_create_studies.add_argument(
         '--is-private', action='store_true', help='Whether the study is private'
@@ -197,19 +197,13 @@ def create_parser():
         help='Name of the study to which to add resource.',
     )
     parser_create_ext_resource.add_argument(
-        '--title',
-        required=True,
-        help='Title of resource.',
+        '--title', required=True, help='Title of resource.',
     )
     parser_create_ext_resource.add_argument(
-        '--url',
-        required=True,
-        help='URL of resource.',
+        '--url', required=True, help='URL of resource.',
     )
     parser_create_ext_resource.add_argument(
-        '--description',
-        required=True,
-        help='Tooltip description of resource.',
+        '--description', required=True, help='Tooltip description of resource.',
     )
     parser_create_ext_resource.add_argument(
         '--publication-url',
@@ -258,9 +252,7 @@ def create_parser():
         '--file', dest='cluster_file', required=True, help='Cluster file to load.'
     )
     parser_upload_cluster.add_argument(
-        '--study-name',
-        required=True,
-        help='Name of the study to add the file.',
+        '--study-name', required=True, help='Name of the study to add the file.',
     )
     parser_upload_cluster.add_argument(
         '--description',
@@ -295,9 +287,7 @@ def create_parser():
         '--file', dest='expression_file', required=True, help='Expression file to load.'
     )
     parser_upload_expression.add_argument(
-        '--study-name',
-        required=True,
-        help='Name of the study to add the file.',
+        '--study-name', required=True, help='Name of the study to add the file.',
     )
     parser_upload_expression.add_argument(
         '--description',
@@ -305,14 +295,10 @@ def create_parser():
         help='Text describing the gene expression matrix file.',
     )
     parser_upload_expression.add_argument(
-        '--species',
-        required=True,
-        help='Species from which the data is generated.',
+        '--species', required=True, help='Species from which the data is generated.',
     )
     parser_upload_expression.add_argument(
-        '--genome',
-        required=True,
-        help='Genome assembly used to generate the data.',
+        '--genome', required=True, help='Genome assembly used to generate the data.',
     )
     # TODO: Add upstream support for this in SCP RESI API
     # parser_upload_expression.add_argument(
@@ -336,21 +322,17 @@ def create_parser():
     parser_upload_metadata.add_argument(
         '--use-convention',
         help='Whether to use metadata convention: validates against standard vocabularies, and will enable faceted search on this data',
-        action='store_true'
+        action='store_true',
     )
     parser_upload_metadata.add_argument(
         '--validate-against-convention',
         help='Validates against standard vocabularies prior to upload',
-        action='store_true'
+        action='store_true',
     )
     parser_upload_metadata.add_argument(
-        '--study-name',
-        required=True,
-        help='Name of the study to add the file.',
+        '--study-name', required=True, help='Name of the study to add the file.',
     )
     parser_upload_metadata.add_argument(
-        '--description',
-        default='',
-        help='Text describing the metadata file.',
+        '--description', default='', help='Text describing the metadata file.',
     )
     return args
