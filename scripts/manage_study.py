@@ -92,12 +92,8 @@ def get_connection():
     return connection
 
 
-def get_parsed_args():
-    return parsed_args
-
-
-def get_api_base():
-    return env_origin_map[get_parsed_args().environment] + '/single_cell/api/v1/'
+def get_api_base(parsed_args):
+    return env_origin_map[parsed_args.environment] + '/single_cell/api/v1/'
 
 
 def manage_call_return(call_return, verbose=False):
@@ -158,10 +154,11 @@ def download_from_bucket(file_path):
     return destination
 
 
-def validate_metadata_file(metadata_path):
-    study_name = get_parsed_args().study_name
-    dry_run = get_parsed_args().dry_run
-    verbose = get_parsed_args().verbose
+def validate_metadata_file(parsed_args):
+    metadata_path = parsed_args.metadata_file
+    study_name = parsed_args.study_name
+    dry_run = parsed_args.dry_run
+    verbose = parsed_args.verbose
     study_accession_res = get_connection().get_study_attribute(
         study_name=study_name, attribute='accession', dry_run=dry_run
     )
@@ -179,7 +176,7 @@ def validate_metadata_file(metadata_path):
             study_accession=str(study_accession),
         )
         convention_res = get_connection().do_get(
-            command=get_api_base()
+            command=get_api_base(parsed_args)
             + 'metadata_schemas/alexandria_convention/latest/json',
             dry_run=dry_run,
         )
@@ -201,7 +198,6 @@ def confirm(question):
 
 
 def main():
-    global parsed_args
     parsed_args = create_parser().parse_args()
     if parsed_args.verbose:
         print("Args----")
@@ -363,7 +359,7 @@ def main():
             print("START VALIDATE FILES")
 
         if hasattr(parsed_args, "metadata_file") and parsed_args.use_convention:
-            validate_metadata_file(parsed_args.metadata_file)
+            validate_metadata_file(parsed_args)
 
         # command = ["python3 verify_portal_file.py"]
         #
