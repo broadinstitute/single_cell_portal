@@ -12,7 +12,7 @@ setup(
     url='https://github.com/broadinstitute/single_cell_portal',
     author='Single Cell Portal team',
     author_email='scp-support@broadinstitute.zendesk.com',
-    install_requires=['pandas', 'requests', 'scp-ingest-pipeline',],
+    install_requires=['pandas', 'requests', 'scp-ingest-pipeline>=1.3.7',],
     packages=find_packages(),
     entry_points={'console_scripts': ['manage-study=scripts.manage_study:main'],},
     classifiers=[

@@ -83,13 +83,9 @@ except ImportError:
 
 env_origin_map = {
     'development': 'https://localhost',
-    'staging': 'https://single-cell-staging.broadinstitute.org',
+    'staging': 'https://singlecell-staging.broadinstitute.org',
     'production': 'https://singlecell.broadinstitute.org',
 }
-
-
-def get_connection():
-    return connection
 
 
 def get_api_base(parsed_args):
@@ -122,7 +118,7 @@ def succeeded(ret):
     return str(ret['response'].status_code)[0] == '2'
 
 
-def login(manager=None, dry_run=False, api_base=None, verbose=False):
+def login(parsed_args, manager=None, dry_run=False, api_base=None, verbose=False):
     '''
     Login to authorize credentials.
 
@@ -154,12 +150,12 @@ def download_from_bucket(file_path):
     return destination
 
 
-def validate_metadata_file(parsed_args):
+def validate_metadata_file(parsed_args, connection):
     metadata_path = parsed_args.metadata_file
     study_name = parsed_args.study_name
     dry_run = parsed_args.dry_run
     verbose = parsed_args.verbose
-    study_accession_res = get_connection().get_study_attribute(
+    study_accession_res = connection.get_study_attribute(
         study_name=study_name, attribute='accession', dry_run=dry_run
     )
     # Needed dummy values for CellMetadata
@@ -175,7 +171,7 @@ def validate_metadata_file(parsed_args):
             study_file_id,
             study_accession=str(study_accession),
         )
-        convention_res = get_connection().do_get(
+        convention_res = connection.do_get(
             command=get_api_base(parsed_args)
             + 'metadata_schemas/alexandria_convention/latest/json',
             dry_run=dry_run,
@@ -211,7 +207,11 @@ def main():
 
     # Login connection
     connection = login(
-        manager=None, dry_run=parsed_args.dry_run, api_base=api_base, verbose=verbose
+        parsed_args,
+        manager=None,
+        dry_run=parsed_args.dry_run,
+        api_base=api_base,
+        verbose=verbose,
     )
 
     ## Handle list studies
@@ -359,7 +359,7 @@ def main():
             print("START VALIDATE FILES")
 
         if hasattr(parsed_args, "metadata_file") and parsed_args.use_convention:
-            validate_metadata_file(parsed_args)
+            validate_metadata_file(parsed_args, connection)
 
         # command = ["python3 verify_portal_file.py"]
         #
@@ -383,7 +383,7 @@ def main():
     if hasattr(parsed_args, "cluster_file"):
         if verbose:
             print("START UPLOAD CLUSTER FILE")
-        connection = login(manager=connection, dry_run=parsed_args.dry_run)
+        connection = login(parsed_args, manager=connection, dry_run=parsed_args.dry_run)
         ret = connection.upload_cluster(
             file=parsed_args.cluster_file,
             study_name=parsed_args.study_name,
@@ -402,7 +402,7 @@ def main():
     if hasattr(parsed_args, "metadata_file"):
         if verbose:
             print("START UPLOAD METADATA FILE")
-        connection = login(manager=connection, dry_run=parsed_args.dry_run)
+        connection = login(parsed_args, manager=connection, dry_run=parsed_args.dry_run)
         print(f'connection is {connection}')
         ret = connection.upload_metadata(
             file=parsed_args.metadata_file,
@@ -418,7 +418,7 @@ def main():
     if hasattr(parsed_args, "expression_file"):
         if verbose:
             print("START UPLOAD EXPRESSION FILE")
-        connection = login(manager=connection, dry_run=parsed_args.dry_run)
+        connection = login(parsed_args, manager=connection, dry_run=parsed_args.dry_run)
         ret = connection.upload_expression_matrix(
             file=parsed_args.expression_file,
             study_name=parsed_args.study_name,
