@@ -57,11 +57,10 @@ class ManageStudyTestCase(unittest.TestCase):
     def set_up_manage_study(self, *args):
         return create_parser().parse_args(args)
 
-    @patch('manage_study.get_connection', side_effect=mock_get_connection)
     @patch('manage_study.succeeded', return_value=True)
     @patch('manage_study.get_api_base', side_effect=mock_get_api_base)
     def test_validate_metadata_file_invalid_ontology(
-        self, mock_get_connection, mock_succeeded, mock_get_api_base,
+        self, mock_succeeded, mock_get_api_base,
     ):
         """Unconventional metadata file should fail validation
 
@@ -82,14 +81,13 @@ class ManageStudyTestCase(unittest.TestCase):
 
         invalid_metadata_path = 'tests/data/invalid_array_v1.1.3.tsv'
         with self.assertRaises(SystemExit) as cm:
-            validate_metadata_file(parsed_args)
+            validate_metadata_file(parsed_args, mock_get_connection())
         self.assertEqual(cm.exception.code, 1)
 
-    @patch('manage_study.get_connection', side_effect=mock_get_connection)
     @patch('manage_study.succeeded', return_value=True)
     @patch('manage_study.get_api_base', side_effect=mock_get_api_base)
     def test_validate_metadata_file_valid_ontology(
-        self, mock_get_connection, mock_succeeded, mock_get_api_base,
+        self, mock_succeeded, mock_get_api_base,
     ):
         """Conventional metadata file should pass validation
 
@@ -107,7 +105,9 @@ class ManageStudyTestCase(unittest.TestCase):
         SCPAPIManager = Mock()
         SCPAPIManager.get_study_attribute.return_value = 'SCP555'
         valid_metadata_path = 'tests/data/valid_array_v20.0.0.tsv'
-        not self.assertRaises(SystemExit, validate_metadata_file(parsed_args))
+        not self.assertRaises(
+            SystemExit, validate_metadata_file(parsed_args, mock_get_connection())
+        )
 
 
 if __name__ == "__main__":
