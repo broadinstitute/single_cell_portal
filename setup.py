@@ -4,7 +4,7 @@ with open('README.md', 'r') as fh:
     long_description = fh.read()
 
 setup(
-    name='single_cell_portal',
+    name='single-cell-portal',
     version='0.1rc1',
     description='Convenience scripts for Single Cell Portal',
     long_description=long_description,
@@ -16,7 +16,7 @@ setup(
     packages=find_packages(),
     entry_points={'console_scripts': ['manage-study=scripts.manage_study:main'],},
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 4 - Beta',
         'License :: OSI Approved :: BSD License',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
         'Programming Language :: Python :: 3.7',
