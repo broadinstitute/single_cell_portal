@@ -11,6 +11,7 @@ from ingest.validation.validate_metadata import (
     exit_if_errors,
     validate_input_metadata,
 )
+
 sys.path.append('.')
 
 from manage_study import validate_metadata_file
@@ -30,87 +31,84 @@ def mocked_requests_get(*args, **kwargs):
             return self.json_data
 
     url = args[0]
-    convention_file_path= 'tests/data/alexandria_convention_schema_2.1.0.json'
+    convention_file_path = 'tests/data/alexandria_convention_schema_2.1.0.json'
     if url == 'metadata_schemas/alexandria_convention/latest/json':
         with open(convention_file_path) as f:
             return MockResponse(json.load(f), 200, reason='OK')
     return MockResponse(None, 404)
 
+
 def mock_get_connection(*args, **kwargs):
     class MockResponse:
-        def get_study_attribute(study_name,attribute, dry_run):
+        def get_study_attribute(study_name, attribute, dry_run):
             return {'success': True, 'study_attribute': 'SCP599'}
 
-        def do_get(command=None,dry_run=None):
-            return {'response':mocked_requests_get(command)}
+        def do_get(command=None, dry_run=None):
+            return {'response': mocked_requests_get(command)}
 
     return MockResponse
 
-def mock_get_parsed_args():
-    return Mock()
 
-def mock_get_api_base():
+def mock_get_api_base(parsed_args):
     return ''
 
+
 class ManageStudyTestCase(unittest.TestCase):
-    def set_up_manage_study(self,*args):
+    def set_up_manage_study(self, *args):
         return create_parser().parse_args(args)
 
-    @patch('manage_study.get_connection', side_effect=mock_get_connection)
     @patch('manage_study.succeeded', return_value=True)
-    @patch('manage_study.get_parsed_args')
-    @patch('manage_study.get_api_base', side_effect = mock_get_api_base)
-    def test_validate_metadata_file_invalid_ontology(self,
-        mock_get_connection,
-        mock_succeeded,
-        mock_get_parsed_args,
-        mock_get_api_base):
+    @patch('manage_study.get_api_base', side_effect=mock_get_api_base)
+    def test_validate_metadata_file_invalid_ontology(
+        self, mock_succeeded, mock_get_api_base,
+    ):
         """Unconventional metadata file should fail validation
 
         This basic test ensures that the external dependency
         `scp-ingest-pipeline` in our public CLI works as expected.
         """
-        mock_get_parsed_args.return_value = self.set_up_manage_study(
-        'upload-metadata',
-        '--study-name',
-        'CLI test',
-        '--file',
-        'tests/data/invalid_array_v1.1.3.tsv',
-        '--use-convention'
+        parsed_args = self.set_up_manage_study(
+            'upload-metadata',
+            '--study-name',
+            'CLI test',
+            '--file',
+            'tests/data/invalid_array_v1.1.3.tsv',
+            '--use-convention',
         )
-        SCPAPIManager= Mock()
-        SCPAPIManager.get_study_attribute.return_value= 'SCP555'
+        print(parsed_args)
+        SCPAPIManager = Mock()
+        SCPAPIManager.get_study_attribute.return_value = 'SCP555'
 
         invalid_metadata_path = 'tests/data/invalid_array_v1.1.3.tsv'
         with self.assertRaises(SystemExit) as cm:
-            validate_metadata_file(invalid_metadata_path)
+            validate_metadata_file(parsed_args, mock_get_connection())
         self.assertEqual(cm.exception.code, 1)
 
-    @patch('manage_study.get_connection', side_effect=mock_get_connection)
     @patch('manage_study.succeeded', return_value=True)
-    @patch('manage_study.get_parsed_args')
-    @patch('manage_study.get_api_base', side_effect = mock_get_api_base)
-    def test_validate_metadata_file_valid_ontology(self,
-        mock_get_connection,
-        mock_succeeded,
-        mock_get_parsed_args,
-        mock_get_api_base):
+    @patch('manage_study.get_api_base', side_effect=mock_get_api_base)
+    def test_validate_metadata_file_valid_ontology(
+        self, mock_succeeded, mock_get_api_base,
+    ):
         """Conventional metadata file should pass validation
 
         This basic test ensures that the external dependency
         `scp-ingest-pipeline` in our public CLI works as expected.
         """
-        mock_get_parsed_args.return_value = self.set_up_manage_study(
-        'upload-metadata',
-        '--study-name',
-        'CLI test',
-        '--file',
-        'tests/data/valid_array_v20.0.0.tsv',
-        '--use-convention'
+        parsed_args = self.set_up_manage_study(
+            'upload-metadata',
+            '--study-name',
+            'CLI test',
+            '--file',
+            'tests/data/valid_array_v20.0.0.tsv',
+            '--use-convention',
         )
-        SCPAPIManager= Mock()
-        SCPAPIManager.get_study_attribute.return_value= 'SCP555'
+        SCPAPIManager = Mock()
+        SCPAPIManager.get_study_attribute.return_value = 'SCP555'
         valid_metadata_path = 'tests/data/valid_array_v20.0.0.tsv'
-        not self.assertRaises(SystemExit, validate_metadata_file(valid_metadata_path))
+        not self.assertRaises(
+            SystemExit, validate_metadata_file(parsed_args, mock_get_connection())
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
