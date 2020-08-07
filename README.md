@@ -30,7 +30,7 @@ To report a bug or suggest an improvement please create a new issue at: https://
 
 ## Need Help?
 
-Email us at single_cell_portal@broadinstitute.org
+Email us at scp-support@broadinstitute.zendesk.com
 
 Happy Science!!!
 
