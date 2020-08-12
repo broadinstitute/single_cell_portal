@@ -565,7 +565,6 @@ class SCPAPIManager(APIManager):
         description_info = {
             "study": {
                 "study_id": study_id,
-                "name": study_name,
                 "study_detail_attributes": {
                     "full_description": new_description
                 }
