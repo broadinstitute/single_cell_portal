@@ -474,9 +474,13 @@ class SCPAPIManager(APIManager):
 
         # Make payload and do post
         study_data = {
-            "name": study_name,
-            "description": study_description,
-            "public": is_public,
+            "study": {
+                "name": study_name,
+                "study_detail_attributes": {
+                    "full_description": study_description
+                },
+                "public": is_public
+            }
         }
         if not branding is None:
             study_data["firecloud_project"] = billing
@@ -558,7 +562,14 @@ class SCPAPIManager(APIManager):
         if not accept_html and not self.is_valid_study_description(new_description):
             return {c_SUCCESS_RET_KEY: False, c_CODE_RET_KEY: c_INVALID_STUDY_DESC}
 
-        description_info = {"study_id": study_id, "description": new_description}
+        description_info = {
+            "study": {
+                "study_id": study_id,
+                "study_detail_attributes": {
+                    "full_description": new_description
+                }
+            }
+        }
 
         update_ret = self.do_patch(
             command=self.api_base + "studies/" + str(study_id),
