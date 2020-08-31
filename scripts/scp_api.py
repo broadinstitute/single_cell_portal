@@ -24,14 +24,15 @@ except ImportError:
     from . import Commandline
 
 # Constants
-c_AUTH = 'Authorization'
+c_AGENT = "User-Agent"
+c_AUTH = "Authorization"
 c_BOUNDARY_LENGTH = 20
 c_CODE_RET_KEY = "code"
 c_RESPONSE = "response"
 c_STUDIES_RET_KEY = "studies"
 c_SUCCESS_RET_KEY = "success"
-c_ATTR_RET_KEY = 'study_attribute'
-c_EXT_RET_KEY = 'external_resources'
+c_ATTR_RET_KEY = "study_attribute"
+c_EXT_RET_KEY = "external_resources"
 
 ## Standard status codes
 c_STUDY_EXISTS = 101
@@ -98,9 +99,9 @@ cmdline = Commandline.Commandline()
 
 
 class APIManager:
-    '''
+    """
     Base class for REST API interaction. Handles common operations.
-    '''
+    """
 
     def __init__(self):
         return
@@ -109,7 +110,8 @@ class APIManager:
         self,
         token=None,
         dry_run=False,
-        api_base='https://singlecell.broadinstitute.org/single_cell/api/v1/',
+        api_base="https://singlecell.broadinstitute.org/single_cell/api/v1/",
+        user_agent=False,
     ):
         """
         Authenticates as user and get's token to perform actions on the user's behalf.
@@ -123,20 +125,26 @@ class APIManager:
         ## TODO add in auth from a file.
         if self.verbose:
             print("LOGIN")
+            print(f"user_agent: {user_agent}")
         if token is None:
             token = self.do_browser_login(dry_run=dry_run)
         self.token = token
         self.api_base = api_base
-        self.verify_https = 'localhost' not in api_base and 'staging' not in api_base
+        self.verify_https = "localhost" not in api_base and "staging" not in api_base
         self.studies = None
+        self.head = {"Accept": "application/json"}
+        if hasattr(self, "token"):
+            self.head[c_AUTH] = "Bearer {}".format(self.token)
+        if user_agent:
+            self.head[c_AGENT] = user_agent
 
     def do_browser_login(self, dry_run=False):
-        '''
+        """
         Authenticate through the browser
 
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Authentication token
-        '''
+        """
 
         if self.verbose:
             print("BROWSER LOGIN")
@@ -151,30 +159,28 @@ class APIManager:
         return cmd_ret.decode("ASCII").strip(os.linesep)
 
     def do_get(self, command, dry_run=False):
-        '''
+        """
         Perform a GET.
 
         :param command: String GET command to send to the REST endpoint
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Dict with response and status code
-        '''
+        """
 
         ## TODO add timeout and exception handling (Timeout exeception)
         if self.verbose:
             print("DO GET")
             print(command)
+            print(self.head)
         if dry_run:
             return {c_SUCCESS_RET_KEY: True, c_CODE_RET_KEY: c_API_OK}
-        head = {'Accept': 'application/json'}
-        if hasattr(self, 'token'):
-            head[c_AUTH] = 'Bearer {}'.format(self.token)
 
         return self.check_api_return(
-            requests.get(command, headers=head, verify=self.verify_https)
+            requests.get(command, headers=self.head, verify=self.verify_https)
         )
 
     def do_post(self, command, values, files=None, dry_run=False):
-        '''
+        """
         *** In development ***
         Perform POST.
 
@@ -183,7 +189,7 @@ class APIManager:
         :param files:
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Dict with response and status code
-        '''
+        """
 
         ## TODO addtimeout and exception handling (Timeout exeception)
         if self.verbose:
@@ -194,20 +200,19 @@ class APIManager:
         if dry_run:
             print("DRY_RUN:: Returning success.")
             return {c_SUCCESS_RET_KEY: True, c_CODE_RET_KEY: c_API_OK}
-        head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
         if self.verbose:
-            print(head)
+            print(self.head)
         if files is None:
             return self.check_api_return(
                 requests.post(
-                    command, headers=head, json=values, verify=self.verify_https
+                    command, headers=self.head, json=values, verify=self.verify_https
                 )
             )
         else:
             return self.check_api_return(
                 requests.post(
                     command,
-                    headers=head,
+                    headers=self.head,
                     files=files,
                     json=values,
                     verify=self.verify_https,
@@ -215,14 +220,14 @@ class APIManager:
             )
 
     def do_patch(self, command, values, dry_run=False):
-        '''
+        """
         Perform PATCH
 
         :param command: String PATCH command to send to the REST endpoint
         :param values: Parameter values to send {name: value}
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Dict with response and status code/status
-        '''
+        """
 
         ## TODO add timeout and exception handling (Timeout exeception)
         if self.verbose:
@@ -231,19 +236,20 @@ class APIManager:
             print(values)
         if dry_run:
             return {c_SUCCESS_RET_KEY: True, c_CODE_RET_KEY: c_API_OK}
-        head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
         return self.check_api_return(
-            requests.patch(command, headers=head, json=values, verify=self.verify_https)
+            requests.patch(
+                command, headers=self.head, json=values, verify=self.verify_https
+            )
         )
 
     def do_delete(self, command, dry_run=False):
-        '''
+        """
         Perform Delete
 
         :param command: String DELETE command to send to the REST endpoint
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Dict with response and status code/status
-        '''
+        """
 
         ## TODO add timeout and exception handling (Timeout exeception)
         if self.verbose:
@@ -251,45 +257,44 @@ class APIManager:
             print(command)
         if dry_run:
             return {c_SUCCESS_RET_KEY: True, c_CODE_RET_KEY: c_DELETE_OK}
-        head = {c_AUTH: 'token {}'.format(self.token), 'Accept': 'application/json'}
         return self.check_api_return(
-            requests.delete(command, headers=head, verify=self.verify_https)
+            requests.delete(command, headers=self.head, verify=self.verify_https)
         )
 
     def check_api_return(self, ret):
-        '''
+        """
         Create dict that has if status code was successful, status code,and response
 
         :param ret: Response
         :return: Dict of response, status code, and status.
-        '''
+        """
 
         if self.verbose:
-            print(f'HTTP response status {ret.status_code}: {ret.reason}')
+            print(f"HTTP response status {ret.status_code}: {ret.reason}")
         api_return = {}
         api_return[c_SUCCESS_RET_KEY] = ret.status_code in [c_API_OK, c_DELETE_OK]
         if ret.status_code not in [c_API_OK, c_DELETE_OK]:
-            print(f'Error {ret.status_code}: {ret.reason}')
+            print(f"Error {ret.status_code}: {ret.reason}")
             if ret.status_code == 401:
-                print('')
+                print("")
                 print(
-                    'Are you still signed in?  SCP automatically logs you out after a period of inactivity.'
+                    "Are you still signed in?  SCP automatically logs you out after a period of inactivity."
                 )
-                print('Try logging in and re-assigning your access token like so:')
-                print('')
-                print('\tgcloud auth login')
-                print('\tACCESS_TOKEN=`gcloud auth print-access-token`')
-                print('')
+                print("Try logging in and re-assigning your access token like so:")
+                print("")
+                print("\tgcloud auth login")
+                print("\tACCESS_TOKEN=`gcloud auth print-access-token`")
+                print("")
         api_return[c_CODE_RET_KEY] = ret.status_code
         api_return[c_RESPONSE] = ret
         return api_return
 
     def get_boundary(self):
-        '''
+        """
         Creates a random string that is likely to not be in a MIME message. Used as a boundary between MIME parts.
 
         :return: String
-        '''
+        """
 
         base = string.ascii_lowercase + string.digits
         return "".join([random.choice(base) for i in range(c_BOUNDARY_LENGTH)])
@@ -297,14 +302,14 @@ class APIManager:
 
 # The expected header
 class SCPAPIManager(APIManager):
-    '''
+    """
     API manager for the Single Cell Portal REST API
-    '''
+    """
 
     def __init__(self, verbose=False):
-        '''
+        """
         Initialize for the SCP endpoint.
-        '''
+        """
 
         APIManager.__init__(self)
         self.verbose = verbose
@@ -330,12 +335,12 @@ class SCPAPIManager(APIManager):
 
     @staticmethod
     def describe_status_code(status_code):
-        '''
+        """
         Translate the status code to the text message, per SCP REST API documentation.
 
         :param status_code: Numeric status code to translate
         :return: String status code text
-        '''
+        """
 
         ret_status_codes = {
             c_STUDY_EXISTS: c_STUDY_EXISTS_TEXT,
@@ -375,12 +380,12 @@ class SCPAPIManager(APIManager):
     '''
 
     def get_studies(self, dry_run=False):
-        '''
+        """
         Get studies available to user.
 
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
-        '''
+        """
 
         if self.verbose:
             print("GET STUDIES")
@@ -392,9 +397,9 @@ class SCPAPIManager(APIManager):
             if resp[c_SUCCESS_RET_KEY]:
                 studies_json = resp[c_RESPONSE].json()
                 self.study_objects = studies_json
-                self.studies = [str(element['name']) for element in studies_json]
+                self.studies = [str(element["name"]) for element in studies_json]
                 self.name_to_id = [
-                    [str(element['name']), str(element['_id']['$oid'])]
+                    [str(element["name"]), str(element["_id"]["$oid"])]
                     for element in studies_json
                 ]
                 self.name_to_id = {key: value for (key, value) in self.name_to_id}
@@ -402,12 +407,12 @@ class SCPAPIManager(APIManager):
         return resp
 
     def is_valid_study_description(self, study_description):
-        '''
+        """
         Confirms a study description does not contain characters that are not allowed.
 
         :param study_description: String description
         :return: Boolean indicator of validity, True is valid
-        '''
+        """
 
         no_error = True
         for letter in study_description:
@@ -421,12 +426,12 @@ class SCPAPIManager(APIManager):
         return no_error
 
     def is_valid_study_name(self, study_name):
-        '''
+        """
         Confirms a study name does not contain characters that are not allowed.
 
         :param study_name: String study name
         :return: Boolean indicator oc validity, True is valid
-        '''
+        """
 
         no_error = True
         for letter in study_name:
@@ -440,13 +445,13 @@ class SCPAPIManager(APIManager):
     def create_study(
         self,
         study_name,
-        study_description='Single Cell Genomics Study',
+        study_description="Single Cell Genomics Study",
         branding=None,
         billing=None,
         is_public=True,
         dry_run=False,
     ):
-        '''
+        """
         Create a study name using the REST API.
         Confirms the study does not exist before creating.
         Confirms name and description are valid.
@@ -458,7 +463,7 @@ class SCPAPIManager(APIManager):
         :param is_public: Boolean indicator if the study should be public
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
-        '''
+        """
         if self.verbose:
             print("CREATE STUDY:: " + study_name)
         # Study variable validation
@@ -476,10 +481,8 @@ class SCPAPIManager(APIManager):
         study_data = {
             "study": {
                 "name": study_name,
-                "study_detail_attributes": {
-                    "full_description": study_description
-                },
-                "public": is_public
+                "study_detail_attributes": {"full_description": study_description},
+                "public": is_public,
             }
         }
         if not branding is None:
@@ -495,14 +498,14 @@ class SCPAPIManager(APIManager):
         return resp
 
     def get_study_attribute(self, study_name, attribute, dry_run=False):
-        '''
+        """
         Get a study attribute using the REST API.
 
         :param study_name: String study name
         :param attribute: String name of attribute to return
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
-        '''
+        """
         if self.verbose:
             print("LOOKING AT " + study_name)
         # Error if the study does not exist
@@ -524,7 +527,7 @@ class SCPAPIManager(APIManager):
             study = ret_study[c_RESPONSE].json()
             # Error if attribute is not available
             if attribute not in study:
-                print('The requested study attribute is not available.')
+                print("The requested study attribute is not available.")
                 return {
                     c_SUCCESS_RET_KEY: False,
                     c_CODE_RET_KEY: c_ATTRIBUTE_DOES_NOT_EXIST,
@@ -536,7 +539,7 @@ class SCPAPIManager(APIManager):
     def edit_study_description(
         self, study_name, new_description, accept_html=False, dry_run=False
     ):
-        '''
+        """
         Edit a study description using the REST API.
         Confirms the study exists.
 
@@ -545,7 +548,7 @@ class SCPAPIManager(APIManager):
         :param accept_html: Boolean Whether to allow HTML characters and formatting
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
-        '''
+        """
         if self.verbose:
             print("EDITING DESCRIPTION FOR " + study_name)
         # Error if the study does not exist
@@ -565,9 +568,7 @@ class SCPAPIManager(APIManager):
         description_info = {
             "study": {
                 "study_id": study_id,
-                "study_detail_attributes": {
-                    "full_description": new_description
-                }
+                "study_detail_attributes": {"full_description": new_description},
             }
         }
 
@@ -580,13 +581,13 @@ class SCPAPIManager(APIManager):
         return update_ret
 
     def get_study_external_resources(self, study_name, dry_run=False):
-        '''
+        """
         Get a study's external resources using the REST API.
 
         :param study_name: String study name
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
-        '''
+        """
         if self.verbose:
             print("LOOKING AT " + study_name)
         # Error if the study does not exist
@@ -605,8 +606,8 @@ class SCPAPIManager(APIManager):
         if dry_run:
             print("DRY_RUN:: Returned dummy external resources.")
             study_resources[c_EXT_RET_KEY] = [
-                {'_id': 'EXT_REC_DUMMY_1'},
-                {'_id': 'EXT_REC_DUMMY_2'},
+                {"_id": "EXT_REC_DUMMY_1"},
+                {"_id": "EXT_REC_DUMMY_2"},
             ]
         else:
             resources = study_resources[c_RESPONSE].json()
@@ -615,14 +616,14 @@ class SCPAPIManager(APIManager):
         return study_resources
 
     def delete_study_external_resource(self, study_name, resource_id, dry_run=False):
-        '''
+        """
         Delete a study's external resource using the REST API.
 
         :param study_name: String study name
         :param resource_ids: String Id of external resource to delete
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
-        '''
+        """
         if self.verbose:
             print("LOOKING AT " + study_name)
         # Error if the study does not exist
@@ -647,7 +648,7 @@ class SCPAPIManager(APIManager):
     def create_study_external_resource(
         self, study_name, title, url, description, publication_url=False, dry_run=False
     ):
-        '''
+        """
         Create an external resource for a study using the REST API.
 
         :param study_name: String study name
@@ -657,7 +658,7 @@ class SCPAPIManager(APIManager):
         :param publication_url Boolean Whether resource is publication
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
-        '''
+        """
         if self.verbose:
             print("CREATING RESOURCE FOR " + study_name)
         # Error if the study does not exist
@@ -690,7 +691,7 @@ class SCPAPIManager(APIManager):
     def set_permission(
         self, study_name, email, access, deliver_email=False, dry_run=False
     ):
-        '''
+        """
         Sets permission on a study.
 
         :param study_name: String study name to update permissions
@@ -699,7 +700,7 @@ class SCPAPIManager(APIManager):
         :param deliver_email: Boolean, is the user interested in email notifications for study changes (True, receive emails)
         :param dry_run: If true, will do a dry run with no actual execution of functionality
         :return: Dict with response and additional information including status and errors
-        '''
+        """
         if self.verbose:
             print("SET PERMISSION: ".join(str(i) for i in [study_name, email, access]))
         # Make sure the access value is valid
@@ -722,7 +723,7 @@ class SCPAPIManager(APIManager):
         share_id = None
         for share in ret_shares[c_RESPONSE].json():
             if share["email"] == email:
-                share_id = share['_id']['$oid']
+                share_id = share["_id"]["$oid"]
 
         permissions_info = {
             "study_id": studyId,
@@ -771,13 +772,13 @@ class SCPAPIManager(APIManager):
             return update_ret
 
     def study_exists(self, study_name, dry_run=False):
-        '''
+        """
         Indicates if the user has access to a study of the given name
 
         :param study_name: String study name
         :param dry_run: If true, will do a dry run with no actual execution of functionality
         :return: Boolean, True indicates the study is known to the user and exists
-        '''
+        """
         if self.verbose:
             print("STUDY EXISTS?")
         if self.studies is None:
@@ -790,13 +791,13 @@ class SCPAPIManager(APIManager):
         return study_name in self.studies
 
     def study_name_to_id(self, name, dry_run=False):
-        '''
+        """
         Changes the a study name into the correct a portal id
 
         :param name: String study name
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: String portal id
-        '''
+        """
         if self.verbose:
             print("STUDY NAME TO ID")
         if dry_run:
@@ -807,25 +808,24 @@ class SCPAPIManager(APIManager):
 
     @staticmethod
     def upload_via_gsutil(bucket_id, file_path):
-        """Copy file to Google Cloud Storage bucket, return stats and filename
-        """
+        """Copy file to Google Cloud Storage bucket, return stats and filename"""
 
-        gs_url = 'gs://' + bucket_id
+        gs_url = "gs://" + bucket_id
 
         # Upload to bucket via gsutil
-        command = 'gsutil cp ' + file_path + ' ' + gs_url
+        command = "gsutil cp " + file_path + " " + gs_url
         cmdline.func_CMD(command=command)
-        filename = file_path.split('/')[-1]
+        filename = file_path.split("/")[-1]
 
         # Get GCS details for the file just uploaded
-        command = 'gsutil stat ' + gs_url + '/' + filename
+        command = "gsutil stat " + gs_url + "/" + filename
         stdout = cmdline.func_CMD(command=command, stdout=True)
 
         # Split on newline, omit first and last lines, transform to dict
-        lines = [line.strip() for line in str(stdout).split('\\n')][1:-1]
+        lines = [line.strip() for line in str(stdout).split("\\n")][1:-1]
         gsutil_stat = {}
         for line in lines:
-            [key, value] = line.split(':    ')
+            [key, value] = line.split(":    ")
             gsutil_stat[key] = value.strip()
 
         return [gsutil_stat, filename]
@@ -858,41 +858,41 @@ class SCPAPIManager(APIManager):
         study_id = self.study_name_to_id(study_name, dry_run=dry_run)
 
         for s in self.study_objects:
-            if s['_id']['$oid'] == study_id:
+            if s["_id"]["$oid"] == study_id:
                 study = s
                 break
-        bucket_id = study['bucket_id']
+        bucket_id = study["bucket_id"]
 
         [gsutil_stat, filename] = self.upload_via_gsutil(bucket_id, file)
 
         file_fields = {
-            'study_file': {
-                'file_type': file_type,
-                'name': name,
-                'remote_location': filename,
-                'upload_file_name': filename,
-                'upload_content_type': gsutil_stat['Content-Type'],
-                'upload_file_size': int(gsutil_stat['Content-Length']),
-                'generation': gsutil_stat['Generation'],
+            "study_file": {
+                "file_type": file_type,
+                "name": name,
+                "remote_location": filename,
+                "upload_file_name": filename,
+                "upload_content_type": gsutil_stat["Content-Type"],
+                "upload_file_size": int(gsutil_stat["Content-Length"]),
+                "generation": gsutil_stat["Generation"],
             }
         }
         for kwarg in kwargs:
             # Handles file-type specific fields, e.g. "species" and "genome"
             # for expression matrix files
-            file_fields['study_file'][kwarg] = kwargs[kwarg]
+            file_fields["study_file"][kwarg] = kwargs[kwarg]
 
         ret = self.do_post(
-            command=self.api_base + 'studies/' + study_id + '/study_files',
+            command=self.api_base + "studies/" + study_id + "/study_files",
             values=file_fields,
             dry_run=dry_run,
         )
         # print(f'/study_files response: {ret["response"].text}')
 
         if parse:
-            study_files_response = ret['response'].json()
-            study_file_id = study_files_response['_id']['$oid']
+            study_files_response = ret["response"].json()
+            study_file_id = study_files_response["_id"]["$oid"]
             parse = (
-                f'{self.api_base}studies/{study_id}/study_files/{study_file_id}/parse'
+                f"{self.api_base}studies/{study_id}/study_files/{study_file_id}/parse"
             )
             ret = self.do_post(command=parse, values=None, dry_run=dry_run)
             # print(f'/parse response: {ret["response"].text}')
@@ -906,7 +906,7 @@ class SCPAPIManager(APIManager):
             print("UPLOAD METADATA FILE")
         return self.upload_study_file(
             file,
-            'Metadata',
+            "Metadata",
             study_name,
             description=description,
             parse=True,
@@ -921,7 +921,7 @@ class SCPAPIManager(APIManager):
             print("UPLOAD EXPRESSION MATRIX FILE")
         return self.upload_study_file(
             file,
-            'Expression Matrix',
+            "Expression Matrix",
             study_name,
             description=description,
             species=species,
@@ -945,7 +945,7 @@ class SCPAPIManager(APIManager):
             print("UPLOAD CLUSTER FILE")
         return self.upload_study_file(
             file,
-            'Cluster',
+            "Cluster",
             study_name,
             cluster_name=cluster_name,
             description=description,
@@ -958,14 +958,14 @@ class SCPAPIManager(APIManager):
 
 
 class DSSAPIManager(APIManager):
-    '''
+    """
     API manager for the HCA DSS
-    '''
+    """
 
     def __init__(self):
-        '''
+        """
         Initialize for the DSS endpoint
-        '''
+        """
 
         APIManager.__init__(self)
         if self.verbose:
@@ -974,14 +974,14 @@ class DSSAPIManager(APIManager):
 
 
 class MatrixAPIManager(APIManager):
-    '''
+    """
     API manager for Matrix service
-    '''
+    """
 
     def __init__(self):
-        '''
+        """
         Initialize for the expression matrix service
-        '''
+        """
 
         APIManager.__init__(self)
         print("INIT MATRIX API")
@@ -989,12 +989,12 @@ class MatrixAPIManager(APIManager):
         self.supportedTypes = None
 
     def describe_status_code(status_code):
-        '''
+        """
         Translate the status code to the text errors as per their endpoint documentation.
 
         :param status_code: Numeric status code to translate
         :return: String status code text
-        '''
+        """
 
         ret_status_codes = {
             c_MATRIX_API_OK: c_NO_ERROR_TEXT,
@@ -1005,12 +1005,12 @@ class MatrixAPIManager(APIManager):
         return ret_status_codes.get(status_code, "That status code is not in use.")
 
     def get_supported_types(self, dry_run=False):
-        '''
+        """
         Query and update supported file types for delivery by the matrix service
 
         :param dry_run: If true, will do a dry run with no actual execution of functionality
         :return: Returns the response, also updates the supported types (in the Matrix Manager)
-        '''
+        """
         print("GET SUPPORTED TYPES")
         if dry_run:
             self.supportedTypes = ["test_type", "test_type"]
@@ -1022,7 +1022,7 @@ class MatrixAPIManager(APIManager):
         return resp
 
     def request_matrix(self, ids, format="zarr", dry_run=False):
-        '''
+        """
         *** In development ****
         Request a matrix by supplying bundle IDs
 
@@ -1030,11 +1030,10 @@ class MatrixAPIManager(APIManager):
         :param format: String supported file format to format the matrix to be received
         :param dry_run: If true, will do a dry run with no actual execution of functionality.
         :return: Response
-        '''
+        """
         print("REQUEST MATRIX BY IDs")
         if not format in self.get_supported_types():
             return {c_SUCCESS_RET_KEY: False, c_CODE_RET_KEY: c_MATRIX_BAD_FORMAT}
         bundleInfo = {"bundle_fqids": ids, "format": format}
         resp = self.do_post(self.api, values=bundleInfo, dry_run=dry_run)
         return resp
-
