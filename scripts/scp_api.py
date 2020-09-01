@@ -285,6 +285,13 @@ class APIManager:
                 print("\tgcloud auth login")
                 print("\tACCESS_TOKEN=`gcloud auth print-access-token`")
                 print("")
+            if ret.status_code == 400 and re.search(
+                "scp-ingest-pipeline.*incompatible", ret.reason
+            ):
+                print("")
+                print("Ingest pipeline package version incompatibility with server?")
+                print("")
+                exit(1)
         api_return[c_CODE_RET_KEY] = ret.status_code
         api_return[c_RESPONSE] = ret
         return api_return

@@ -41,10 +41,10 @@ def create_parser():
         help="Do not check file locally before uploading.",
     )
     args.add_argument(
-        "--no-version-check",
-        dest="check_version",
+        "--no-user-agent",
+        dest="user_agent",
         action="store_false",
-        help="Do not check for ingest pipeline version.",
+        help="Do not send user-agent string for ingest pipeline version.",
     )
     args.add_argument(
         "--verbose", action="store_true", help="Whether to print debugging information"

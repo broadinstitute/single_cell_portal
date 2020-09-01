@@ -53,6 +53,10 @@ python3 manage_study.py --token-$ACCESS_TOKEN create-study-external-resource --s
 
 # Print a study attribute (eg. cell_count)
 python3 manage_study.py --token-$ACCESS_TOKEN get-study-attribute --study-name "${STUDY_NAME}" --attribute cell_count
+
+# Avoid sending a user-agent string while obtaining the number of studies in SCP
+python manage_study.py --no-user-agent --token=$ACCESS_TOKEN list-studies --summary
+
 """
 
 import argparse
@@ -128,7 +132,7 @@ def login(parsed_args, manager=None, dry_run=False, api_base=None, verbose=False
     """
     if manager is None:
         manager = scp_api.SCPAPIManager(verbose=verbose)
-        if parsed_args.check_version:
+        if parsed_args.user_agent:
             ingest_pkg_version = pkg_resources.get_distribution(
                 "scp-ingest-pipeline"
             ).version
@@ -417,10 +421,10 @@ def main():
 
     ## Upload metadata file
     if hasattr(parsed_args, "metadata_file"):
+        connection = login(parsed_args, manager=connection, dry_run=parsed_args.dry_run)
         if verbose:
             print("START UPLOAD METADATA FILE")
-        connection = login(parsed_args, manager=connection, dry_run=parsed_args.dry_run)
-        print(f"connection is {connection}")
+            print(f"connection is {connection}")
         ret = connection.upload_metadata(
             file=parsed_args.metadata_file,
             use_convention=parsed_args.use_convention,
