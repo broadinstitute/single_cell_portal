@@ -13,6 +13,7 @@ import random
 import string
 import os
 import json
+import re
 
 import logging
 
@@ -285,11 +286,13 @@ class APIManager:
                 print("\tgcloud auth login")
                 print("\tACCESS_TOKEN=`gcloud auth print-access-token`")
                 print("")
-            if ret.status_code == 400 and re.search(
-                "scp-ingest-pipeline.*incompatible", ret.reason
-            ):
+            incompatible_ingest_version = re.search(
+                "scp-ingest-pipeline.*incompatible", ret.json()["error"]
+            )
+            if ret.status_code == 400 and incompatible_ingest_version:
                 print("")
-                print("Ingest pipeline package version incompatibility with server?")
+                print("Local ingest pipeline package version incompatibile with server")
+                print(ret.json()["error"])
                 print("")
                 exit(1)
         api_return[c_CODE_RET_KEY] = ret.status_code
@@ -403,6 +406,7 @@ class SCPAPIManager(APIManager):
         else:
             if resp[c_SUCCESS_RET_KEY]:
                 studies_json = resp[c_RESPONSE].json()
+                print(f"from scp_api {studies_json}")
                 self.study_objects = studies_json
                 self.studies = [str(element["name"]) for element in studies_json]
                 self.name_to_id = [

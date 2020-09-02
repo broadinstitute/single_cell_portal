@@ -69,6 +69,24 @@ def mocked_requests_post(*args, **kwargs):
     return MockResponse(None, 404)
 
 
+# This method will be used by the mock to replace requests.get response
+# for ingest pipeline major version mismatch response in user-agent string
+def mocked_ingest_version_mismatch(*args, **kwargs):
+    class MockResponse:
+        def __init__(self, json_data, status_code, reason=None):
+            self.json_data = json_data
+            self.status_code = status_code
+            self.reason = reason
+
+        def json(self):
+            return self.json_data
+
+    ingest_mismatch_json = {
+        "error": 'scp-ingest-pipeline: 0.9.12 incompatible with host, please update via "pip install scp-ingest-pipeline --upgrade"'
+    }
+    return MockResponse(ingest_mismatch_json, 400)
+
+
 class SCPAPITestCase(unittest.TestCase):
     @patch("requests.get", side_effect=mocked_requests_get)
     def test_get_studies(self, mocked_requests_get):
@@ -82,6 +100,23 @@ class SCPAPITestCase(unittest.TestCase):
             "Study only for unit test",
         ]
         self.assertEqual(studies, expected_studies)
+
+    @patch("requests.get", side_effect=mocked_ingest_version_mismatch)
+    def test_ingest_version_mismatch(self, mocked_ingest_version_mismatch):
+        manager = scp_api.SCPAPIManager()
+        manager.api_base = "https://singlecell.broadinstitute.org/single_cell/api/v1/"
+        manager.verify_https = True
+        manager.head = {
+            "Accept": "application/json",
+            "User-Agent": "single-cell-portal/0.1.3rc1 (manage-study) scp-ingest-pipeline/0.9.12 (ingest_pipeline.py)",
+        }
+
+        with self.assertRaises(SystemExit) as cm:
+            manager.get_studies()["studies"]
+
+        self.assertEqual(
+            cm.exception.code, 1
+        ), "expect exit if ingest major version mismatch detected"
 
     @patch(
         "scp_api.SCPAPIManager.upload_via_gsutil", side_effect=mock_upload_via_gsutil
