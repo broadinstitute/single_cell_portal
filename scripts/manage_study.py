@@ -133,13 +133,7 @@ def login(parsed_args, manager=None, dry_run=False, api_base=None, verbose=False
     if manager is None:
         manager = scp_api.SCPAPIManager(verbose=verbose)
         if parsed_args.user_agent:
-            ingest_pkg_version = pkg_resources.get_distribution(
-                "scp-ingest-pipeline"
-            ).version
-            portal_pkg_version = pkg_resources.get_distribution(
-                "single_cell_portal"
-            ).version
-            user_agent = f"single-cell-portal/{portal_pkg_version} (manage-study) scp-ingest-pipeline/{ingest_pkg_version} (ingest_pipeline.py)"
+            user_agent = get_user_agent()
             manager.login(
                 token=parsed_args.token,
                 dry_run=dry_run,
@@ -149,6 +143,24 @@ def login(parsed_args, manager=None, dry_run=False, api_base=None, verbose=False
         else:
             manager.login(token=parsed_args.token, dry_run=dry_run, api_base=api_base)
     return manager
+
+
+def get_user_agent():
+    """Generate User-Agent string to reflect locally installed package versions"""
+    try:
+        ingest_pkg_version = pkg_resources.get_distribution(
+            "scp-ingest-pipeline"
+        ).version
+    except pkg_resources.DistributionNotFound:
+        ingest_pkg_version = None
+    try:
+        portal_pkg_version = pkg_resources.get_distribution(
+            "single_cell_portal"
+        ).version
+    except pkg_resources.DistributionNotFound:
+        portal_pkg_version = None
+    user_agent = f"single-cell-portal/{portal_pkg_version} (manage-study) scp-ingest-pipeline/{ingest_pkg_version} (ingest_pipeline.py)"
+    return user_agent
 
 
 def download_from_bucket(file_path):
