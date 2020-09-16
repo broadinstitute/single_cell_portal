@@ -53,12 +53,17 @@ python3 manage_study.py --token-$ACCESS_TOKEN create-study-external-resource --s
 
 # Print a study attribute (eg. cell_count)
 python3 manage_study.py --token-$ACCESS_TOKEN get-study-attribute --study-name "${STUDY_NAME}" --attribute cell_count
+
+# Avoid sending a user-agent string while obtaining the number of studies in SCP
+python manage_study.py --no-user-agent --token=$ACCESS_TOKEN list-studies --summary
+
 """
 
 import argparse
 import json
 import os
 from bson.objectid import ObjectId
+import pkg_resources
 
 from google.cloud import storage
 from ingest.ingest_pipeline import IngestPipeline
@@ -82,23 +87,23 @@ except ImportError:
     from .cli_parser import *
 
 env_origin_map = {
-    'development': 'https://localhost',
-    'staging': 'https://singlecell-staging.broadinstitute.org',
-    'production': 'https://singlecell.broadinstitute.org',
+    "development": "https://localhost",
+    "staging": "https://singlecell-staging.broadinstitute.org",
+    "production": "https://singlecell.broadinstitute.org",
 }
 
 
 def get_api_base(parsed_args):
-    return env_origin_map[parsed_args.environment] + '/single_cell/api/v1/'
+    return env_origin_map[parsed_args.environment] + "/single_cell/api/v1/"
 
 
 def manage_call_return(call_return, verbose=False):
-    '''
+    """
     Accesses the error codes in the underlying library and check the return code.
 
     :param call_return: Dict returned from scp_api call with REST call return info
     :return: No return will exit on error
-    '''
+    """
     # Print error code and describe code then exit if not success
     if verbose:
         print("HTTP status code = " + str(call_return[scp_api.c_CODE_RET_KEY]))
@@ -112,24 +117,50 @@ def manage_call_return(call_return, verbose=False):
 
 
 def succeeded(ret):
-    """Whether request succeeded
-    """
+    """Whether request succeeded"""
     # 2xx, e.g. 200 or 204, means success
-    return str(ret['response'].status_code)[0] == '2'
+    return str(ret["response"].status_code)[0] == "2"
 
 
 def login(parsed_args, manager=None, dry_run=False, api_base=None, verbose=False):
-    '''
+    """
     Login to authorize credentials.
 
     :param manager: API Manager
     :param dry_run: If true, will do a dry run with no actual execution of functionality.
     :return:
-    '''
+    """
     if manager is None:
         manager = scp_api.SCPAPIManager(verbose=verbose)
-        manager.login(token=parsed_args.token, dry_run=dry_run, api_base=api_base)
+        if parsed_args.user_agent:
+            user_agent = get_user_agent()
+            manager.login(
+                token=parsed_args.token,
+                dry_run=dry_run,
+                api_base=api_base,
+                user_agent=user_agent,
+            )
+        else:
+            manager.login(token=parsed_args.token, dry_run=dry_run, api_base=api_base)
     return manager
+
+
+def get_user_agent():
+    """Generate User-Agent string to reflect locally installed package versions"""
+    try:
+        ingest_pkg_version = pkg_resources.get_distribution(
+            "scp-ingest-pipeline"
+        ).version
+    except pkg_resources.DistributionNotFound:
+        ingest_pkg_version = None
+    try:
+        portal_pkg_version = pkg_resources.get_distribution(
+            "single_cell_portal"
+        ).version
+    except pkg_resources.DistributionNotFound:
+        portal_pkg_version = None
+    user_agent = f"single-cell-portal/{portal_pkg_version} (manage-study) scp-ingest-pipeline/{ingest_pkg_version} (ingest_pipeline.py)"
+    return user_agent
 
 
 def download_from_bucket(file_path):
@@ -156,15 +187,15 @@ def validate_metadata_file(parsed_args, connection):
     dry_run = parsed_args.dry_run
     verbose = parsed_args.verbose
     study_accession_res = connection.get_study_attribute(
-        study_name=study_name, attribute='accession', dry_run=dry_run
+        study_name=study_name, attribute="accession", dry_run=dry_run
     )
     # Needed dummy values for CellMetadata
-    study_file = ObjectId('addedfeed000000000000000')
-    study_file_id = ObjectId('addedfeed000000000000001')
+    study_file = ObjectId("addedfeed000000000000000")
+    study_file_id = ObjectId("addedfeed000000000000001")
     if succeeded(study_accession_res):
         if verbose:
-            print(f'Study accession {study_accession_res} retrieved for {study_name}')
-        study_accession = study_accession_res.get('study_attribute')
+            print(f"Study accession {study_accession_res} retrieved for {study_name}")
+        study_accession = study_accession_res.get("study_attribute")
         metadata = CellMetadata(
             metadata_path,
             study_file,
@@ -173,12 +204,12 @@ def validate_metadata_file(parsed_args, connection):
         )
         convention_res = connection.do_get(
             command=get_api_base(parsed_args)
-            + 'metadata_schemas/alexandria_convention/latest/json',
+            + "metadata_schemas/alexandria_convention/latest/json",
             dry_run=dry_run,
         )
         if succeeded(convention_res):
             if verbose:
-                print(f'Retreieved file for latest metdata convention')
+                print(f"Retreieved file for latest metdata convention")
             convention = convention_res["response"].json()
             validate_input_metadata(metadata, convention)
             serialize_issues(metadata)
@@ -188,9 +219,9 @@ def validate_metadata_file(parsed_args, connection):
 
 def confirm(question):
     while True:
-        answer = input(question + ' (y/n): ').lower().strip()
-        if answer in ('y', 'yes', 'n', 'no'):
-            return answer in ('y', 'yes')
+        answer = input(question + " (y/n): ").lower().strip()
+        if answer in ("y", "yes", "n", "no"):
+            return answer in ("y", "yes")
 
 
 def main():
@@ -203,7 +234,7 @@ def main():
     verbose = parsed_args.verbose
 
     origin = env_origin_map[parsed_args.environment]
-    api_base = origin + '/single_cell/api/v1/'
+    api_base = origin + "/single_cell/api/v1/"
 
     # Login connection
     connection = login(
@@ -243,7 +274,7 @@ def main():
         )
         manage_call_return(ret)
         if succeeded(ret):
-            print('Created study')
+            print("Created study")
 
     ## Get a study attribute
     if parsed_args.command == c_TOOL_STUDY_GET_ATTR:
@@ -255,7 +286,7 @@ def main():
             dry_run=parsed_args.dry_run,
         )
         manage_call_return(ret)
-        print('Study {}:'.format(parsed_args.attribute))
+        print("Study {}:".format(parsed_args.attribute))
         print(ret[scp_api.c_ATTR_RET_KEY])
 
     ## Edit a study description
@@ -264,7 +295,7 @@ def main():
             print("STARTING EDIT DESCRIPTION")
 
         if parsed_args.from_file:
-            with open(parsed_args.new_description, 'r') as d_file:
+            with open(parsed_args.new_description, "r") as d_file:
                 new_description = d_file.read()
         else:
             new_description = parsed_args.new_description
@@ -277,17 +308,18 @@ def main():
         )
         manage_call_return(ret)
         if succeeded(ret):
-            print('Updated study description')
+            print("Updated study description")
 
     ## Get all external resources from a study
     if parsed_args.command == c_TOOL_STUDY_GET_EXT:
         if verbose:
             print("STARTING GET EXTERNAL RESOURCES")
         ret = connection.get_study_external_resources(
-            study_name=parsed_args.study_name, dry_run=parsed_args.dry_run,
+            study_name=parsed_args.study_name,
+            dry_run=parsed_args.dry_run,
         )
         manage_call_return(ret, verbose)
-        print('Study external resources: \n')
+        print("Study external resources: \n")
         # Returns in dict format -- table format might be better
         print(ret[scp_api.c_EXT_RET_KEY])
 
@@ -298,12 +330,13 @@ def main():
 
         # first get all external resource ids
         ret = connection.get_study_external_resources(
-            study_name=parsed_args.study_name, dry_run=parsed_args.dry_run,
+            study_name=parsed_args.study_name,
+            dry_run=parsed_args.dry_run,
         )
         manage_call_return(ret, verbose)
-        ext_ids = [res['_id']['$oid'] for res in ret['external_resources']]
+        ext_ids = [res["_id"]["$oid"] for res in ret["external_resources"]]
         if not ext_ids:
-            print('No external resources associated with study.')
+            print("No external resources associated with study.")
             exit()
         # confirm deletion with user
         confirmed = confirm(
@@ -312,7 +345,7 @@ def main():
         )
         if confirmed:
             if verbose:
-                print('Will continue deleting resources.')
+                print("Will continue deleting resources.")
             for ext_id in ext_ids:
                 ret = connection.delete_study_external_resource(
                     study_name=parsed_args.study_name,
@@ -320,7 +353,7 @@ def main():
                     dry_run=parsed_args.dry_run,
                 )
                 manage_call_return(ret, verbose)
-            print('Deleted all external resources')
+            print("Deleted all external resources")
 
     ## Create new external resource for a study
     if parsed_args.command == c_TOOL_STUDY_CREATE_EXT:
@@ -336,7 +369,7 @@ def main():
         )
         manage_call_return(ret, verbose)
         if succeeded(ret):
-            print('Created external resource')
+            print("Created external resource")
 
     ## Share with user
     if hasattr(parsed_args, "permission"):
@@ -350,7 +383,7 @@ def main():
         )
         manage_call_return(ret)
         if succeeded(ret):
-            print('Set permission')
+            print("Set permission")
 
     ## Validate files
     if parsed_args.validate and not hasattr(parsed_args, "summarize_list"):
@@ -396,14 +429,14 @@ def main():
         )
         manage_call_return(ret)
         if succeeded(ret):
-            print('Uploaded and began parse of cluster file')
+            print("Uploaded and began parse of cluster file")
 
     ## Upload metadata file
     if hasattr(parsed_args, "metadata_file"):
+        connection = login(parsed_args, manager=connection, dry_run=parsed_args.dry_run)
         if verbose:
             print("START UPLOAD METADATA FILE")
-        connection = login(parsed_args, manager=connection, dry_run=parsed_args.dry_run)
-        print(f'connection is {connection}')
+            print(f"connection is {connection}")
         ret = connection.upload_metadata(
             file=parsed_args.metadata_file,
             use_convention=parsed_args.use_convention,
@@ -412,7 +445,7 @@ def main():
         )
         manage_call_return(ret)
         if succeeded(ret):
-            print('Uploaded and began parse of metadata file')
+            print("Uploaded and began parse of metadata file")
 
     ## Upload expression file
     if hasattr(parsed_args, "expression_file"):
@@ -428,7 +461,7 @@ def main():
         )
         manage_call_return(ret)
         if succeeded(ret):
-            print('Uploaded and began parse of expression file')
+            print("Uploaded and began parse of expression file")
 
     ## Upload miscellaneous file
     ### TODO
@@ -446,5 +479,5 @@ def main():
     ### TODO
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
