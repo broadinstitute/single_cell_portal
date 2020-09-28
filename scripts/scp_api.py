@@ -405,7 +405,6 @@ class SCPAPIManager(APIManager):
         else:
             if resp[c_SUCCESS_RET_KEY]:
                 studies_json = resp[c_RESPONSE].json()
-                print(f"from scp_api {studies_json}")
                 self.study_objects = studies_json
                 self.studies = [str(element["name"]) for element in studies_json]
                 self.name_to_id = [
@@ -821,13 +820,40 @@ class SCPAPIManager(APIManager):
         """Copy file to Google Cloud Storage bucket, return stats and filename"""
 
         gs_url = "gs://" + bucket_id
-
-        # Upload to bucket via gsutil
-        command = "gsutil cp " + file_path + " " + gs_url
-        cmdline.func_CMD(command=command)
         filename = file_path.split("/")[-1]
 
-        # Get GCS details for the file just uploaded
+        # if filepath uses destination google bucket, no need to upload
+        if file_path[:5] == "gs://":
+            source_bucket = file_path[5:].split("/")[0]
+        else:
+            source_bucket = None
+
+        # check if file in bucket via gsutil
+        command = "gsutil stat " + gs_url + "/" + filename
+        print("Checking if file already exists in study bucket.")
+        if cmdline.func_CMD(command=command, mute=True):
+            if source_bucket == bucket_id:
+                print(f"Using existing file, {filename}, in study bucket.")
+                file_from_study_bucket = True
+            else:
+                print(
+                    f"ERROR: {filename} already exists in study bucket, please delete existing file, then retry."
+                )
+                exit(1)
+        else:
+            if source_bucket == bucket_id:
+                print(f"\nERROR: {filename} not found in study bucket.")
+                exit(1)
+            else:
+                file_from_study_bucket = False
+        print()
+
+        # Upload to bucket via gsutil
+        if not file_from_study_bucket:
+            command = "gsutil cp " + file_path + " " + gs_url
+            cmdline.func_CMD(command=command, stdout=False)
+
+        # Get GCS details for the file to be used
         command = "gsutil stat " + gs_url + "/" + filename
         stdout = cmdline.func_CMD(command=command, stdout=True)
 
@@ -838,7 +864,21 @@ class SCPAPIManager(APIManager):
             [key, value] = line.split(":    ")
             gsutil_stat[key] = value.strip()
 
-        return [gsutil_stat, filename]
+        return [gsutil_stat, filename, file_from_study_bucket]
+
+    @staticmethod
+    def delete_via_gsutil(bucket_id, file_path):
+        """Remove file from Google Cloud Storage bucket"""
+
+        gs_url = "gs://" + bucket_id
+        filename = file_path.split("/")[-1]
+
+        # Delete file from bucket via gsutil
+        command = "gsutil rm " + gs_url + "/" + filename
+
+        if not cmdline.func_CMD(command=command, stdout=False):
+            print(f"ERROR: failed to delete {filename}.")
+            exit(1)
 
     def upload_study_file(
         self,
@@ -873,7 +913,9 @@ class SCPAPIManager(APIManager):
                 break
         bucket_id = study["bucket_id"]
 
-        [gsutil_stat, filename] = self.upload_via_gsutil(bucket_id, file)
+        [gsutil_stat, filename, file_from_study_bucket] = self.upload_via_gsutil(
+            bucket_id, file
+        )
 
         file_fields = {
             "study_file": {
@@ -896,7 +938,17 @@ class SCPAPIManager(APIManager):
             values=file_fields,
             dry_run=dry_run,
         )
-        # print(f'/study_files response: {ret["response"].text}')
+        # handle file upload refused by server (handles metadata file cases)
+        if ret[c_CODE_RET_KEY] == 422:
+            print("\nUpload request failed with the following error(s)")
+            for key in ret[c_RESPONSE].json()["errors"].keys():
+                print(f"{key}:{ret[c_RESPONSE].json()['errors'][key]}")
+            if not file_from_study_bucket:
+                print("\nCleaning up after failed request:")
+                self.delete_via_gsutil(bucket_id, file)
+            else:
+                print("\nExisting file will persist in study bucket.")
+            exit(1)
 
         if parse:
             study_files_response = ret["response"].json()
@@ -957,7 +1009,7 @@ class SCPAPIManager(APIManager):
             file,
             "Cluster",
             study_name,
-            cluster_name=cluster_name,
+            name=cluster_name,
             description=description,
             x=x,
             y=x,
