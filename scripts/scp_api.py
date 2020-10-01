@@ -99,6 +99,12 @@ c_MATRIX_BAD_FORMAT_TEXT = "The requested format is not supported in the service
 cmdline = Commandline.Commandline()
 
 
+def exists_in_bucket(bucket_file_path, mute=False):
+    """gsutil gstat to see if file is in study bucket"""
+    command = "gsutil stat " + bucket_file_path
+    return cmdline.func_CMD(command=command, mute=True)
+
+
 class APIManager:
     """
     Base class for REST API interaction. Handles common operations.
@@ -829,9 +835,8 @@ class SCPAPIManager(APIManager):
             source_bucket = None
 
         # check if file in bucket via gsutil
-        command = "gsutil stat " + gs_url + "/" + filename
-        print("Checking if file already exists in study bucket.")
-        if cmdline.func_CMD(command=command, mute=True):
+        full_gs_url = gs_url + "/" + filename
+        if exists_in_bucket(full_gs_url, mute=True):
             if source_bucket == bucket_id:
                 print(f"Using existing file, {filename}, in study bucket.")
                 file_from_study_bucket = True
