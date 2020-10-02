@@ -822,6 +822,12 @@ class SCPAPIManager(APIManager):
             return self.name_to_id.get(name, None)
 
     @staticmethod
+    def exists_in_bucket(bucket_file_path, mute=False):
+        """gsutil gstat to see if file is in study bucket"""
+        command = "gsutil stat " + bucket_file_path
+        return cmdline.func_CMD(command=command, mute=True)
+
+    @staticmethod
     def upload_via_gsutil(bucket_id, file_path):
         """Copy file to Google Cloud Storage bucket, return stats and filename"""
 
@@ -836,7 +842,7 @@ class SCPAPIManager(APIManager):
 
         # check if file in bucket via gsutil
         full_gs_url = gs_url + "/" + filename
-        if exists_in_bucket(full_gs_url, mute=True):
+        if SCPAPIManager.exists_in_bucket(full_gs_url, mute=True):
             if source_bucket == bucket_id:
                 print(f"Using existing file, {filename}, in study bucket.")
                 file_from_study_bucket = True
