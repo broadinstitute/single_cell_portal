@@ -864,9 +864,14 @@ class SCPAPIManager(APIManager):
         print()
 
         # Upload to bucket via gsutil
-        if not file_from_study_bucket:
-            command = "gsutil cp " + file_path + " " + gs_url
-            cmdline.func_CMD(command=command, stdout=False)
+        if not file_from_study_bucket and source_bucket:
+            if SCPAPIManager.exists_in_bucket(file_path):
+                command = "gsutil cp " + file_path + " " + gs_url
+                cmdline.func_CMD(command=command, stdout=False)
+            else:
+                print(f"\nERROR: failed to find upload file {file_path}.")
+                # custom exit code to indicate exit-file-not-found-in-remote-bucket
+                exit(85)
 
         # Get GCS details for the file to be used
         command = "gsutil stat " + gs_url + "/" + filename

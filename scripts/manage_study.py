@@ -64,7 +64,7 @@ EXIT CODES
 82  exit-failed-to-gsutil-delete-file
 83  exit-uploaded-file-deleted
 84  exit-no-file-cleanup-needed
-
+85  exit-file-not-found-in-remote-bucket
 """
 
 import argparse
