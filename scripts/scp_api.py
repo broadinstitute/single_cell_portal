@@ -299,7 +299,9 @@ class APIManager:
                 print("Local ingest pipeline package version incompatibile with server")
                 print(ret.json()["error"])
                 print("")
-                exit(1)
+                # custom exit code to indicate
+                # incompatible scp-ingest-pipeline package version detected
+                exit(79)
         api_return[c_CODE_RET_KEY] = ret.status_code
         api_return[c_RESPONSE] = ret
         return api_return
@@ -824,7 +826,7 @@ class SCPAPIManager(APIManager):
     @staticmethod
     def exists_in_bucket(bucket_file_path, mute=False):
         """gsutil gstat to see if file is in study bucket"""
-        command = "gsutil stat " + bucket_file_path
+        command = "gsutil ls " + bucket_file_path
         return cmdline.func_CMD(command=command, mute=True)
 
     @staticmethod
@@ -850,11 +852,13 @@ class SCPAPIManager(APIManager):
                 print(
                     f"ERROR: {filename} already exists in study bucket, please delete existing file, then retry."
                 )
-                exit(1)
+                # custom exit code to indicate exit-file-already-exists-in-study-bucket
+                exit(80)
         else:
             if source_bucket == bucket_id:
                 print(f"\nERROR: {filename} not found in study bucket.")
-                exit(1)
+                # custom exit code to indicate exit-file-not-found-in-study-bucket
+                exit(81)
             else:
                 file_from_study_bucket = False
         print()
@@ -889,7 +893,8 @@ class SCPAPIManager(APIManager):
 
         if not cmdline.func_CMD(command=command, stdout=False):
             print(f"ERROR: failed to delete {filename}.")
-            exit(1)
+            # custom exit code to indicate exit-failed-to-gsutil-delete-file
+            exit(82)
 
     def upload_study_file(
         self,
@@ -957,9 +962,12 @@ class SCPAPIManager(APIManager):
             if not file_from_study_bucket:
                 print("\nCleaning up after failed request:")
                 self.delete_via_gsutil(bucket_id, file)
+                # custom exit code to indicate exit-uploaded-file-deleted
+                exit(83)
             else:
                 print("\nExisting file will persist in study bucket.")
-            exit(1)
+                # custom exit code to indicate exit-no-file-cleanup-needed
+                exit(84)
 
         if parse:
             study_files_response = ret["response"].json()
