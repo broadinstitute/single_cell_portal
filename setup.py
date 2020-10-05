@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="single-cell-portal",
-    version="0.2.0",
+    version="0.2.1",
     description="Convenience scripts for Single Cell Portal",
     long_description=long_description,
     long_description_content_type="text/markdown",
