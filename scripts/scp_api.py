@@ -99,12 +99,6 @@ c_MATRIX_BAD_FORMAT_TEXT = "The requested format is not supported in the service
 cmdline = Commandline.Commandline()
 
 
-def exists_in_bucket(bucket_file_path, mute=False):
-    """gsutil gstat to see if file is in study bucket"""
-    command = "gsutil stat " + bucket_file_path
-    return cmdline.func_CMD(command=command, mute=True)
-
-
 class APIManager:
     """
     Base class for REST API interaction. Handles common operations.
@@ -826,7 +820,7 @@ class SCPAPIManager(APIManager):
     @staticmethod
     def exists_in_bucket(bucket_file_path, mute=False):
         """gsutil gstat to see if file is in study bucket"""
-        command = "gsutil ls " + bucket_file_path
+        command = "gsutil stat " + bucket_file_path
         return cmdline.func_CMD(command=command, mute=True)
 
     @staticmethod
@@ -864,10 +858,10 @@ class SCPAPIManager(APIManager):
         print()
 
         # Upload to bucket via gsutil
-        if not file_from_study_bucket and source_bucket:
-            if SCPAPIManager.exists_in_bucket(file_path):
-                command = "gsutil cp " + file_path + " " + gs_url
-                cmdline.func_CMD(command=command, stdout=False)
+        if not (file_from_study_bucket and source_bucket):
+            command = "gsutil cp " + file_path + " " + gs_url
+            if cmdline.func_CMD(command=command, stdout=False):
+                print("\n")
             else:
                 print(f"\nERROR: failed to find upload file {file_path}.")
                 # custom exit code to indicate exit-file-not-found-in-remote-bucket
