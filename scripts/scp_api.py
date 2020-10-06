@@ -295,6 +295,7 @@ class APIManager:
                 print("")
                 # custom exit code to indicate
                 # incompatible scp-ingest-pipeline package version detected
+                # TODO: replace with python error handling and logging (SCP-2790)
                 exit(79)
         api_return[c_CODE_RET_KEY] = ret.status_code
         api_return[c_RESPONSE] = ret
@@ -847,11 +848,13 @@ class SCPAPIManager(APIManager):
                     f"ERROR: {filename} already exists in study bucket, please delete existing file, then retry."
                 )
                 # custom exit code to indicate exit-file-already-exists-in-study-bucket
+                # TODO: replace with python error handling and logging (SCP-2790)
                 exit(80)
         else:
             if source_bucket == bucket_id:
                 print(f"\nERROR: {filename} not found in study bucket.")
                 # custom exit code to indicate exit-file-not-found-in-study-bucket
+                # TODO: replace with python error handling and logging (SCP-2790)
                 exit(81)
             else:
                 file_from_study_bucket = False
@@ -865,6 +868,7 @@ class SCPAPIManager(APIManager):
             else:
                 print(f"\nERROR: failed to find upload file {file_path}.")
                 # custom exit code to indicate exit-file-not-found-in-remote-bucket
+                # TODO: replace with python error handling and logging (SCP-2790)
                 exit(85)
 
         # Get GCS details for the file to be used
@@ -893,6 +897,7 @@ class SCPAPIManager(APIManager):
         if not cmdline.func_CMD(command=command, stdout=False):
             print(f"ERROR: failed to delete {filename}.")
             # custom exit code to indicate exit-failed-to-gsutil-delete-file
+            # TODO: replace with python error handling and logging (SCP-2790)
             exit(82)
 
     def upload_study_file(
@@ -962,10 +967,12 @@ class SCPAPIManager(APIManager):
                 print("\nCleaning up after failed request:")
                 self.delete_via_gsutil(bucket_id, file)
                 # custom exit code to indicate exit-uploaded-file-deleted
+                # TODO: replace with python error handling and logging (SCP-2790)
                 exit(83)
             else:
                 print("\nExisting file will persist in study bucket.")
                 # custom exit code to indicate exit-no-file-cleanup-needed
+                # TODO: replace with python error handling and logging (SCP-2790)
                 exit(84)
 
         if parse:
