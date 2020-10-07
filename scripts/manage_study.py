@@ -57,6 +57,15 @@ python3 manage_study.py --token-$ACCESS_TOKEN get-study-attribute --study-name "
 # Avoid sending a user-agent string while obtaining the number of studies in SCP
 python manage_study.py --no-user-agent --token=$ACCESS_TOKEN list-studies --summary
 
+EXIT CODES
+# TODO: replace with python error handling and logging (SCP-2790)
+79  incompatible scp-ingest-pipeline package version detected
+80  exit-file-already-exists-in-study-bucket
+81  exit-file-not-found-in-study-bucket
+82  exit-failed-to-gsutil-delete-file
+83  exit-uploaded-file-deleted
+84  exit-no-file-cleanup-needed
+85  exit-file-not-found-in-remote-bucket
 """
 
 import argparse
