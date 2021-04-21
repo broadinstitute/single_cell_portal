@@ -1,12 +1,12 @@
 NAME	biosample_id	donor_id	species	species__ontology_label	sex	cell_type	cell_type__ontology_label	average_intensity	disease	disease__ontology_label	organ	organ__ontology_label	library_preparation_protocol	library_preparation_protocol__ontology_label
 TYPE	group	group	group	group	group	group	group	numeric	group	group	group	group	group	group
-CELL_0001	mm1_lymph	mouse1	NCBITaxon_10090	Mus musculus	male	CL_0000084	T cell	7.742	MONDO_0005062	lymphoma	UBERON_0000029	lymph node	EFO_0009899	10X 3' v2 sequencing
-CELL_0002	mm1_lymph	mouse1	NCBITaxon_10090	Mus musculus	male	CL_0000625	CD8-positive, alpha-beta T cell	-13.745	MONDO_0005062	lymphoma	UBERON_0000029	lymph node	EFO_0009899	10X 3' v2 sequencing
-CELL_0003	hu1_blood	human1	NCBITaxon_9606	Homo sapiens	female	CL_0000235	macrophage	-2.116	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10X 3' v2 sequencing
-CELL_0004	hu1_blood	human1	NCBITaxon_9606	Homo sapiens	female	CL_0000084	T cell	0.638	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10X 3' v2 sequencing
-CELL_0005	mm1_blood	mouse1	NCBITaxon_10090	Mus musculus	male	CL_0000084	T cell	9.188	MONDO_0005062	lymphoma	UBERON_0000178	blood	EFO_0009899	10X 3' v2 sequencing
-CELL_0006	mm1_blood	mouse1	NCBITaxon_10090	Mus musculus	male	CL_0000786	plasma cell	-4.125	MONDO_0005062	lymphoma	UBERON_0000178	blood	EFO_0009899	10X 3' v2 sequencing
-CELL_0007	mm2_blood	mouse2	NCBITaxon_10090	Mus musculus	male	CL_0000094	granulocyte	-12.606	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10X 3' v2 sequencing
-CELL_0008	mm2_blood	mouse2	NCBITaxon_10090	Mus musculus	male	CL_0000576	monocyte	3.675	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10X 3' v2 sequencing
-CELL_0009	hu2_blood	human2	NCBITaxon_9606	Homo sapiens	male	CL_0000576	monocyte	-2.27	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10X 3' v2 sequencing
-CELL_0010	hu2_blood	human2	NCBITaxon_9606	Homo sapiens	male	CL_0000084	T cell	-2.606	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10X 3' v2 sequencing
+CELL_0001	mm1_lymph	mouse1	NCBITaxon_10090	Mus musculus	male	CL_0000084	T cell	7.742	MONDO_0005062	lymphoma	UBERON_0000029	lymph node	EFO_0009899	10x3' v2 sequencing
+CELL_0002	mm1_lymph	mouse1	NCBITaxon_10090	Mus musculus	male	CL_0000625	CD8-positive, alpha-beta T cell	-13.745	MONDO_0005062	lymphoma	UBERON_0000029	lymph node	EFO_0009899	10x3' v2 sequencing
+CELL_0003	hu1_blood	human1	NCBITaxon_9606	Homo sapiens	female	CL_0000235	macrophage	-2.116	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10x3' v2 sequencing
+CELL_0004	hu1_blood	human1	NCBITaxon_9606	Homo sapiens	female	CL_0000084	T cell	0.638	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10x3' v2 sequencing
+CELL_0005	mm1_blood	mouse1	NCBITaxon_10090	Mus musculus	male	CL_0000084	T cell	9.188	MONDO_0005062	lymphoma	UBERON_0000178	blood	EFO_0009899	10x3' v2 sequencing
+CELL_0006	mm1_blood	mouse1	NCBITaxon_10090	Mus musculus	male	CL_0000786	plasma cell	-4.125	MONDO_0005062	lymphoma	UBERON_0000178	blood	EFO_0009899	10x3' v2 sequencing
+CELL_0007	mm2_blood	mouse2	NCBITaxon_10090	Mus musculus	male	CL_0000094	granulocyte	-12.606	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10x3' v2 sequencing
+CELL_0008	mm2_blood	mouse2	NCBITaxon_10090	Mus musculus	male	CL_0000576	monocyte	3.675	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10x3' v2 sequencing
+CELL_0009	hu2_blood	human2	NCBITaxon_9606	Homo sapiens	male	CL_0000576	monocyte	-2.27	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10x3' v2 sequencing
+CELL_0010	hu2_blood	human2	NCBITaxon_9606	Homo sapiens	male	CL_0000084	T cell	-2.606	PATO_0000461	normal	UBERON_0000178	blood	EFO_0009899	10x3' v2 sequencing
