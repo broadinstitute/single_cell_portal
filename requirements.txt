@@ -1,7 +1,6 @@
 pandas>=0.16.2
 requests>=2.21.0
-numpy==1.19.2
-scp-ingest-pipeline==1.11.0
+scp-ingest-pipeline==1.7.0
 
 # For faster development iterations.
 # ../../scp-ingest-pipeline
