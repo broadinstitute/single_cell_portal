@@ -5,7 +5,7 @@ output: html_notebook
 
 Seurat's Read10X function expects the three files that comprise an Feature-Barcode Matrix to have specific names and format, all located in one directory.  For compatibility with this example, these files would be put in a directory called "10x_naming" that is located in the current working directory.
 
-To create files with the expected name and format, the following file transformations were performed for SCP1219 study files:  
+To create files with the expected name and format, the following file transformations were performed for [SCP1219](https://singlecell.broadinstitute.org/single_cell/study/SCP1219/columbia-university-nyp-covid-19-lung-atlas) study files:  
 
 ## Expression Matrix
 rename mtx file to expected name  
