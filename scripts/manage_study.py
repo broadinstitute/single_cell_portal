@@ -220,10 +220,11 @@ def validate_metadata_file(parsed_args, connection):
             if verbose:
                 print(f"Retreieved file for latest metdata convention")
             convention = convention_res["response"].json()
-            validate_input_metadata(metadata, convention)
-            serialize_issues(metadata)
-            report_issues(metadata)
-            exit_if_errors(metadata)
+            validate_against_convention = True
+            metadata.preprocess(validate_against_convention)
+            metadata.validate(validate_against_convention)
+            if not conforms_to_metadata_convention(self.cell_metadata):
+                return 1
 
 
 def confirm(question):
