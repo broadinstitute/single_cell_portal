@@ -3,6 +3,7 @@ CLI for command line arguments for manage-study
 """
 
 import argparse
+import yaml
 
 # Subparser tool names
 c_TOOL_LIST_STUDY = "list-studies"
@@ -55,6 +56,11 @@ def create_parser():
         default="production",
         choices=["development", "staging", "production"],
         help="API environment to use",
+    )
+
+    args.add_argument(
+        "--config-file",
+        help="YAML file of manage-study parameter settings; CLI settings take precedence over YAML values",
     )
 
     # Create tools (subparser)
@@ -361,4 +367,7 @@ def create_parser():
         default="",
         help="Text describing the metadata file.",
     )
+    parsed = args.parse_args()
+    print(" ".join(f"{k}={v} \n" for k, v in vars(parsed).items()))
+    exit()
     return args
