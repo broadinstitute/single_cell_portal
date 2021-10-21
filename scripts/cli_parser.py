@@ -60,7 +60,7 @@ def create_parser():
 
     args.add_argument(
         "--config-file",
-        help="YAML file of manage-study parameter settings; CLI settings take precedence over YAML values",
+        help="YAML file of manage-study parameter settings; YAML values take precedence over CLI settings",
     )
 
     # Create tools (subparser)
@@ -367,7 +367,37 @@ def create_parser():
         default="",
         help="Text describing the metadata file.",
     )
-    parsed = args.parse_args()
-    print(" ".join(f"{k}={v} \n" for k, v in vars(parsed).items()))
+
+    # Turn argparse Namespace object into dictionary
+    cli_vars = vars(args.parse_args())
+    # obtain all default values specified by the parser
+    defaults = vars(args.parse_args([]))
+    # print(f"defaults {defaults}")
+    if cli_vars["config_file"]:
+        with open(cli_vars["config_file"]) as f:
+            ydict = yaml.safe_load(f)
+        # print(f"ydict {ydict}")
+        #
+        for k, v in cli_vars.items():
+            # print(f"cli_vars {k} {v}")
+            yv = ydict.get(k, None)
+            # print(f"ydict {k} {yv}")
+            dv = defaults.get(k, None)
+            # if the CLI argument, exists emit a warning that the file setting will be used
+            # settings may be from parser defaults and not actually CLI-specified
+            # making it difficult to allow CLI settings to take precedence over file settings
+            if yv and (yv != dv):
+                print(f"OVERRIDE CLI setting '{k} = {v}' with file setting '{yv}'")
+            else:
+                ydict[k] = v
+        final_args = ydict
+    else:
+        final_args = cli_vars
+    # print("".join(f"{k}={v}\n" for k, v in final_args.items()))
+
+    # ToDo resolve passing dictionary final_args rather than argparse object
+    # see if a template config-file is feasible and whether CLI flags need changing
+    # simplify config-file usage
+    # remove testing print statements and exit
     exit()
-    return args
+    return final_args
