@@ -224,11 +224,8 @@ def validate_metadata_file(parsed_args, connection):
             validate_against_convention = True
             metadata.preprocess(validate_against_convention)
             metadata.validate(validate_against_convention)
-            if not metadata.conforms_to_metadata_convention:
-                return True
-            else:
-                report_issues(metadata)
-                return False
+            validate_input_metadata(metadata, convention)
+            return not report_issues(metadata)
 
 
 def confirm(question):
