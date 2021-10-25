@@ -1,0 +1,148 @@
+---
+title: "Create SCP files"
+output: html_notebook
+---
+## Setup
+This R notebook uses [code written by Velina Kozareva](https://github.com/vkozareva/single_cell_portal/blob/object-conversion-scripts/scripts/object_conversion/seurat/seurat_scp_convenience.R) with the following change:  
+line 159 was  
+} else if (s_version == 3) {  
+Velina's code was written before Seurat v4 existed so the line now needs to be  
+} else if (s_version >= 3) {  
+
+Example precomputed Seurat object downloaded from https://www.dropbox.com/s/63gnlw45jf7cje8/pbmc3k_final.rds?dl=1
+(reference: https://satijalab.org/seurat/archive/v3.0/de_vignette.html)
+
+Save the modified code as a file in the same directory as your Seurat object file (in this case, pbmc3k_final.rds; replace in the code block below with the name of your Seurat object file) and call the file with the modified version of Velina's code: seurat_scp_convenience_v2.R
+
+Save this Rmd file in the same directory. This should allow you to source Velina's code and read your Seurat object by using the code below. If you encounter an message indicating "cannot open the connection", try replacing the filename in the command with the full path to the file.
+
+### Adapt the following code to generate SCP files from your Seurat object
+##### Name the output directory where you would like your SCP files to be written
+
+```{r}
+source("seurat_scp_convenience_v2.R")
+library(Seurat)
+data <- readRDS(file = "pbmc3k_final.rds")
+outdir <- "SCP_files"
+if (!dir.exists(outdir)) {dir.create(outdir)}
+#if you don't want a prefix, set it to the empty string ""
+prefix = "expt1"
+```
+
+### General information about the Seurat object, confirm the object is as expected
+```{r}
+data
+```
+
+### Use this block to add a prefix to your cells if renaming ALL cells
+####### This is useful if multiple runs have identical cell barcodes
+##### The following code would need to be modified if SUBSETs of cells need to be differentially prefixed.
+```{r}
+if (length(prefix)) {
+  # add.cell.id puts underscore between prefix and original cell name
+  #data <- RenameCells(data, add.cell.id = prefix)
+  # set up the following to put a hyphen, rather than underscore, as separator
+  # which separator you choose is up to you, both are acceptable
+  data <- RenameCells(data, new.names = paste0(prefix, "-", colnames(data)))
+  head(colnames(data))
+}
+```
+### Show details of the Seurat object
+##### including the analysis commands that have been run on the data
+```{r}
+str(data)
+```
+### Update the Seurat object, if needed
+##### This notebook should still work with Seurat v2 but has not been tested
+```{r}
+s_version <- packageVersion('Seurat')$major
+  if (s_version == 2) {
+    stop ('Portions of this notebook may need updating for Seurat v2, proceed with caution.')
+  } else if (s_version >= 3) {
+    data <- UpdateSeuratObject(object = data)
+  } else {
+    stop ('Seurat v1 objects are not supported.')
+  }
+```
+
+### Generate a cluster file
+##### Many reduction.use options are possible, replace "umap" with the dimensionality reduction option used in the analysis. Refer to the output of str(data) if unfamiliar with how the data was analyzed (look under @reductions)
+```{r}
+cluster_name <- paste0(outdir, "/", prefix, "-", "cluster.tsv")
+generateClusterFile(data, cluster_name, reduction.use = "umap")
+```
+
+
+### Generate raw and processed count matrices
+##### files generated have fixed names (matrix.mtx, barcodes.tsv, genes.tsv)
+##### SCP expects raw and processed matrices to have different file names, rename one set of matrices prior to upload
+```{r}
+raw_dir <- paste0(outdir, "/", "raw")
+# create raw count MTX IF using conventional Seurat slot naming
+generateExpressionMatrix(data, raw_dir, slot.use = "counts", compress.files = T)
+
+proc_dir <- paste0(outdir, "/", "processed")
+# create processed count MTX IF using conventional Seurat slot naming
+generateExpressionMatrix(data, proc_dir, slot.use = "data", compress.files = T)
+```
+
+### Add SCP required metadata to your Seurat object
+##### Use the interactive metadata option to add metadata that are consistent across ALL cells
+###### metadata that vary by groups of cells cannot be annotated using this script (eg. if you have multiple biosamples, diease vs control; or multiple donors, mouse1, mouse2 ... mouseN)
+##### Many SCP required metadata are ontology-based, look up ontology ID values using the links found at https://singlecell.zendesk.com/hc/en-us/articles/360060609852-Required-Metadata
+##### ontology labels are the human-readable text that accompany ontology IDs
+###### SCP uses the ontology_label to validate that the provided ontology ID is the intended term and not mis-entered 
+##### For example: For the metadata "species", NCBITaxon_9606 is a valid ontology ID
+##### Homo sapiens is the corresponding value for "species__ontology_label"
+
+#### **When prompted to "Enter columns you wish to add" provide the following metadata columns as they are also SCP required metadata**
+##### species__ontology_label disease__ontology_label organ__ontology_label library_preparation_protocol__ontology_label
+```{r}
+#Velina's script does not add the required ontology label columns 
+#use the "add optional metadata" feature in addConsistentMetadataColumns
+
+data = addConsistentMetadataColumns(data, return.object = T)
+```
+###### If you use Excel to add metadata that varies by groups of cells, take care that Excel copy/paste does not automagically increment the pasted value (ie. NCBITaxon_9606, NCBITaxon_9607, NCBITaxon_9608 etc)
+
+
+
+### Review existing metadata and identify metadata to exclude
+##### ie. any metadata unique to all cells OR metadata not useful for analysis
+##### this block generates a string for column names that can be used in the next (Generate metadata file) block
+```{r}
+metadata = data@meta.data
+#Edit this string to rename metadata or exclude metadata
+dput(colnames(metadata))
+```
+
+### Generate metadata file
+##### cols.use can be used to omit metadata columns or to re-order the columns
+##### column order in cols.use determines the order the metadata are listed in the annotations dropdown
+### **column names can only have only alphanumeric characters and underscore characters**
+##### new.col.names can be used to rename columns such as "percent.mt" which have characters that are disallowed
+###### for this example, metadata names with "."  separators were replaced with "_"
+###### if a metadata (for example, orig.ident) was not useful, it can be omitted from both cols.use and new.col.names and that metadata will be omitted from the output file.
+##### spacing in generateMetadataFile command was added for readability, the string from the prior block can be cut and paste as-is and does not need to resemble the block below.
+```{r}
+metadata_name <- paste0(outdir, "/", prefix, "-", "metadata.tsv")
+# generate metadata file omitting "orig.ident"
+generateMetadataFile(data, metadata_name, 
+    cols.use = c( "seurat_clusters", "biosample_id", "donor_id", 
+      "species", "disease", "organ", "library_preparation_protocol", 
+      "sex", "biosample_type", "species__ontology_label", 
+      "disease__ontology_label", "organ__ontology_label", 
+      "library_preparation_protocol__ontology_label", 
+      "orig.ident", "nCount_RNA", "nFeature_RNA", 
+      "percent.mt","RNA_snn_res.0.5"),
+    new.col.names = c( "seurat_clusters", "biosample_id", "donor_id", 
+      "species", "disease", "organ", "library_preparation_protocol", 
+      "sex", "biosample_type", "species__ontology_label", 
+      "disease__ontology_label", "organ__ontology_label", 
+      "library_preparation_protocol__ontology_label", 
+      "orig_ident", "nCount_RNA", "nFeature_RNA", 
+      "percent_mt", "RNA_snn_res_0_5")
+)
+```
+
+
