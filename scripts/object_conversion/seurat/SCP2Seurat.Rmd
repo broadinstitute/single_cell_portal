@@ -1,0 +1,109 @@
+---
+title: "Seurat object from SCP files"
+output: html_notebook
+---
+
+Seurat's Read10X function expects the three files that comprise a feature-barcode matrix to have specific names and format, all located in one directory.  For compatibility with this example, these files would be put in a directory called "10x_naming" that is located in the current working directory.
+
+To create files with the expected name and format, the following file transformations were performed for [SCP1219](https://singlecell.broadinstitute.org/single_cell/study/SCP1219/columbia-university-nyp-covid-19-lung-atlas) study files:  
+
+## Expression Matrix
+rename mtx file to expected name  
+`mv gene_sorted-lung_expression_data.mtx.gz matrix.mtx.gz`
+
+
+<p>
+## Barcodes file
+• Check that barcodes file are not actually comma-delimited and has a single column of barcode names.  
+
+rename the file to the expected name  
+`mv lung_cellNames.csv barcodes.tsv`  
+ 
+Read10X function expects compressed barcode file if the matrix file is compressed  
+`gzip barcodes.tsv`  
+
+
+<p>
+## Features/genes file
+<p>
+• Check if genes file has comma-delimited data (if the genes file did have multiple columns separated by commas, conversion to tab delimited format would be needed)  
+
+rename the file to the expected name  
+`mv lung_geneNames_upload.csv features.tsv`  
+
+Read10X function expects compressed feature file if the matrix file is compressed  
+`gzip features.tsv`  
+
+<p>
+## CAUTION
+Things to remember about the Seurat Object created by following this example: The expression data in the "counts" slot will only be raw counts if the matrix inputted via Read10X was a raw count matrix. Many studies in SCP only have processed count matrix where the counts have been normalized, scaled, batch-corrected or otherwise processed. ***Please read the relevant publication to understand the nature of the matrix you are working with***
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+# some commands below use syntax specific to Seurat v3
+library(Seurat)
+SCP1219.data <- Read10X(data.dir = "10x_naming", gene.column = 1)
+# set gene.column = 1 option because SCP1219's genes file was a single column of gene names
+# if the genes file is a two column file
+#   make sure the file is tab delimited 
+#   and the gene.column option can be omitted.
+str(SCP1219.data)
+```
+
+SCP metadata files have TYPE specification as the second row of the metadata file - this row complicates dataframe creation. Edit the metadata file to remove the TYPE row before running the following command.
+
+
+```{r}
+SCP1219.meta <- read.table("lung_metaData_sansTYPE.txt", sep = "\t", quote = "", row.names = 1, header = TRUE)
+str(SCP1219.meta)
+```
+
+```{r}
+scp1219 <- CreateSeuratObject(counts = SCP1219.data, meta.data = SCP1219.meta)
+str(scp1219)
+```
+### CAUTION
+notice in the above output that metadata like "species" and "sex" seem to have an NA value in addition to the expected levels. The NA values are not expected because every cell should have a valid "species" and "sex" annotation (these are metadata required by SCP). I'm not sure if the NA are indications of an issue with the appended metadata. Please proceed carefully in case this is an indication that the data object was not reconsititute correctly.
+
+reference for code below https://satijalab.org/seurat/archive/v3.1/interaction_vignette.html
+
+```{r}
+table(scp1219$cell_type_main)
+```
+
+
+```{r}
+Idents(scp1219) <- "cell_type_main"
+
+# How can I extract expression matrix for all Epithelial cells (perhaps, to load into another package)
+epi.data <- as.matrix(GetAssayData(scp1219, slot = "counts")[, WhichCells(scp1219, ident = "Epithelial cells")])
+```
+
+```{r}
+str(epi.data)
+```
+```{r}
+# Can I create a Seurat object of just the Epithelial cells?
+epi.obj <- subset(scp1219, idents = "Epithelial cells")
+```
+ 
+
+```{r}
+str(epi.obj)
+```
+Interestingly, the object above does not seem to have NA values for any of the SCP required metadata
+
+Sizes of resulting objects
+
+| Object | Size | Type |
+|:----:|:----:|:----:|
+| SCP1219.data | 1.2G | dgRMatrix  
+| scp1219 | 2.5G | Seurat object  
+| epi.obj | 763M | Seurat object  
+| epi.data | 7.7G | matrix  
+
+
+```{r, collapse = TRUE}
+sessionInfo()
+```

@@ -198,6 +198,7 @@ def validate_metadata_file(parsed_args, connection):
     study_accession_res = connection.get_study_attribute(
         study_name=study_name, attribute="accession", dry_run=dry_run
     )
+
     # Needed dummy values for CellMetadata
     study_file = ObjectId("addedfeed000000000000000")
     study_file_id = ObjectId("addedfeed000000000000001")
@@ -220,10 +221,11 @@ def validate_metadata_file(parsed_args, connection):
             if verbose:
                 print(f"Retreieved file for latest metdata convention")
             convention = convention_res["response"].json()
+            validate_against_convention = True
+            metadata.preprocess(validate_against_convention)
+            metadata.validate(validate_against_convention)
             validate_input_metadata(metadata, convention)
-            serialize_issues(metadata)
-            report_issues(metadata)
-            exit_if_errors(metadata)
+            return not report_issues(metadata)
 
 
 def confirm(question):
@@ -401,7 +403,8 @@ def main():
             print("START VALIDATE FILES")
 
         if hasattr(parsed_args, "metadata_file") and parsed_args.use_convention:
-            validate_metadata_file(parsed_args, connection)
+            conforms = validate_metadata_file(parsed_args, connection)
+            print(f"after validation, conforms = {conforms}")
 
         # command = ["python3 verify_portal_file.py"]
         #
@@ -442,19 +445,26 @@ def main():
 
     ## Upload metadata file
     if hasattr(parsed_args, "metadata_file"):
-        connection = login(parsed_args, manager=connection, dry_run=parsed_args.dry_run)
-        if verbose:
-            print("START UPLOAD METADATA FILE")
-            print(f"connection is {connection}")
-        ret = connection.upload_metadata(
-            file=parsed_args.metadata_file,
-            use_convention=parsed_args.use_convention,
-            study_name=parsed_args.study_name,
-            dry_run=parsed_args.dry_run,
-        )
-        manage_call_return(ret)
-        if succeeded(ret):
-            print("Uploaded and began parse of metadata file")
+        if conforms:
+            connection = login(
+                parsed_args, manager=connection, dry_run=parsed_args.dry_run
+            )
+            if verbose:
+                print("START UPLOAD METADATA FILE")
+                print(f"connection is {connection}")
+            ret = connection.upload_metadata(
+                file=parsed_args.metadata_file,
+                use_convention=parsed_args.use_convention,
+                study_name=parsed_args.study_name,
+                dry_run=parsed_args.dry_run,
+            )
+            manage_call_return(ret)
+            if succeeded(ret):
+                print("Uploaded and began parse of metadata file")
+        else:
+            print(
+                "Metadata file does not conform to metadata convention, please revise and try again."
+            )
 
     ## Upload expression file
     if hasattr(parsed_args, "expression_file"):
