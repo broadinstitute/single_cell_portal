@@ -47,6 +47,14 @@ if (length(prefix)) {
   head(colnames(data))
 }
 ```
+
+## The code in this notebook assumes:
+## - raw counts in the "counts" slot under @assays in the Seurat Object
+## - processed counts in the "data" slot under @assays in the Seurat Object
+## - metadata under @meta.data in the Seurat Object
+## - "umap" calculation under @reductions in the Seurat Object
+### if your data is not stored as described above, please modify the code to reflect your Seurat object's layout
+
 ### Show details of the Seurat object
 ##### including the analysis commands that have been run on the data
 ```{r}
@@ -66,7 +74,7 @@ s_version <- packageVersion('Seurat')$major
 ```
 
 ### Generate a cluster file
-##### Many reduction.use options are possible, replace "umap" with the dimensionality reduction option used in the analysis. Refer to the output of str(data) if unfamiliar with how the data was analyzed (look under @reductions)
+##### Many reduction.use options are possible, **replace "umap" with the dimensionality reduction option used in the analysis**. Refer to the output of str(data) if unfamiliar with how the data was analyzed (look under @reductions)
 ```{r}
 cluster_name <- paste0(outdir, "/", prefix, "-", "cluster.tsv")
 generateClusterFile(data, cluster_name, reduction.use = "umap")
@@ -109,7 +117,7 @@ data = addConsistentMetadataColumns(data, return.object = T)
 
 ### Review existing metadata and identify metadata to exclude
 ##### ie. any metadata unique to all cells OR metadata not useful for analysis
-##### this block generates a string for column names that can be used in the next (Generate metadata file) block
+#### **use the generated string of column names in the next (Generate metadata file) block**
 ```{r}
 metadata = data@meta.data
 #Edit this string to rename metadata or exclude metadata
@@ -118,6 +126,7 @@ dput(colnames(metadata))
 
 ### Generate metadata file
 ##### cols.use can be used to omit metadata columns or to re-order the columns
+##### use the string in the block above to manipulate the metadata file you will generate
 ##### column order in cols.use determines the order the metadata are listed in the annotations dropdown
 ### **column names can only have only alphanumeric characters and underscore characters**
 ##### new.col.names can be used to rename columns such as "percent.mt" which have characters that are disallowed
@@ -144,5 +153,4 @@ generateMetadataFile(data, metadata_name,
       "percent_mt", "RNA_snn_res_0_5")
 )
 ```
-
 
