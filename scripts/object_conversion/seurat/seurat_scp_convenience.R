@@ -188,8 +188,8 @@ generateClusterFile = function(object, file.name, reduction.use = 'tsne',
 
 # Global variables for metadata related functions below
 # ***These may need to be updated periodically***
-required_meta_cols = c('biosample_id', 'donor_id', 'species', 'disease', 'organ', 
-                       'library_preparation_protocol', 'sex', 'biosample_type')
+required_meta_cols = c('biosample_id', 'donor_id', 'species', 'species__ontology_label', 'disease', 'disease__ontology_label', 'organ', 'organ__ontology_label', 
+                       'library_preparation_protocol', 'library_preparation_protocol__ontology_label', 'sex', 'biosample_type')
 required_with_cv = c('sex', 'biosample_type')
 cv_list = list(
   biosample_type = c("CellLine","DerivedType_Organoid","DerivedType_InVitroDifferentiated",
